@@ -198,7 +198,7 @@ public sealed class Config
     public int? OverlayX { get; set; }
     public int? OverlayY { get; set; }
     /// <summary>Locked overlay = click-through, cannot be moved (Ctrl+Shift+L to toggle).</summary>
-    public bool OverlayLocked { get; set; }
+    public bool OverlayLocked { get; set; } = true;
 
     /// <summary>Size of the overlay in percent (100 = normal), on top of the Windows display scaling.</summary>
     public int OverlaySize { get; set; } = 100;

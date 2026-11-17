@@ -22,6 +22,13 @@ Chest Counter reads the replays Fortnite saves after each match and keeps a runn
 
 > It counts the chests **you opened**. It does not show where chests are on the map.
 
+## What's new in this fork
+
+- **Sleek Black / Dark-Grey Apple-Themed Animated UI**: Frosted dark glass cards, SF Pro / Segoe UI Variable typography, spring-animated transitions, and updated OBS/in-game overlays.
+- **Custom Chest Icon**: Updated app, taskbar, tray, and header chest artwork.
+- **Overlay Auto-Lock & Spin-Up Numbers**: The overlay automatically locks to click-through during live matches so it cannot be dragged in a fight, and numbers smoothly spin up when counters update.
+- **Collapsed-House / Gum-Gum Fruit Chest Attribution (`AnalyzerVersion 19`)**: Closed chests broken from support collapse (such as upper-floor chests when breaking lower walls with the Gum-Gum Fruit) are attributed within 35 m.
+
 ## How it works (and why it is safe)
 
 Fortnite can record a **replay file** of every match on your PC. Chest Counter reads these files once the match is over, and nothing else.

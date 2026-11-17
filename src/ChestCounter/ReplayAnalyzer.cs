@@ -212,7 +212,7 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
     private readonly List<GrantEvent> _grants = new();
 
     /// <summary>Bump when the analysis changes so that existing replays are re-analyzed.</summary>
-    public const int CurrentVersion = 18; // 18: exact export group match, player state updates, prize & vehicle attribution fixes
+    public const int CurrentVersion = 19; // 19: attribute collapsed/support-broken upper-floor chests up to 35 m away
 
     private static readonly bool ProbeDebug = Environment.GetEnvironmentVariable("CHESTCOUNTER_DEBUG") == "4";
 
@@ -1163,24 +1163,23 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
     }
 
     /// <summary>
-    /// Gives each closed chest destroyed without an instigator to the player who stood right at it when its loot
-    /// spilled (within 4.5 m, nobody closer). The loot is the chest's own for sure: the server makes the container
-    /// the owner of the pickups it throws out, which also tells where a level placed chest stands. Measured on 99
-    /// replays: a player's own chests spill their loot at 1 to 4 m (2 m median); in every such case looked at, the
-    /// player had just broken a prop next to the chest.
+    /// Gives each closed chest destroyed without an instigator to the nearest player when its loot spilled
+    /// (within 35 m, nobody closer — covers multi-story houses collapsed from the ground floor or outside, e.g.
+    /// with the Gum-Gum Fruit). The loot is the chest's own for sure: the server makes the container the owner
+    /// of the pickups it throws out, which also tells where a level placed chest stands.
     /// </summary>
     private void ResolveOrphans()
     {
         foreach (var orphan in _orphans)
         {
-            var loot = _tosses.Where(x => x.Loc != null && x.Owner == orphan.Actor && Math.Abs(x.Time - orphan.Time) <= 2f).Select(x => x.Loc!.Value).ToList();
+            var loot = _tosses.Where(x => x.Loc != null && x.Owner == orphan.Actor && Math.Abs(x.Time - orphan.Time) <= 3f).Select(x => x.Loc!.Value).ToList();
             if (loot.Count == 0)
             {
                 continue;
             }
 
             uint nearest = 0;
-            var nearestDistance = 450f;
+            var nearestDistance = 3500f;
             foreach (var pawn in _pawnToPlayerState.Keys)
             {
                 if (PositionOf(pawn, orphan.Time) is not { } at)

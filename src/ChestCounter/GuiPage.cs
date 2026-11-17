@@ -134,117 +134,168 @@ public static class GuiPage
         ["footer"] = L.T("Fermer cette fenêtre ne coupe pas le compteur.", "Closing this window does not stop the counter.", "Cerrar esta ventana no detiene el contador."),
     };
 
-    public static string Html(string token) => Template.Replace("__TOKEN__", token).Replace("__FONT__", ReportWriter.FontFaceCss).Replace("__PENCIL__", ReportWriter.PencilIcon);
+    public static string Html(string token) => Template.Replace("__TOKEN__", token).Replace("__FONT__", ReportWriter.FontFaceCss).Replace("__PENCIL__", ReportWriter.PencilIcon).Replace("__CHESTICON__", ReportWriter.ChestIconImg);
 
     private const string Template = """
         <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
         <title>Chest Counter</title>
-        <style>__FONT__
-        :root{--bg:#0f1b24;--ink:#efe2c4;--muted:#b8b0a0;--title:#f0c057;--card:#f2e6c9;--cink:#2a1c0f;--cmuted:#6b5a44;--line:#d8c59c;--track:#e4d3ad;--gold:#c9a24f;--team:#1f7f7a;--warn:#a3361f}
-        @media (prefers-color-scheme:light){:root{--bg:#efe4c9;--ink:#2a1c0f;--muted:#6b5a44;--title:#7a4a1e;--card:#fffaf0;--line:#e2d2ae;--track:#efe2c4}}
-        *{box-sizing:border-box}
-        body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI",system-ui,sans-serif}
-        main{max-width:1080px;margin:0 auto;padding:24px 16px 40px;display:flex;flex-direction:column;gap:20px}
-        .pirate{font-family:"Pirata One","Segoe UI",serif;font-weight:400}
-        .num{font-family:Bahnschrift,"Segoe UI",sans-serif;font-stretch:75%;font-variant-numeric:tabular-nums}
+        <style>
+        :root{
+          --bg:#060608;
+          --bg-elevated:#0d0d11;
+          --ink:#f5f5f7;
+          --muted:#86868b;
+          --title:#ffffff;
+          --card:rgba(22,22,26,.78);
+          --card-solid:#16161a;
+          --cink:#f5f5f7;
+          --cmuted:#8e8e93;
+          --line:rgba(255,255,255,.09);
+          --line-strong:rgba(255,255,255,.18);
+          --track:rgba(255,255,255,.06);
+          --gold:#ffffff;
+          --team:#30d158;
+          --warn:#ff453a;
+          --accent:#0a84ff;
+          --purple:#bf5af2;
+          --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+          --ease:cubic-bezier(.16,1,.3,1);
+        }
+        *{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(10px) scale(.992)}to{opacity:1;transform:translateY(0) scale(1)}}
+        @keyframes modalIn{from{opacity:0;transform:scale(.95) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+        @keyframes pulseGlow{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.22);opacity:.72}}
+        @keyframes barShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+        body{
+          margin:0;
+          background:radial-gradient(1100px 540px at 50% -180px,rgba(255,255,255,.07),transparent 70%),linear-gradient(180deg,#09090c 0%,#050507 100%);
+          background-attachment:fixed;
+          color:var(--ink);
+          font:400 15px/1.5 var(--font);
+          letter-spacing:-.011em;
+        }
+        main{max-width:1080px;margin:0 auto;padding:28px 20px 44px;display:flex;flex-direction:column;gap:22px;animation:fadeUp .45s var(--ease) both}
+        .pirate{font-family:var(--font);font-weight:700;letter-spacing:-.03em}
+        .num{font-family:var(--font);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.035em}
         #app{display:flex;flex-direction:column;gap:20px}
-        #hdr{display:flex;flex-direction:column;gap:16px}
-        #view{display:flex;flex-direction:column;gap:20px}
+        #hdr{display:flex;flex-direction:column;gap:18px}
+        #view{display:flex;flex-direction:column;gap:18px}
+        #view.tab-anim,#activityPane.tab-anim,#reportPane.tab-anim{animation:fadeUp .34s var(--ease) both}
         #view:empty{display:none}
         #rep{width:100%;min-height:400px;border:0;display:block;background:transparent;overflow:hidden}
-        .who{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-        .who select{min-height:32px;padding:2px 8px;font-size:14px;border-color:var(--gold);background:transparent;color:var(--ink)}
-        .who select option{color:#2a1c0f;background:#fffaf0}
-        header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;border-bottom:2px solid var(--gold);padding-bottom:14px}
-        .brand{display:flex;align-items:center;gap:12px}
-        h1{margin:0;font-size:38px;line-height:1;color:var(--title)}
-        .who{color:var(--muted);font-size:14px}
-        .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:var(--card);color:var(--cink);font-weight:600;font-size:14px}
-        .pill i{width:10px;height:10px;border-radius:50%;background:#3a9a5b}
-        .pill.live i{background:#ff3b30}.pill.busy i{background:#e0a526}.pill.warn i{background:#c8412f}
-        nav{display:flex;gap:6px;flex-wrap:wrap}
-        nav button{min-height:44px;padding:8px 18px;border-radius:8px;border:1px solid var(--gold);background:transparent;color:var(--ink);font:600 15px "Segoe UI",system-ui,sans-serif;cursor:pointer}
-        nav button.on{background:var(--gold);color:var(--cink)}
-        h2{margin:0 0 10px;font-size:24px;color:var(--title)}
-        .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
-        .tile{background:var(--card);color:var(--cink);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
-        .tile .v{font-size:36px;font-weight:700;line-height:1.1}
-        .tile .l{font-size:13px;color:var(--cmuted)}
-        .tile.hero{position:relative;background:#7a4a1e;color:#fbecc4;border:2px solid #e7b440}
-        .editbtn{position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;border-radius:8px;border:1px solid #e7b440;background:transparent;color:#ffd36a;cursor:pointer;display:grid;place-items:center}
-        .editbtn:hover{background:rgba(231,180,64,.18)}.editbtn:focus-visible{outline:3px solid #ffd36a;outline-offset:2px}
-        dialog{width:min(560px,calc(100% - 32px));padding:20px 22px;border:2px solid var(--gold);border-radius:10px;background:var(--card);color:var(--cink)}
-        dialog::backdrop{background:rgba(5,10,14,.6)}
-        .dhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
-        .dhead h2{margin:0;color:#7a4a1e}
-        .dclose{width:40px;height:40px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--cink);font-size:22px;line-height:1;cursor:pointer}
-        .tile.hero .v{font-size:54px;color:#ffd36a}.tile.hero .l{color:#fbecc4}
-        .card{background:var(--card);color:var(--cink);border:1px solid var(--line);border-radius:8px;padding:16px}
-        .row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--line)}
+        .who{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:13px;font-weight:500;margin-top:3px}
+        .who select{min-height:30px;padding:3px 10px;font-size:13px;border-radius:999px;border:1px solid var(--line-strong);background:rgba(255,255,255,.05);color:var(--ink);transition:border-color .2s var(--ease),background .2s var(--ease)}
+        .who select:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.28)}
+        .who select option{color:#f5f5f7;background:#16161a}
+        header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;border-bottom:1px solid var(--line);padding-bottom:18px}
+        .brand{display:flex;align-items:center;gap:14px}
+        .brand img,.brand svg{filter:drop-shadow(0 4px 14px rgba(0,0,0,.45));transition:transform .3s var(--ease)}
+        .brand:hover img,.brand:hover svg{transform:scale(1.06) translateY(-1px)}
+        h1{margin:0;font-size:30px;line-height:1.08;font-weight:700;letter-spacing:-.035em;background:linear-gradient(180deg,#ffffff 0%,#b8b8bf 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:var(--title)}
+        .pill{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--line);backdrop-filter:blur(20px);color:var(--ink);font-weight:600;font-size:13px;letter-spacing:-.01em;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:all .25s var(--ease)}
+        .pill i{width:8px;height:8px;border-radius:50%;background:#30d158;box-shadow:0 0 10px rgba(48,209,88,.6)}
+        .pill.live i{background:#ff453a;box-shadow:0 0 12px rgba(255,69,58,.8);animation:pulseGlow 1.6s ease-in-out infinite}
+        .pill.busy i{background:#ffd60a;box-shadow:0 0 12px rgba(255,214,10,.7);animation:pulseGlow 1.6s ease-in-out infinite}
+        .pill.warn i{background:#ff9f0a;box-shadow:0 0 12px rgba(255,159,10,.7)}
+        nav{display:inline-flex;gap:4px;flex-wrap:wrap;padding:4px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid var(--line);align-self:flex-start;backdrop-filter:blur(20px)}
+        nav button{min-height:36px;padding:6px 18px;border-radius:10px;border:1px solid transparent;background:transparent;color:var(--muted);font:600 14px var(--font);letter-spacing:-.01em;cursor:pointer;transition:color .22s var(--ease),background .22s var(--ease),transform .16s var(--ease),box-shadow .22s var(--ease)}
+        nav button:hover{color:var(--ink);background:rgba(255,255,255,.05)}
+        nav button:active{transform:scale(.96)}
+        nav button.on{background:#ffffff;color:#050507;box-shadow:0 2px 10px rgba(255,255,255,.18),0 1px 2px rgba(0,0,0,.4)}
+        h2{margin:0 0 10px;font-size:20px;font-weight:700;letter-spacing:-.025em;color:var(--title)}
+        .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:14px}
+        .tile{position:relative;background:var(--card);backdrop-filter:blur(24px) saturate(180%);color:var(--cink);border:1px solid var(--line);border-radius:18px;padding:18px 20px;box-shadow:0 8px 28px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);transition:transform .28s var(--ease),border-color .28s var(--ease),box-shadow .28s var(--ease),background .28s var(--ease)}
+        .tile:hover{transform:translateY(-3px);border-color:var(--line-strong);background:rgba(28,28,34,.86);box-shadow:0 16px 36px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1)}
+        .tile .v{font-size:36px;font-weight:700;line-height:1.08;color:#ffffff;letter-spacing:-.035em}
+        .tile .l{font-size:13px;color:var(--cmuted);margin-top:4px;font-weight:500}
+        .tile.hero{background:linear-gradient(145deg,rgba(42,42,50,.92) 0%,rgba(18,18,22,.96) 100%);color:#ffffff;border:1px solid rgba(255,255,255,.22);box-shadow:0 14px 40px rgba(0,0,0,.55),0 0 40px rgba(255,255,255,.04),inset 0 1px 0 rgba(255,255,255,.18)}
+        .tile.hero:hover{border-color:rgba(255,255,255,.35);box-shadow:0 18px 46px rgba(0,0,0,.65),0 0 48px rgba(255,255,255,.07),inset 0 1px 0 rgba(255,255,255,.24)}
+        .editbtn{position:absolute;top:14px;right:14px;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#ffffff;cursor:pointer;display:grid;place-items:center;transition:all .2s var(--ease)}
+        .editbtn:hover{background:#ffffff;color:#050507;border-color:#ffffff;transform:scale(1.06)}
+        .editbtn:active{transform:scale(.95)}
+        .editbtn:focus-visible{outline:2px solid #ffffff;outline-offset:2px}
+        dialog{width:min(540px,calc(100% - 32px));padding:24px 26px;border:1px solid var(--line-strong);border-radius:22px;background:rgba(20,20,24,.94);backdrop-filter:blur(32px) saturate(180%);color:var(--cink);box-shadow:0 28px 80px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.1);animation:modalIn .28s var(--ease) both}
+        dialog::backdrop{background:rgba(0,0,0,.68);backdrop-filter:blur(10px)}
+        .dhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+        .dhead h2{margin:0;color:#ffffff}
+        .dclose{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--cink);font-size:20px;line-height:1;cursor:pointer;display:grid;place-items:center;transition:all .2s var(--ease)}
+        .dclose:hover{background:rgba(255,255,255,.16);transform:scale(1.06)}
+        .tile.hero .v{font-size:52px;background:linear-gradient(180deg,#ffffff 0%,#d1d1d6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#ffffff;margin:2px 0}
+        .tile.hero .l{color:#a1a1a6}
+        .card{background:var(--card);backdrop-filter:blur(24px) saturate(180%);color:var(--cink);border:1px solid var(--line);border-radius:18px;padding:18px 20px;box-shadow:0 8px 28px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.05);transition:border-color .25s var(--ease),box-shadow .25s var(--ease)}
+        .card:hover{border-color:rgba(255,255,255,.14)}
+        .row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}
         .row:last-child{border-bottom:none}
-        .row .t{font-weight:600}.row .h{font-size:13px;color:var(--cmuted);margin-top:2px}
-        .actions{display:flex;flex-wrap:wrap;gap:8px}
-        button.b{min-height:40px;padding:8px 16px;border-radius:8px;border:1px solid var(--gold);background:var(--card);color:var(--cink);font:600 14px "Segoe UI",system-ui,sans-serif;cursor:pointer}
-        button.b:hover{background:var(--track)}
-        button.b.main{background:#7a4a1e;color:#fbecc4;border-color:#e7b440}
-        button.b.danger{border-color:var(--warn);color:var(--warn)}
-        select,input[type=text],input[type=number]{min-height:40px;padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:#fffaf0;color:var(--cink);font:15px "Segoe UI",system-ui,sans-serif}
+        .row .t{font-weight:600;color:#ffffff}.row .h{font-size:13px;color:var(--cmuted);margin-top:3px;line-height:1.45}
+        .actions{display:flex;flex-wrap:wrap;gap:10px}
+        button.b{min-height:38px;padding:8px 18px;border-radius:999px;border:1px solid var(--line-strong);background:rgba(255,255,255,.06);color:var(--cink);font:600 14px var(--font);letter-spacing:-.01em;cursor:pointer;transition:all .2s var(--ease)}
+        button.b:hover{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.28);transform:translateY(-1px)}
+        button.b:active{transform:scale(.97)}
+        button.b.main{background:#ffffff;color:#050507;border-color:#ffffff;box-shadow:0 4px 16px rgba(255,255,255,.16)}
+        button.b.main:hover{background:#e5e5ea;border-color:#e5e5ea;box-shadow:0 6px 22px rgba(255,255,255,.24)}
+        button.b.danger{border-color:rgba(255,69,58,.4);color:#ff453a;background:rgba(255,69,58,.08)}
+        button.b.danger:hover{background:rgba(255,69,58,.18);border-color:#ff453a}
+        select,input[type=text],input[type=number]{min-height:38px;padding:6px 12px;border-radius:10px;border:1px solid var(--line-strong);background:rgba(255,255,255,.06);color:var(--cink);font:500 14px var(--font);transition:border-color .2s var(--ease),background .2s var(--ease),box-shadow .2s var(--ease)}
+        select:hover,input[type=text]:hover,input[type=number]:hover{border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.09)}
+        select:focus,input[type=text]:focus,input[type=number]:focus{outline:none;border-color:#ffffff;box-shadow:0 0 0 3px rgba(255,255,255,.15);background:rgba(255,255,255,.1)}
+        select option{background:#16161a;color:#f5f5f7}
         input[type=text]{width:min(520px,100%)}
-        .switch{position:relative;display:inline-block;width:52px;height:30px;flex:none;vertical-align:middle}
+        .switch{position:relative;display:inline-block;width:50px;height:30px;flex:none;vertical-align:middle}
         .switch input{opacity:0;width:100%;height:100%;margin:0;cursor:pointer;position:absolute;z-index:1}
-        .switch span{position:absolute;inset:0;border-radius:15px;background:#c9bc9c;transition:background .15s}
-        .switch span:after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .15s}
-        .switch input:checked+span{background:var(--team)}.switch input:checked+span:after{transform:translateX(22px)}
-        .switch input:focus-visible+span{outline:3px solid var(--gold)}
-        .badge{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:#f6d8c9;color:var(--warn);font-size:12px;font-weight:700;vertical-align:1px;cursor:help}
-        .log{font:13px/1.55 Consolas,"Cascadia Mono",monospace;max-height:260px;overflow:auto;white-space:pre-wrap}
-        .log .err{color:#b3261e}.log .warn{color:#9a5b00}.log .ok{color:#1d7a3c}.log .info{color:#1f6f8b}.log .tre{color:#6c3fb5}.log .mut{color:var(--cmuted)}
-        .bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;background:#b9821c}
-        .path{font:13px Consolas,monospace;word-break:break-all;background:var(--track);padding:6px 8px;border-radius:6px;display:block;margin:6px 0}
+        .switch span{position:absolute;inset:0;border-radius:999px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.08);transition:background .25s var(--ease),border-color .25s var(--ease)}
+        .switch span:after{content:"";position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#ffffff;box-shadow:0 2px 6px rgba(0,0,0,.45);transition:transform .25s var(--ease)}
+        .switch input:checked+span{background:var(--team);border-color:var(--team)}.switch input:checked+span:after{transform:translateX(20px)}
+        .switch input:focus-visible+span{outline:2px solid #ffffff;outline-offset:2px}
+        .badge{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:rgba(255,159,10,.15);border:1px solid rgba(255,159,10,.3);color:#ff9f0a;font-size:11px;font-weight:600;vertical-align:1px;cursor:help}
+        .log{font:13px/1.6 "SF Mono","Cascadia Mono",Consolas,monospace;max-height:260px;overflow:auto;white-space:pre-wrap;background:rgba(10,10,14,.85);border-color:var(--line)}
+        .log .err{color:#ff453a}.log .warn{color:#ffd60a}.log .ok{color:#30d158}.log .info{color:#64d2ff}.log .tre{color:#bf5af2}.log .mut{color:var(--cmuted)}
+        .bar{height:8px;background:var(--track);border-radius:999px;overflow:hidden;margin-top:10px}.bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ffffff,#a1a1a6,#ffffff);background-size:200% 100%;animation:barShimmer 2.2s linear infinite;transition:width .35s var(--ease)}
+        .path{font:13px "SF Mono","Cascadia Mono",Consolas,monospace;word-break:break-all;background:rgba(255,255,255,.05);border:1px solid var(--line);padding:8px 12px;border-radius:10px;display:block;margin:8px 0;color:#d1d1d6}
         .note{font-size:13px;color:var(--muted)}
         .hidden{display:none!important}
-        footer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px dashed var(--gold);padding-top:12px;color:var(--muted);font-size:13px}
-        .estimate{margin-top:8px;font-weight:600}
-        .mtotal{font-weight:600;margin-bottom:6px}
-        .mweek{display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer}
-        .mweek b{white-space:nowrap}
+        footer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:13px}
+        .estimate{margin-top:10px;font-weight:600;color:#ffffff}
+        .mtotal{font-weight:600;margin-bottom:8px;color:#ffffff}
+        .mweek{display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer}
+        .mweek input{accent-color:#ffffff;width:16px;height:16px}
+        .mweek b{white-space:nowrap;color:#ffffff}
         .mweek span{color:var(--cmuted);font-size:13px}
-        .mhist{list-style:none;margin:10px 0 0;padding:0;max-height:190px;overflow:auto}
-        .mhist li{display:flex;align-items:center;gap:12px;padding:5px 2px;border-top:1px solid var(--line)}
-        .mhist b{min-width:70px;text-align:right}
+        .mhist{list-style:none;margin:12px 0 0;padding:0;max-height:190px;overflow:auto}
+        .mhist li{display:flex;align-items:center;gap:12px;padding:7px 4px;border-top:1px solid var(--line)}
+        .mhist b{min-width:70px;text-align:right;color:#ffffff}
         .mhist span{flex:1;color:var(--cmuted);font-size:13px}
-        .mhist .mx{border:0;background:none;color:var(--cmuted);font-size:18px;line-height:1;cursor:pointer;padding:2px 7px;border-radius:4px}
-        .mhist .mx:hover{color:var(--warn);background:rgba(163,54,31,.1)}
-        .notice{position:relative;display:flex;gap:12px;align-items:flex-start;border-left:6px solid var(--gold)}
-        .notice.warning{border-left-color:#c8412f;background:#fbe9d0}
-        .notice .ni{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font:700 14px "Segoe UI",system-ui,sans-serif;background:var(--gold);color:#fff;margin-top:1px}
-        .notice.warning .ni{background:#c8412f}
-        .notice .nb{flex:1;min-width:0}.notice .nt{font-weight:700;margin-bottom:2px}.notice .nx{white-space:pre-line}
+        .mhist .mx{border:0;background:none;color:var(--cmuted);font-size:18px;line-height:1;cursor:pointer;padding:2px 7px;border-radius:6px;transition:all .18s var(--ease)}
+        .mhist .mx:hover{color:var(--warn);background:rgba(255,69,58,.14)}
+        .notice{position:relative;display:flex;gap:12px;align-items:flex-start;border-left:4px solid #ffffff}
+        .notice.warning{border-left-color:#ff453a;background:rgba(255,69,58,.08);border-color:rgba(255,69,58,.25)}
+        .notice .ni{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font:700 13px var(--font);background:#ffffff;color:#050507;margin-top:1px}
+        .notice.warning .ni{background:#ff453a;color:#ffffff}
+        .notice .nb{flex:1;min-width:0}.notice .nt{font-weight:700;margin-bottom:2px;color:#ffffff}.notice .nx{white-space:pre-line;color:#d1d1d6}
         .notice .actions{margin-top:10px}
-        .notice .nclose{flex:none;width:32px;height:32px;margin:-6px -8px 0 0;border:0;border-radius:6px;background:transparent;color:var(--cmuted);font-size:20px;line-height:1;cursor:pointer}
-        .notice .nclose:hover{background:rgba(0,0,0,.06);color:var(--cink)}
+        .notice .nclose{flex:none;width:30px;height:30px;margin:-4px -6px 0 0;border:0;border-radius:50%;background:transparent;color:var(--cmuted);font-size:18px;line-height:1;cursor:pointer;transition:all .18s var(--ease)}
+        .notice .nclose:hover{background:rgba(255,255,255,.1);color:#ffffff}
         @media (max-width:640px){.row{flex-direction:column;align-items:flex-start}}
         /* The counter's own window: its title bar is drawn here (drag to move, double click to maximize). */
         .tbar{display:none}
         body.windowed{height:100vh;overflow:hidden}
-        body.windowed .tbar{display:flex;justify-content:flex-end;position:fixed;top:0;left:0;right:0;height:34px;background:var(--bg);z-index:20;app-region:drag;user-select:none}
-        body.windowed #scroll{position:absolute;top:34px;left:0;right:0;bottom:0;overflow:auto}
+        body.windowed .tbar{display:flex;justify-content:flex-end;position:fixed;top:0;left:0;right:0;height:34px;background:rgba(6,6,8,.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.05);z-index:20;app-region:drag;user-select:none}
+        body.windowed #scroll{position:absolute;top:34px;left:0;right:0;bottom:0;overflow:auto;scroll-behavior:smooth}
         body.windowed header{app-region:drag}
         body.windowed header select,body.windowed header button{app-region:no-drag}
         .wctl{display:flex;app-region:no-drag}
-        .wctl button{width:46px;height:34px;padding:0;border:0;border-radius:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;transition:background .12s,color .12s}
-        .wctl button:hover{background:rgba(201,162,79,.18);color:var(--title)}
-        .wctl button.x:hover{background:#b3261e;color:#fff}
-        .wctl button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+        .wctl button{width:46px;height:34px;padding:0;border:0;border-radius:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;transition:background .15s,color .15s}
+        .wctl button:hover{background:rgba(255,255,255,.1);color:#ffffff}
+        .wctl button.x:hover{background:#ff453a;color:#ffffff}
+        .wctl button:focus-visible{outline:2px solid #ffffff;outline-offset:-2px}
         .wctl svg{display:block}
         /* Scrollbars in the colors of the tool (no white bar on the side). */
-        #scroll::-webkit-scrollbar,html::-webkit-scrollbar{width:12px}
-        #scroll::-webkit-scrollbar-track,html::-webkit-scrollbar-track{background:var(--bg)}
-        #scroll::-webkit-scrollbar-thumb,html::-webkit-scrollbar-thumb{background:rgba(201,162,79,.32);border-radius:6px;border:3px solid var(--bg)}
-        #scroll::-webkit-scrollbar-thumb:hover,html::-webkit-scrollbar-thumb:hover{background:rgba(201,162,79,.6)}
-        .log::-webkit-scrollbar{width:10px}
+        #scroll::-webkit-scrollbar,html::-webkit-scrollbar{width:10px}
+        #scroll::-webkit-scrollbar-track,html::-webkit-scrollbar-track{background:transparent}
+        #scroll::-webkit-scrollbar-thumb,html::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:999px;border:2px solid var(--bg)}
+        #scroll::-webkit-scrollbar-thumb:hover,html::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.34)}
+        .log::-webkit-scrollbar{width:8px}
         .log::-webkit-scrollbar-track{background:transparent}
-        .log::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px;border:2px solid var(--card)}
+        .log::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:999px}
         </style></head><body><div class="tbar"><div class="wctl">
           <button type="button" id="wmin"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5.5h10" stroke="currentColor" stroke-width="1.1"/></svg></button>
           <button type="button" id="wmax"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><rect id="wmaxicon" x=".55" y=".55" width="8.9" height="8.9" fill="none" stroke="currentColor" stroke-width="1.1"/><path id="wresicon" d="M2.5 2.5V.55h6.95v6.95H7.5M.55 2.5h6.95v6.95H.55z" fill="none" stroke="currentColor" stroke-width="1.1" style="display:none"/></svg></button>
@@ -270,10 +321,10 @@ public static class GuiPage
         function sw(id,on,act){return `<label class="switch"><input type="checkbox" id="${id}" ${on?'checked':''} onchange="api('${act}',this.checked)"><span></span></label>`}
         function row(title,help,control){return `<div class="row"><div><div class="t">${title}</div>${help?`<div class="h">${help}</div>`:''}</div><div>${control}</div></div>`}
         function sel(act,value,opts){return `<select onchange="api('${act}',this.value)">${opts.map(o=>`<option value="${esc(o[0])}" ${String(o[0])===String(value)?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`}
-        function setTab(t){tab=t;try{localStorage.setItem('cc-gui-tab',t)}catch(e){}render(true)}
+        function setTab(t){const changed=tab!==t;tab=t;try{localStorage.setItem('cc-gui-tab',t)}catch(e){}render(true);if(changed){['#view','#activityPane','#reportPane'].forEach(sel=>{const el=$(sel);if(el){el.classList.remove('tab-anim');void el.offsetWidth;el.classList.add('tab-anim')}})}}
         function render(force){
           const T=S.txt;document.documentElement.lang=S.lang;
-          const head=`<header><div class="brand"><svg width="44" height="44" viewBox="0 0 56 56" aria-hidden="true"><rect x="6" y="20" width="44" height="28" rx="4" fill="#7a4a1e" stroke="#e7b440" stroke-width="3"/><path d="M6 26 Q28 4 50 26" fill="#965d27" stroke="#e7b440" stroke-width="3"/><rect x="24" y="24" width="8" height="10" rx="2" fill="#e7b440"/></svg><div><h1 class="pirate">${esc(S.appName)}</h1><div class="who">${S.profiles.length>1?`<select aria-label="${esc(T.profile)}" title="${esc(T.profile)}" onchange="api('profile',this.value)">${S.profiles.map(p=>`<option value="${esc(p.key)}" ${p.key===S.profileKey?'selected':''}>${esc(p.name)} (${esc(p.matches)})</option>`).join('')}</select>`:`<span>${esc(S.player||'')}</span>`}<span>v${esc(S.version)}</span></div></div></div><span class="pill ${S.status.kind}"><i></i>${esc(S.status.text)}</span></header>
+          const head=`<header><div class="brand"><img src="__CHESTICON__" width="46" height="46" alt="" style="object-fit:contain"><div><h1 class="pirate">${esc(S.appName)}</h1><div class="who">${S.profiles.length>1?`<select aria-label="${esc(T.profile)}" title="${esc(T.profile)}" onchange="api('profile',this.value)">${S.profiles.map(p=>`<option value="${esc(p.key)}" ${p.key===S.profileKey?'selected':''}>${esc(p.name)} (${esc(p.matches)})</option>`).join('')}</select>`:`<span>${esc(S.player||'')}</span>`}<span>v${esc(S.version)}</span></div></div></div><span class="pill ${S.status.kind}"><i></i>${esc(S.status.text)}</span></header>
           <nav>${['home','report','overlay','settings','help'].map(t=>`<button class="${t===tab?'on':''}" onclick="setTab('${t}')">${esc(T[t])}</button>`).join('')}</nav>`;
           if(!force&&busyHeader())return;
           if(!force&&busy()){$('#hdr').innerHTML=head;appHtml=null;return}
@@ -326,14 +377,14 @@ public static class GuiPage
         function home(T){
           let h='';
           if(S.autoClose)h+=`<div class="card notice warning"><b>${esc(S.status.text)}</b><br>${esc(T.autoCloseText)}<div class="actions" style="margin-top:10px"><button class="b main" onclick="api('keepOpen')">${esc(T.keepOpen)}</button></div></div>`;
-          if(S.firstRun){const s=S.settings;h+=`<div class="card welcome"><h2 class="pirate" style="color:#7a4a1e">${esc(T.welcome)}</h2><p style="margin-top:0">${esc(T.welcomeText)}</p>
-            <div class="t" style="font-weight:600;margin-top:14px">${esc(T.welcomeQuick)}</div>
+          if(S.firstRun){const s=S.settings;h+=`<div class="card welcome"><h2 class="pirate">${esc(T.welcome)}</h2><p style="margin-top:0;color:#d1d1d6">${esc(T.welcomeText)}</p>
+            <div class="t" style="font-weight:600;margin-top:14px;color:#ffffff">${esc(T.welcomeQuick)}</div>
             ${row(esc(T.language),'',sel('language',s.language,s.languages))}
             ${row(esc(T.inGame),esc(T.inGameHelp),sw('wov',S.overlay.show,'showOverlay'))}
             ${s.windowed?row(esc(T.tray),esc(T.trayHelp),sw('wtr',s.minimizeToTray,'minimizeToTray')):''}
             <div class="actions" style="margin-top:12px"><button class="b main" onclick="api('dismissWelcome')">${esc(T.welcomeDone)}</button></div></div>`}
           if(S.progress)h+=`<div class="card"><b>${esc(T.analyzing)} ${S.progress.done} / ${S.progress.total}</b><div class="bar"><i style="width:${Math.round(100*S.progress.done/Math.max(1,S.progress.total))}%"></i></div></div>`;
-          if(S.whatsNew&&S.whatsNew.length)h+=`<div class="card"><h2 class="pirate" style="color:#7a4a1e">${esc(fmt(T.whatsNew,S.version))}</h2><ul>${S.whatsNew.map(n=>`<li>${esc(n)}</li>`).join('')}</ul><button class="b main" onclick="api('dismissWhatsNew')">${esc(T.ok)}</button></div>`;
+          if(S.whatsNew&&S.whatsNew.length)h+=`<div class="card"><h2 class="pirate">${esc(fmt(T.whatsNew,S.version))}</h2><ul>${S.whatsNew.map(n=>`<li>${esc(n)}</li>`).join('')}</ul><button class="b main" onclick="api('dismissWhatsNew')">${esc(T.ok)}</button></div>`;
           if(S.update)h+=`<div class="card"><h2 class="pirate">${esc(fmt(T.newVersion,S.update.version))}</h2><ul>${S.update.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul><button class="b main" onclick="api('installUpdate')">${esc(T.install)}</button></div>`;
           h+=`<section class="tiles"><div class="tile hero"><button type="button" class="editbtn" onclick="openManual()" title="${esc(T.editChests)}" aria-label="${esc(T.editChests)}">__PENCIL__</button><div class="l">${esc(T.total)}</div><div class="v num">${esc(S.total)}</div><div class="l">${esc(T.totalSub)}${S.manual?'<br>'+esc(fmt(T.byHand,S.manualText.replace('+',''))):''}</div></div>
             <div class="tile"><div class="v num">${esc(S.session)}</div><div class="l">${esc(T.session)} · ${esc(S.sessionMatches)} ${esc(T.matches)}</div></div>

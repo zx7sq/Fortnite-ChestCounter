@@ -122,91 +122,125 @@ public static class ReportWriter
     /// <summary>A short date and time ("Nov 8, 6:00 AM"), shown in local time or UTC.</summary>
     private static string ShortWhen(DateTime utc) => L.Shown(utc).ToString(L.T("d MMM ", "MMM d, ", "d MMM ") + L.TimePattern(), Fr) + L.Zone;
 
-    // "Logbook" look (direction A): parchment cards on a night-sea background (a day version follows Windows' light
-    // mode). Titles use the embedded Pirata One font; figures use Bahnschrift, installed with Windows.
+    // Sleek Apple dark-mode aesthetic: obsidian black, frosted dark grey glass cards, crisp SF Pro / system typography,
+    // and smooth spring animations.
     private const string Style = """
-        :root{--bg:#0f1b24;--ink:#efe2c4;--ink2:#f7ecd2;--muted:#b8b0a0;--title:#f0c057;--card:#f2e6c9;--cink:#2a1c0f;--cmuted:#6b5a44;--line:#d8c59c;--track:#e4d3ad;--gold:#c9a24f;--star:#6c3fb5;--team:#1f7f7a;--warn:#a3361f;--warnbg:rgba(200,65,47,.10)}
-        @media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#efe4c9;--ink:#2a1c0f;--ink2:#2a1c0f;--muted:#6b5a44;--title:#7a4a1e;--card:#fffaf0;--line:#e2d2ae;--track:#efe2c4}}
-        :root[data-theme="light"]{--bg:#efe4c9;--ink:#2a1c0f;--ink2:#2a1c0f;--muted:#6b5a44;--title:#7a4a1e;--card:#fffaf0;--line:#e2d2ae;--track:#efe2c4}
-        *{box-sizing:border-box}
-        body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif}
-        main{max-width:1120px;margin:0 auto;padding:36px 16px 56px;display:flex;flex-direction:column;gap:28px}
-        .pirate{font-family:"Pirata One","Segoe UI",serif;font-weight:400}
-        .num{font-family:Bahnschrift,"Segoe UI",sans-serif;font-stretch:75%;font-variant-numeric:tabular-nums}
-        header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:2px solid var(--gold);padding-bottom:16px}
+        :root{
+          --bg:#060608;
+          --ink:#f5f5f7;
+          --ink2:#ffffff;
+          --muted:#86868b;
+          --title:#ffffff;
+          --card:rgba(22,22,26,.78);
+          --cink:#f5f5f7;
+          --cmuted:#8e8e93;
+          --line:rgba(255,255,255,.09);
+          --line-strong:rgba(255,255,255,.18);
+          --track:rgba(255,255,255,.07);
+          --gold:#ffffff;
+          --star:#bf5af2;
+          --team:#30d158;
+          --warn:#ff453a;
+          --warnbg:rgba(255,69,58,.10);
+          --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+          --ease:cubic-bezier(.16,1,.3,1);
+        }
+        *{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(10px) scale(.992)}to{opacity:1;transform:translateY(0) scale(1)}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes barGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+        @keyframes pulseBorder{0%,100%{box-shadow:inset 5px 0 0 #ff9f0a,0 8px 28px rgba(0,0,0,.35)}50%{box-shadow:inset 5px 0 0 #ffd60a,0 8px 32px rgba(255,159,10,.18)}}
+        body{
+          margin:0;
+          background:radial-gradient(1100px 540px at 50% -180px,rgba(255,255,255,.07),transparent 70%),linear-gradient(180deg,#09090c 0%,#050507 100%);
+          background-attachment:fixed;
+          color:var(--ink);
+          font:400 15px/1.5 var(--font);
+          letter-spacing:-.011em;
+        }
+        main{max-width:1120px;margin:0 auto;padding:36px 20px 56px;display:flex;flex-direction:column;gap:28px;animation:fadeUp .42s var(--ease) both}
+        .pirate{font-family:var(--font);font-weight:700;letter-spacing:-.03em}
+        .num{font-family:var(--font);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.035em}
+        header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;border-bottom:1px solid var(--line);padding-bottom:18px}
         .brand{display:flex;align-items:center;gap:14px}
-        h1{margin:0;font-size:44px;line-height:1;color:var(--title)}
-        .who{font-size:15px;color:var(--muted);margin-top:4px}.who b{color:var(--ink2)}
+        h1{margin:0;font-size:38px;line-height:1.05;font-weight:700;letter-spacing:-.035em;background:linear-gradient(180deg,#ffffff 0%,#b8b8bf 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:var(--title)}
+        .who{font-size:14px;color:var(--muted);margin-top:4px}.who b{color:var(--ink2);font-weight:600}
         .muted{color:var(--muted)}
-        h2{margin:0 0 10px;font-size:26px;line-height:1.2;color:var(--title)}
-        .tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
-        .tile{background:var(--card);color:var(--cink);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:2px}
-        .tile .v{font-size:36px;font-weight:700;line-height:1.1}
-        .tile .l{font-size:13px;color:var(--cmuted)}
+        h2{margin:0 0 12px;font-size:22px;line-height:1.2;font-weight:700;letter-spacing:-.025em;color:var(--title)}
+        .tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
+        .tile{background:var(--card);backdrop-filter:blur(24px) saturate(180%);color:var(--cink);border:1px solid var(--line);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;box-shadow:0 8px 28px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);transition:transform .28s var(--ease),border-color .28s var(--ease),box-shadow .28s var(--ease),background .28s var(--ease)}
+        .tile:hover{transform:translateY(-3px);border-color:var(--line-strong);background:rgba(28,28,34,.86);box-shadow:0 16px 36px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1)}
+        .tile .v{font-size:34px;font-weight:700;line-height:1.08;color:#ffffff}
+        .tile .l{font-size:13px;color:var(--cmuted);font-weight:500}
         .tile .s{font-size:12px;color:var(--cmuted);margin-top:4px}
-        .tile.hero{grid-column:span 2;background:#7a4a1e;color:#fbecc4;border:2px solid #e7b440;justify-content:space-between}
-        .tile.hero{position:relative}
-        .editbtn{display:none;position:absolute;top:10px;right:10px;width:36px;height:36px;padding:0;border-radius:8px;border:1px solid #e7b440;background:transparent;color:#ffd36a;cursor:pointer;place-items:center}
-        .editbtn:hover{background:rgba(231,180,64,.18)}.editbtn:focus-visible{outline:3px solid #ffd36a;outline-offset:2px}
+        .tile.hero{position:relative;grid-column:span 2;background:linear-gradient(145deg,rgba(42,42,50,.92) 0%,rgba(18,18,22,.96) 100%);color:#ffffff;border:1px solid rgba(255,255,255,.22);justify-content:space-between;box-shadow:0 14px 40px rgba(0,0,0,.55),0 0 40px rgba(255,255,255,.04),inset 0 1px 0 rgba(255,255,255,.18)}
+        .tile.hero:hover{border-color:rgba(255,255,255,.35)}
+        .editbtn{display:none;position:absolute;top:14px;right:14px;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#ffffff;cursor:pointer;place-items:center;transition:all .2s var(--ease)}
+        .editbtn:hover{background:#ffffff;color:#050507;border-color:#ffffff;transform:scale(1.06)}
+        .editbtn:focus-visible{outline:2px solid #ffffff;outline-offset:2px}
         html.incounter .editbtn{display:grid}
-        .tile.hero .k{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#f3cf7a}
-        .tile.hero .v{font-size:60px;color:#ffd36a;line-height:1}
-        .tile.hero .l{color:#fbecc4}
+        .tile.hero .k{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#a1a1a6}
+        .tile.hero .v{font-size:56px;background:linear-gradient(180deg,#ffffff 0%,#d1d1d6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#ffffff;line-height:1}
+        .tile.hero .l{color:#a1a1a6}
         @media (max-width:820px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.tile.hero{grid-column:span 2}}
-        .card{background:var(--card);color:var(--cink);border:1px solid var(--line);border-radius:8px;padding:6px 16px;overflow-x:auto}
+        .card{background:var(--card);backdrop-filter:blur(24px) saturate(180%);color:var(--cink);border:1px solid var(--line);border-radius:18px;padding:8px 18px;overflow-x:auto;box-shadow:0 8px 28px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.05);transition:border-color .25s var(--ease)}
+        .card:hover{border-color:rgba(255,255,255,.14)}
         .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
         @media (max-width:820px){.two{grid-template-columns:1fr}}
         table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-        th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
-        th{white-space:nowrap;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--cmuted);font-weight:600}
+        th,td{text-align:left;padding:11px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+        th{white-space:nowrap;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--cmuted);font-weight:600}
         tr:last-child td{border-bottom:none}
-        td.n{text-align:right;font-weight:700}
+        tr.r{transition:background .18s var(--ease)}
+        tr.r:hover td{background:rgba(255,255,255,.03)}
+        td.n{text-align:right;font-weight:700;color:#ffffff}
         td.nw{white-space:nowrap}
-        .big{font-size:20px}
+        .big{font-size:19px}
         .items{color:var(--cmuted);font-size:13px}
         /* Your chances */
-        .ch-intro{margin:0 0 12px;color:var(--muted);font-size:14px;max-width:760px}
-        .chances2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+        .ch-intro{margin:0 0 14px;color:var(--muted);font-size:14px;max-width:760px}
+        .chances2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
         @media (max-width:820px){.chances2{grid-template-columns:1fr}}
-        .hcard{background:var(--card);color:var(--cink);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
-        .hcard.got{border-color:var(--team);box-shadow:inset 6px 0 0 var(--team);padding-left:22px}
-        .hcard.boosted{border-color:#e2702f;box-shadow:inset 6px 0 0 #e2702f;padding-left:22px}
-        .htop{display:flex;align-items:center;gap:10px}
-        .cthumb{width:44px;height:44px;border-radius:6px;object-fit:cover;background:var(--track);flex:none}
+        .hcard{background:var(--card);backdrop-filter:blur(24px) saturate(180%);color:var(--cink);border:1px solid var(--line);border-radius:18px;padding:18px 20px;display:flex;flex-direction:column;gap:8px;box-shadow:0 8px 28px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);transition:transform .28s var(--ease),border-color .28s var(--ease),box-shadow .28s var(--ease)}
+        .hcard:hover{transform:translateY(-2px);border-color:var(--line-strong);box-shadow:0 14px 36px rgba(0,0,0,.5)}
+        .hcard.got{border-color:rgba(48,209,88,.45);box-shadow:inset 5px 0 0 var(--team),0 8px 28px rgba(0,0,0,.35);padding-left:24px}
+        .hcard.boosted{border-color:rgba(255,159,10,.5);animation:pulseBorder 2.4s ease-in-out infinite;padding-left:24px}
+        .htop{display:flex;align-items:center;gap:12px}
+        .cthumb{width:46px;height:46px;border-radius:10px;object-fit:cover;background:var(--track);border:1px solid var(--line);flex:none}
         .hname{flex:1;min-width:0}
-        .hname .k{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--cmuted)}
-        .ciname{font-weight:700;font-size:15px}
+        .hname .k{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--cmuted)}
+        .ciname{font-weight:700;font-size:16px;color:#ffffff;letter-spacing:-.015em}
         .hval{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-        .hval .big{font-size:40px;font-weight:700;line-height:1.05}
-        .hexp{font-size:14px}
+        .hval .big{font-size:40px;font-weight:700;line-height:1.05;color:#ffffff}
+        .hexp{font-size:14px;color:#d1d1d6}
         .hcard .s{font-size:13px;color:var(--cmuted)}
-        .cfoot{font-size:13px;color:var(--cmuted);border-top:1px dashed var(--line);padding-top:6px;margin-top:2px}
-        .halfway{margin-top:2px}.hrow{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--cmuted)}
-        .tag{display:inline-block;padding:2px 9px;border-radius:999px;font:700 11px "Segoe UI",system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;flex:none}
-        .tag.weekly{background:#2c5d8a;color:#fff}
-        .tag.season{background:#6c3fb5;color:#fff}
-        .chances2 .gotbadge,.ctable .gotbadge{display:none;padding:2px 8px;border-radius:999px;background:var(--team);color:#fff;font:700 11px "Segoe UI",system-ui,sans-serif;margin-left:8px;white-space:nowrap}
+        .cfoot{font-size:13px;color:var(--cmuted);border-top:1px solid var(--line);padding-top:8px;margin-top:2px}
+        .halfway{margin-top:4px}.hrow{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--cmuted)}
+        .tag{display:inline-block;padding:3px 10px;border-radius:999px;font:600 11px var(--font);letter-spacing:.06em;text-transform:uppercase;flex:none}
+        .tag.weekly{background:rgba(10,132,255,.16);border:1px solid rgba(10,132,255,.35);color:#64d2ff}
+        .tag.season{background:rgba(191,90,242,.16);border:1px solid rgba(191,90,242,.35);color:#da8fff}
+        .chances2 .gotbadge,.ctable .gotbadge{display:none;padding:2px 9px;border-radius:999px;background:rgba(48,209,88,.18);border:1px solid rgba(48,209,88,.4);color:#30d158;font:600 11px var(--font);margin-left:8px;white-space:nowrap}
         .got .gotbadge{display:inline-block!important}
-        .vchip{display:inline-block;padding:2px 9px;border-radius:999px;font:600 12px "Segoe UI",system-ui,sans-serif;white-space:nowrap}
-        .vchip.vunlikely{background:#e4d3ad;color:#6b5a44}
-        .vchip.unlikely{background:#f0d9a8;color:#7a5410}
-        .vchip.possible{background:#f6cf86;color:#6d4300}
-        .vchip.likely{background:#cfe3c0;color:#2f5a1c}
-        .vchip.vlikely{background:#b7dcae;color:#1f4d14}
-        .vchip.certain{background:#2f7d4f;color:#fff}
-        .cbar{display:block;height:6px;background:var(--track);border-radius:3px;overflow:hidden;margin-top:5px}
+        .vchip{display:inline-block;padding:3px 10px;border-radius:999px;font:600 12px var(--font);white-space:nowrap;border:1px solid transparent}
+        .vchip.vunlikely{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);color:#a1a1a6}
+        .vchip.unlikely{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.16);color:#d1d1d6}
+        .vchip.possible{background:rgba(255,214,10,.14);border-color:rgba(255,214,10,.3);color:#ffd60a}
+        .vchip.likely{background:rgba(48,209,88,.14);border-color:rgba(48,209,88,.3);color:#30d158}
+        .vchip.vlikely{background:rgba(48,209,88,.22);border-color:rgba(48,209,88,.45);color:#40e068}
+        .vchip.certain{background:#30d158;color:#050507;font-weight:700}
+        .cbar{display:block;height:6px;background:var(--track);border-radius:999px;overflow:hidden;margin-top:6px}
         .cbar.wide{width:100%}
-        .cbar i{display:block;height:6px;border-radius:3px}
-        .cbar i.vunlikely,.cbar i.unlikely{background:#c9a24f}.cbar i.possible{background:#d68a1c}
-        .cbar i.likely,.cbar i.vlikely{background:#5f9c4a}.cbar i.certain{background:#2f7d4f}.cbar i.gold{background:#b9821c}
-        .cgroup{margin-top:18px}
-        .ghead{display:flex;align-items:center;gap:10px;margin:0 0 8px}
-        .ghead .gt{font-weight:700;font-size:16px;color:var(--ink2)}
+        .cbar i{display:block;height:6px;border-radius:999px;transition:width .45s var(--ease)}
+        .cbar i.vunlikely,.cbar i.unlikely{background:#8e8e93}.cbar i.possible{background:#ffd60a}
+        .cbar i.likely,.cbar i.vlikely,.cbar i.certain{background:#30d158}.cbar i.gold{background:#ffffff}
+        .cgroup{margin-top:20px}
+        .ghead{display:flex;align-items:center;gap:12px;margin:0 0 10px}
+        .ghead .gt{font-weight:700;font-size:16px;color:var(--ink2);letter-spacing:-.015em}
         .ghead .gs{font-size:13px;color:var(--muted)}
         .cdbox{margin-left:auto;text-align:right;flex:none}
         .cdbox .cdl{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-        .cdbox .cd{font:700 18px "Segoe UI",system-ui,sans-serif;color:var(--ink2)}
-        .cd{font-variant-numeric:tabular-nums}.cd.soon{color:#f0a04b}
+        .cdbox .cd{font:700 18px var(--font);color:var(--ink2)}
+        .cd{font-variant-numeric:tabular-nums}.cd.soon{color:#ff9f0a}
         .ctable:not(.mini){table-layout:fixed;width:100%}
         .ctable:not(.mini) th:nth-child(1){width:38%}
         .ctable:not(.mini) th:nth-child(2){width:16%}
@@ -215,20 +249,21 @@ public static class ReportWriter
         .ctable th.r,.ctable td.n{text-align:right}
         .ctable td.n{white-space:nowrap;font-weight:700}
         .ctable td{vertical-align:middle}
-        .tflex{display:flex;align-items:center;gap:10px}
-        .thumb{width:36px;height:36px;border-radius:6px;object-fit:cover;background:var(--track);flex:none}
-        .tk{font-weight:600}
+        .tflex{display:flex;align-items:center;gap:12px}
+        .thumb{width:38px;height:38px;border-radius:8px;object-fit:cover;background:var(--track);border:1px solid var(--line);flex:none}
+        .tk{font-weight:600;color:#ffffff}
         .iname{display:block;font-size:12px;color:var(--cmuted)}
         .tchance{min-width:0}
         .tcv{display:flex;align-items:center;justify-content:space-between;gap:8px}
         tr.got .tk{color:var(--team)}
-        tr.boosted td:first-child{box-shadow:inset 4px 0 0 #e2702f;padding-left:14px}
+        tr.boosted td:first-child{box-shadow:inset 4px 0 0 #ff9f0a;padding-left:14px}
         .cmore{margin-top:14px;color:var(--ink)}
-        .cmore summary{cursor:pointer;font-weight:600;color:var(--ink2)}
+        .cmore summary{cursor:pointer;font-weight:600;color:var(--ink2);transition:color .2s}
+        .cmore summary:hover{color:#ffffff}
         .cmore p,.cmore ul{color:var(--muted);font-size:14px;max-width:760px}
-        .cmore li{margin:4px 0}
-        .cmore a{color:var(--title)}
-        .ctable.mini td,.ctable.mini th{padding-top:6px;padding-bottom:6px}
+        .cmore li{margin:5px 0}
+        .cmore a{color:#ffffff;text-decoration:underline;text-underline-offset:3px}
+        .ctable.mini td,.ctable.mini th{padding-top:7px;padding-bottom:7px}
         time[title]{border-bottom:1px dotted currentColor;cursor:help}
         .mo{display:none}
         @media (max-width:600px){
@@ -251,44 +286,47 @@ public static class ReportWriter
         /* A treasure the counter ticked by itself (seen in the replays): checked, not greyed, cannot be unticked */
         .prize input[data-auto]{cursor:default}
         .star{color:var(--star);font-weight:600}
-        .gold{color:#b9821c}
-        .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:10px;vertical-align:-1px}
-        .meter{display:block;width:140px;height:6px;background:var(--track);border-radius:3px;overflow:hidden}
-        .meter i{display:block;height:6px}
-        .flag{display:flex;gap:12px;align-items:flex-start;background:#3a1f12;color:#f6dfb0;border:1px solid #c8412f;border-radius:8px;padding:12px 14px;font-size:14px;margin-top:12px}
+        .gold{color:#ffffff}
+        .sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:10px;vertical-align:-1px}
+        .meter{display:block;width:140px;height:6px;background:var(--track);border-radius:999px;overflow:hidden}
+        .meter i{display:block;height:6px;border-radius:999px;transition:width .4s var(--ease)}
+        .flag{display:flex;gap:12px;align-items:flex-start;background:rgba(255,69,58,.08);color:#ffd5d2;border:1px solid rgba(255,69,58,.3);border-radius:14px;padding:14px 16px;font-size:14px;margin-top:12px}
         tr.unusual td{background:var(--warnbg)}
         .warn{color:var(--warn)}
-        .chart{padding:18px 18px 12px}
-        .bars{display:flex;align-items:stretch;gap:4px;height:150px;padding-top:26px}
+        .chart{padding:20px 20px 14px}
+        .bars{display:flex;align-items:stretch;gap:5px;height:150px;padding-top:26px}
         .col{flex:1;min-width:5px;display:flex;align-items:flex-end;position:relative;cursor:default}
-        .bar{width:100%;background:var(--gold);border-radius:3px 3px 0 0;transition:filter .12s}
-        .bar.top{background:#c8412f}
+        .bar{width:100%;background:linear-gradient(180deg,rgba(255,255,255,.78),rgba(255,255,255,.32));border-radius:5px 5px 2px 2px;transform-origin:bottom;animation:barGrow .5s var(--ease) both;transition:filter .18s var(--ease),transform .18s var(--ease),background .18s var(--ease)}
+        .bar.top{background:linear-gradient(180deg,#ffffff,#d1d1d6);box-shadow:0 0 16px rgba(255,255,255,.28)}
         .bar.zero{background:var(--line);height:3px!important}
-        .col:hover .bar{filter:brightness(1.15)}
-        .tip{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--cink);color:var(--card);
-             padding:3px 8px;border-radius:6px;font-size:12px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .12s;z-index:2}
-        .col:nth-child(-n+3) .tip{left:0;transform:none}
-        .col:nth-last-child(-n+3) .tip{left:auto;right:0;transform:none}
-        .col:hover .tip{opacity:1}
-        .axis{display:flex;justify-content:space-between;gap:8px;color:var(--cmuted);font-size:12px;margin-top:8px;border-top:1px dashed var(--line);padding-top:6px}
-        .head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+        .col:hover .bar{filter:brightness(1.25);transform:scaleY(1.03)}
+        .tip{position:absolute;left:50%;transform:translateX(-50%) translateY(4px);white-space:nowrap;background:rgba(28,28,34,.96);border:1px solid var(--line-strong);color:#ffffff;
+             padding:4px 10px;border-radius:8px;font-size:12px;font-weight:600;opacity:0;pointer-events:none;box-shadow:0 8px 20px rgba(0,0,0,.5);transition:opacity .16s var(--ease),transform .16s var(--ease);z-index:2}
+        .col:nth-child(-n+3) .tip{left:0;transform:translateY(4px)}
+        .col:nth-last-child(-n+3) .tip{left:auto;right:0;transform:translateY(4px)}
+        .col:hover .tip{opacity:1;transform:translateX(-50%) translateY(0)}
+        .col:nth-child(-n+3):hover .tip,.col:nth-last-child(-n+3):hover .tip{transform:translateY(0)}
+        .axis{display:flex;justify-content:space-between;gap:8px;color:var(--cmuted);font-size:12px;margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+        .head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
         .head h2{margin:0}
         .tsw{position:relative;display:inline-flex;align-items:center;gap:10px;min-height:36px;font-size:14px;color:var(--ink2);cursor:pointer;user-select:none}
         .tsw input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
-        .tsw .trk{position:relative;width:38px;height:22px;border-radius:11px;background:#8f8572;flex:none;transition:background .15s}
-        .tsw .trk:after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s}
-        .tsw input:checked+.trk{background:var(--team)}.tsw input:checked+.trk:after{transform:translateX(16px)}
-        .tsw input:focus-visible+.trk{outline:3px solid var(--gold);outline-offset:2px}
-        .tsw .badge{display:inline-block;margin-left:2px;padding:1px 8px;border-radius:999px;background:#f6d8c9;color:var(--warn);font-size:12px;font-weight:700}
-        .statsbar{display:flex;justify-content:flex-end;margin:-22px 0 -10px}
+        .tsw .trk{position:relative;width:40px;height:24px;border-radius:999px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.08);flex:none;transition:background .22s var(--ease),border-color .22s var(--ease)}
+        .tsw .trk:after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#ffffff;box-shadow:0 2px 5px rgba(0,0,0,.4);transition:transform .22s var(--ease)}
+        .tsw input:checked+.trk{background:var(--team);border-color:var(--team)}.tsw input:checked+.trk:after{transform:translateX(16px)}
+        .tsw input:focus-visible+.trk{outline:2px solid #ffffff;outline-offset:2px}
+        .tsw .badge{display:inline-block;margin-left:2px;padding:2px 8px;border-radius:999px;background:rgba(255,159,10,.15);border:1px solid rgba(255,159,10,.3);color:#ff9f0a;font-size:11px;font-weight:600}
+        .statsbar{display:flex;justify-content:flex-end;margin:-20px 0 -8px}
         .squadtile,.sq{display:none}
         body.showsquad .squadtile{display:flex}body.showsquad .sq{display:table-cell}
         body.showsquad .tiles.hassquad{grid-template-columns:repeat(7,minmax(0,1fr))}
         .fold .head h2{display:flex;align-items:center;gap:4px}
-        .foldbtn{display:inline-flex;align-items:center;gap:10px;background:none;border:0;padding:4px 0;margin:0;font:inherit;color:inherit;cursor:pointer;text-align:left}
-        .foldbtn:focus-visible{outline:3px solid var(--gold);outline-offset:4px;border-radius:4px}
-        .chev{width:10px;height:10px;border-right:3px solid currentColor;border-bottom:3px solid currentColor;transform:rotate(45deg);margin:0 4px 6px 2px;transition:transform .15s}
+        .foldbtn{display:inline-flex;align-items:center;gap:10px;background:none;border:0;padding:4px 0;margin:0;font:inherit;color:inherit;cursor:pointer;text-align:left;transition:opacity .18s}
+        .foldbtn:hover{opacity:.85}
+        .foldbtn:focus-visible{outline:2px solid #ffffff;outline-offset:4px;border-radius:6px}
+        .chev{width:9px;height:9px;border-right:2.2px solid currentColor;border-bottom:2.2px solid currentColor;transform:rotate(45deg);margin:0 4px 4px 2px;transition:transform .24s var(--ease)}
         .fold.closed .chev{transform:rotate(-45deg);margin-bottom:0}
+        .foldbody{animation:fadeUp .28s var(--ease) both}
         .fold.closed .foldbody{display:none}
         .fold.closed .head{margin-bottom:0}
         .fold.closed .head>:not(h2){display:none}
@@ -298,82 +336,79 @@ public static class ReportWriter
         tr.team td{opacity:.8}
         .by{white-space:nowrap}
         .by svg{vertical-align:-3px;margin-right:6px}
-        footer{font-size:13px;color:var(--muted);border-top:1px dashed var(--gold);padding-top:14px}
-        .loading{display:flex;gap:16px;align-items:center;background:var(--card);color:var(--cink);border:2px solid var(--gold);border-radius:8px;padding:16px 18px}
+        footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+        .loading{display:flex;gap:16px;align-items:center;background:var(--card);backdrop-filter:blur(24px);color:var(--cink);border:1px solid var(--line-strong);border-radius:18px;padding:18px 20px}
         .loading .muted{color:var(--cmuted)}
-        .spin{width:30px;height:30px;flex:none;border:3px solid var(--line);border-top-color:#b9821c;border-radius:50%;animation:spin .8s linear infinite}
-        @keyframes spin{to{transform:rotate(360deg)}}
+        .spin{width:28px;height:28px;flex:none;border:2.5px solid var(--line);border-top-color:#ffffff;border-radius:50%;animation:spin .8s linear infinite}
         .loading .grow{flex:1;min-width:0}
-        .pbar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin:8px 0 6px}
-        .pbar i{display:block;height:100%;background:#b9821c}
-        .profiles{margin-top:-16px;font-size:13px}
+        .pbar{height:8px;background:var(--track);border-radius:999px;overflow:hidden;margin:8px 0 6px}
+        .pbar i{display:block;height:100%;border-radius:999px;background:#ffffff;transition:width .3s var(--ease)}
+        .profiles{margin-top:-14px;font-size:13px}
         .embed,.embed body{background:transparent;overflow:hidden}.embed main{padding:0;max-width:none}.embed header,.embed footer,.embed .profiles,.embed .notice{display:none}
-        .info{position:relative;display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;margin-left:6px;border-radius:50%;border:1.5px solid var(--cmuted);color:var(--cmuted);font:700 11px/1 Georgia,serif;font-style:italic;cursor:help;vertical-align:1px;outline:none}
-        .info:hover,.info:focus{border-color:#b9821c;color:#b9821c}
-        .infotip{display:none;position:absolute;z-index:5;top:24px;right:-12px;width:300px;max-width:80vw;background:var(--cink);color:var(--card);padding:10px 12px;border-radius:8px;font:400 13px/1.45 "Segoe UI",system-ui,sans-serif;font-style:normal;text-align:left;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+        .info{position:relative;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-left:6px;border-radius:50%;border:1.5px solid var(--cmuted);color:var(--cmuted);font:600 11px/1 var(--font);cursor:help;vertical-align:1px;outline:none;transition:all .18s var(--ease)}
+        .info:hover,.info:focus{border-color:#ffffff;color:#ffffff;background:rgba(255,255,255,.08)}
+        .infotip{display:none;position:absolute;z-index:5;top:26px;right:-12px;width:310px;max-width:80vw;background:rgba(24,24,30,.96);backdrop-filter:blur(24px);border:1px solid var(--line-strong);color:#f5f5f7;padding:12px 14px;border-radius:12px;font:400 13px/1.5 var(--font);font-style:normal;text-align:left;box-shadow:0 12px 32px rgba(0,0,0,.6);animation:fadeUp .18s var(--ease) both}
         .info:hover .infotip,.info:focus .infotip{display:block}
-        h2 .info{border-color:var(--title);color:var(--title);vertical-align:6px}
+        h2 .info{border-color:var(--cmuted);color:var(--cmuted);vertical-align:3px}
         h2 .infotip{left:-12px;right:auto}
         tr.pg{display:none!important}
-        .pager{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 0 8px;border-top:1px solid var(--line)}
+        .pager{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 0 8px;border-top:1px solid var(--line)}
         .pager[hidden],.pager button[hidden]{display:none}
         .pager .count{color:var(--cmuted);font-size:13px;margin-right:auto}
-        .pager button{min-height:36px;padding:6px 14px;border-radius:6px;border:1px solid var(--gold);background:transparent;color:var(--cink);font:600 13px "Segoe UI",system-ui,sans-serif;cursor:pointer}
-        .pager button:hover{background:var(--track)}
-        .notice{background:var(--card);color:var(--cink);border:1px solid var(--line);border-left:6px solid var(--gold);border-radius:8px;padding:12px 16px;white-space:pre-line}
-        .notice.warning{border-left-color:#c8412f;background:#fbe9d0}
-        .exper{display:inline-block;font:700 12px "Segoe UI",system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:#f6d8c9;color:var(--warn);vertical-align:6px}
-        .thour{background:var(--card);color:var(--cink);border:1px solid var(--line);border-left:6px solid var(--gold);border-radius:8px;padding:10px 14px;margin-bottom:12px}
-        .thour.live{border-left-color:#c8412f;background:#fbe9d0}
-        .thour .tt{font-weight:700}.thour .exp{font-weight:400;color:var(--cmuted)}
+        .pager button{min-height:34px;padding:6px 14px;border-radius:999px;border:1px solid var(--line-strong);background:rgba(255,255,255,.05);color:var(--cink);font:600 13px var(--font);cursor:pointer;transition:all .18s var(--ease)}
+        .pager button:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28)}
+        .notice{background:var(--card);backdrop-filter:blur(24px);color:var(--cink);border:1px solid var(--line);border-left:4px solid #ffffff;border-radius:16px;padding:14px 18px;white-space:pre-line}
+        .notice.warning{border-left-color:#ff453a;background:rgba(255,69,58,.08);border-color:rgba(255,69,58,.25)}
+        .exper{display:inline-block;font:600 11px var(--font);letter-spacing:.06em;text-transform:uppercase;padding:2px 9px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--line-strong);color:#d1d1d6;vertical-align:4px}
+        .thour{background:var(--card);backdrop-filter:blur(24px);color:var(--cink);border:1px solid var(--line);border-left:4px solid #ffffff;border-radius:16px;padding:12px 16px;margin-bottom:14px}
+        .thour.live{border-left-color:#ff9f0a;background:rgba(255,159,10,.08);border-color:rgba(255,159,10,.28)}
+        .thour .tt{font-weight:700;color:#ffffff}.thour .exp{font-weight:400;color:var(--cmuted)}
         /* Treasure Hour live: the boosted odds, in orange like the banner */
-        .boost{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:#fbdcc6;color:#b4410f;font:700 12px "Segoe UI",system-ui,sans-serif;letter-spacing:0;text-transform:none;vertical-align:1px}
+        .boost{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:rgba(255,159,10,.18);border:1px solid rgba(255,159,10,.35);color:#ff9f0a;font:700 11px var(--font);letter-spacing:0;text-transform:none;vertical-align:1px}
         .boost[hidden]{display:none}
-        .odds.boosted{border-color:#e2702f;box-shadow:inset 6px 0 0 #e2702f;padding-left:22px}
-        tr.boosted td:first-child{box-shadow:inset 4px 0 0 #e2702f;padding-left:14px}
-        .boostv{color:#b4410f;font-weight:700}
+        .odds.boosted{border-color:#ff9f0a;box-shadow:inset 5px 0 0 #ff9f0a;padding-left:22px}
+        tr.boosted td:first-child{box-shadow:inset 4px 0 0 #ff9f0a;padding-left:14px}
+        .boostv{color:#ff9f0a;font-weight:700}
         .thour .tb{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;margin-top:4px}
-        .chances{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+        .chances{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
         @media (max-width:820px){.chances{grid-template-columns:1fr}}
-        .odds{background:var(--card);color:var(--cink);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
-        .odds .k{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--cmuted);display:flex;justify-content:space-between;gap:8px}
-        .odds .v{font-size:40px;font-weight:700;line-height:1.1}
+        .odds{background:var(--card);color:var(--cink);border:1px solid var(--line);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+        .odds .k{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--cmuted);display:flex;justify-content:space-between;gap:8px}
+        .odds .v{font-size:40px;font-weight:700;line-height:1.1;color:#ffffff}
         .odds .l,.odds .s{font-size:13px;color:var(--cmuted)}
-        .meter.wide{width:100%;margin:6px 0 2px}.meter.wide i{background:#b9821c}
+        .meter.wide{width:100%;margin:6px 0 2px}.meter.wide i{background:#ffffff}
         .gotbadge{display:none;color:var(--team);letter-spacing:0;text-transform:none;font-weight:700}
         .odds.got{border-color:var(--team)}.odds.got .gotbadge{display:inline}
-        .collection{padding:10px 16px 14px}
-        .wk{padding:8px 0}.wk+.wk{border-top:1px solid var(--line)}
-        .wt{font-weight:600;margin-bottom:8px}.wk.now .wt{color:#b9821c}
-        .prizes{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
-        .prize{position:relative;display:flex;flex-direction:column;gap:2px;padding:8px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:var(--card)}
-        .prize input{position:absolute;top:10px;left:10px;width:20px;height:20px;accent-color:var(--team);cursor:pointer;z-index:1}
-        .prize .pimg{display:block;aspect-ratio:1;border-radius:6px;background:var(--track);overflow:hidden;margin-bottom:4px}
-        .prize img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(.65);opacity:.75}
-        .prize .pn{font-size:13px;font-weight:600;line-height:1.3}
+        .collection{padding:14px 18px 18px}
+        .wk{padding:12px 0}.wk+.wk{border-top:1px solid var(--line)}
+        .wt{font-weight:600;margin-bottom:10px;color:#ffffff}.wk.now .wt{color:#ffffff}
+        .prizes{display:grid;grid-template-columns:repeat(auto-fill,minmax(144px,1fr));gap:12px}
+        .prize{position:relative;display:flex;flex-direction:column;gap:4px;padding:10px;border:1px solid var(--line);border-radius:14px;cursor:pointer;background:rgba(255,255,255,.03);transition:transform .24s var(--ease),border-color .24s var(--ease),background .24s var(--ease),box-shadow .24s var(--ease)}
+        .prize:hover{transform:translateY(-3px);border-color:var(--line-strong);background:rgba(255,255,255,.06);box-shadow:0 12px 26px rgba(0,0,0,.4)}
+        .prize input{position:absolute;top:12px;left:12px;width:18px;height:18px;accent-color:var(--team);cursor:pointer;z-index:1}
+        .prize .pimg{display:block;aspect-ratio:1;border-radius:10px;background:var(--track);overflow:hidden;margin-bottom:4px}
+        .prize img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(.75);opacity:.6;transition:filter .28s var(--ease),opacity .28s var(--ease),transform .35s var(--ease)}
+        .prize:hover img{transform:scale(1.04)}
+        .prize .pn{font-size:13px;font-weight:600;line-height:1.3;color:#ffffff}
         .prize .pk{font-size:12px;color:var(--cmuted)}
-        .prize.got{border:2px solid var(--team);padding:7px}
+        .prize.got{border:1.5px solid var(--team);background:rgba(48,209,88,.06);box-shadow:0 0 24px rgba(48,209,88,.12)}
         .prize.got img{filter:none;opacity:1}
         """;
 
-    /// <summary>@font-face of the embedded headings font (empty if the resource is missing: the page falls back to Segoe UI).</summary>
-    private static readonly string FontFace = LoadFontFace();
+    /// <summary>Clean Apple system typography (no decorative embedded font required).</summary>
+    public static string FontFaceCss => "";
 
-    /// <summary>The headings font, for the pages of the graphical interface too.</summary>
-    public static string FontFaceCss => FontFace;
+    public static readonly string ChestIconImg = LoadChestIcon();
 
-    private static string LoadFontFace()
+    private static string LoadChestIcon()
     {
         try
         {
-            using var s = typeof(ReportWriter).Assembly.GetManifestResourceStream("PirataOne.woff2");
-            if (s == null)
-            {
-                return "";
-            }
+            using var s = typeof(ReportWriter).Assembly.GetManifestResourceStream("ChestIcon.png");
+            if (s == null) return "";
             using var ms = new MemoryStream();
             s.CopyTo(ms);
-            return "@font-face{font-family:'Pirata One';src:url(data:font/woff2;base64," + Convert.ToBase64String(ms.ToArray()) + ") format('woff2');font-display:swap}";
+            return "data:image/png;base64," + Convert.ToBase64String(ms.ToArray());
         }
         catch
         {
@@ -381,18 +416,20 @@ public static class ReportWriter
         }
     }
 
-    private const string ChestIcon = """<svg width="52" height="52" viewBox="0 0 56 56" aria-hidden="true"><rect x="6" y="20" width="44" height="28" rx="4" fill="#7a4a1e" stroke="#e7b440" stroke-width="3"/><path d="M6 26 Q28 4 50 26" fill="#965d27" stroke="#e7b440" stroke-width="3"/><rect x="24" y="24" width="8" height="10" rx="2" fill="#e7b440"/><line x1="6" y1="34" x2="50" y2="34" stroke="#e7b440" stroke-width="2"/></svg>""";
-    private const string TeamIcon = """<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" fill="none" stroke="#1f7f7a" stroke-width="2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6" fill="none" stroke="#1f7f7a" stroke-width="2"/><circle cx="17" cy="9" r="2.6" fill="none" stroke="#1f7f7a" stroke-width="2"/><path d="M16 14c3 0 5 2.2 5 5" fill="none" stroke="#1f7f7a" stroke-width="2"/></svg>""";
-    private const string FlagIcon = """<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="flex:none;margin-top:2px"><path d="M5 21V4M5 4h11l-2 4 2 4H5" fill="none" stroke="#ff8a6a" stroke-width="2" stroke-linejoin="round"/></svg>""";
+    private static string ChestIcon => ChestIconImg.Length > 0
+        ? $"<img src=\"{ChestIconImg}\" width=\"48\" height=\"48\" alt=\"\" style=\"object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,.45))\"/>"
+        : """<svg width="48" height="48" viewBox="0 0 56 56" aria-hidden="true"><defs><linearGradient id="rcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2c2c34"/><stop offset="100%" stop-color="#141418"/></linearGradient></defs><rect x="6" y="20" width="44" height="28" rx="6" fill="url(#rcg)" stroke="#e5e5ea" stroke-width="2.2"/><path d="M6 25 Q28 5 50 25" fill="#24242b" stroke="#ffffff" stroke-width="2.2"/><rect x="24" y="23" width="8" height="10" rx="2.5" fill="#ffffff"/><line x1="6" y1="34" x2="50" y2="34" stroke="rgba(255,255,255,.35)" stroke-width="1.6"/></svg>""";
+    private const string TeamIcon = """<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" fill="none" stroke="#64d2ff" stroke-width="2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6" fill="none" stroke="#64d2ff" stroke-width="2"/><circle cx="17" cy="9" r="2.6" fill="none" stroke="#64d2ff" stroke-width="2"/><path d="M16 14c3 0 5 2.2 5 5" fill="none" stroke="#64d2ff" stroke-width="2"/></svg>""";
+    private const string FlagIcon = """<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="flex:none;margin-top:2px"><path d="M5 21V4M5 4h11l-2 4 2 4H5" fill="none" stroke="#ff453a" stroke-width="2" stroke-linejoin="round"/></svg>""";
 
     private static readonly Dictionary<string, string> KindColor = new()
     {
-        [ChestKinds.Normal] = "#c9a24f",
-        [ChestKinds.Rare] = "#2c7fb8",
-        [ChestKinds.Buried] = "#8a5a2b",
-        [ChestKinds.Extraction] = "#1f7f7a",
-        [ChestKinds.PosterChest] = "#7a4fc2",
-        [ChestKinds.Other] = "#9a8f7a",
+        [ChestKinds.Normal] = "#f5f5f7",
+        [ChestKinds.Rare] = "#0a84ff",
+        [ChestKinds.Buried] = "#ff9f0a",
+        [ChestKinds.Extraction] = "#30d158",
+        [ChestKinds.PosterChest] = "#bf5af2",
+        [ChestKinds.Other] = "#8e8e93",
     };
 
     public static string Report(Config config, TrackerData data, IReadOnlyList<Profile> profiles)
@@ -427,7 +464,7 @@ public static class ReportWriter
             <!doctype html><html lang="{L.Code}"><head><meta charset="utf-8">
             <meta name="viewport" content="width=device-width,initial-scale=1">
             <meta http-equiv="refresh" content="{(progress != null ? 2 : 15)}">
-            <title>{title}</title><style>{FontFace}{Style}</style></head><body data-showsquad="{(config.ShowSquadInReport ? 1 : 0)}" data-showteam="{(config.ShowTeamTreasuresInReport ? 1 : 0)}"><main>
+            <title>{title}</title><style>{Style}</style></head><body data-showsquad="{(config.ShowSquadInReport ? 1 : 0)}" data-showteam="{(config.ShowTeamTreasuresInReport ? 1 : 0)}"><main>
             <header><div class="brand">{ChestIcon}<div><h1 class="pirate">{title}</h1>{(player.Length > 0 ? $"<div class=\"who\"><b>{H(player)}</b></div>" : "")}</div></div>
             <span class="muted" style="font-size:13px">{updated}</span></header>
             {LoadingCard(progress)}{NoticeCards()}{ProfilesLine(profiles, player)}
@@ -575,7 +612,7 @@ public static class ReportWriter
             var treasure = string.Join("<br>", m.TreasureFinds.Select(f => $"<span class=\"{(f.FromGoldenChest ? "gold" : "star")}\">{(f.FromGoldenChest ? "★★" : "★")} {H(f.DisplayName)}</span>"))
                 + string.Concat(m.TeamTreasureFinds.Select((f, i) => $"<span class=\"team\">{(i == 0 && m.TreasureFinds.Count == 0 ? "" : "<br>")}{TeamIcon} ★ {H(f.DisplayName)}</span>"));
             var win = m.Placement == 1;
-            sb.Append($"<tr class=\"r\"><td class=\"nw num items\">{L.DateTimeShort(When(m))}</td><td>{H(Pretty.Playlist(m.Playlist))}</td><td class=\"nw num\"{(win ? " style=\"color:#b9821c;font-weight:700\"" : "")}>{H(Pretty.Placement(m))}</td><td class=\"n num big\">{m.ChestsOpened}{(m.VehicleChestsMissing ? $" <span class=\"warn\" title=\"{H(VehicleWarning)}\">⚠</span>" : "")}</td>{(teamChests > 0 ? $"<td class=\"n num sq\" title=\"{H(string.Join(", ", m.TeamChests.Where(x => x.Chests > 0).Select(x => $"{x.Name} {x.Chests}")))}\">{(m.TeamChests.Count > 0 ? "+" + m.TeamChestsOpened : "")}</td>" : "")}<td class=\"items\">{treasure}</td></tr>");
+            sb.Append($"<tr class=\"r\"><td class=\"nw num items\">{L.DateTimeShort(When(m))}</td><td>{H(Pretty.Playlist(m.Playlist))}</td><td class=\"nw num\"{(win ? " style=\"color:#ffffff;font-weight:700\"" : "")}>{H(Pretty.Placement(m))}</td><td class=\"n num big\">{m.ChestsOpened}{(m.VehicleChestsMissing ? $" <span class=\"warn\" title=\"{H(VehicleWarning)}\">⚠</span>" : "")}</td>{(teamChests > 0 ? $"<td class=\"n num sq\" title=\"{H(string.Join(", ", m.TeamChests.Where(x => x.Chests > 0).Select(x => $"{x.Name} {x.Chests}")))}\">{(m.TeamChests.Count > 0 ? "+" + m.TeamChestsOpened : "")}</td>" : "")}<td class=\"items\">{treasure}</td></tr>");
         }
         sb.Append($"</table>{Pager("t-matches")}</div>");
         var blind = matches.Count(m => m.VehicleChestsMissing);
@@ -1252,19 +1289,19 @@ public static class ReportWriter
             <!doctype html><html lang="{{L.Code}}"><head><meta charset="utf-8"><meta http-equiv="refresh" content="5">
             <title>{{L.T("Overlay coffres", "Chest overlay", "Overlay de cofres")}}</title>
             <style>
-            html,body{margin:0;background:transparent}
-            body{padding:10px 14px;display:inline-block;color:#fff;font-family:Bahnschrift,"Segoe UI",sans-serif;font-style:italic;font-weight:600;text-align:right;
-                 -webkit-text-stroke:4px #0b0f18;paint-order:stroke fill;letter-spacing:.01em}
-            .total{display:flex;align-items:center;justify-content:flex-end;gap:10px;font-size:46px;font-weight:700;font-stretch:condensed;line-height:1.05}
-            .total.live{color:#ffd23f}
+            html,body{margin:0;background:transparent;-webkit-font-smoothing:antialiased}
+            body{padding:10px 14px;display:inline-block;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;font-weight:700;text-align:right;
+                 -webkit-text-stroke:3.5px #050507;paint-order:stroke fill;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+            .total{display:flex;align-items:center;justify-content:flex-end;gap:10px;font-size:44px;font-weight:800;line-height:1.05;letter-spacing:-.035em}
+            .total.live{color:#30d158}
             .total svg{width:30px;height:26px;flex:none}
-            .r{display:flex;align-items:center;justify-content:flex-end;gap:8px;font-size:21px;font-stretch:semi-condensed;line-height:1.3}
-            .r.gold b{color:#ffd23f}
-            .sep{opacity:.9}
-            .dot{width:13px;height:13px;border-radius:50%;background:#ff3b30;box-shadow:0 0 0 2px #0b0f18;flex:none}
-            .t{color:#d6beff}.t .star{color:#c49bff}
+            .r{display:flex;align-items:center;justify-content:flex-end;gap:8px;font-size:19px;font-weight:600;line-height:1.35;color:#e5e5ea}
+            .r b{color:#ffffff;font-weight:700}
+            .sep{opacity:.6}
+            .dot{width:12px;height:12px;border-radius:50%;background:#ff453a;box-shadow:0 0 0 2px #050507;flex:none}
+            .t{color:#da8fff}.t .star{color:#bf5af2}
             </style></head><body>
-            <div class="total{{(v.CurrentLive && v.Current is { } c && c != "…" ? " live" : "")}}">{{(v.CurrentLive ? "<i class=\"dot\"></i>" : "")}}<svg viewBox="0 0 30 26" aria-hidden="true"><rect x="2" y="10" width="26" height="14" rx="2" fill="#ffd23f" stroke="#0b0f18" stroke-width="2.5"/><path d="M2 12 Q15 -2 28 12" fill="#e0a526" stroke="#0b0f18" stroke-width="2.5"/><rect x="12.5" y="12" width="5" height="6" rx="1" fill="#0b0f18"/></svg>{{H(v.Total)}}</div>
+            <div class="total{{(v.CurrentLive && v.Current is { } c && c != "…" ? " live" : "")}}">{{(v.CurrentLive ? "<i class=\"dot\"></i>" : "")}}<svg viewBox="0 0 30 26" aria-hidden="true"><rect x="2" y="10" width="26" height="14" rx="3" fill="#2c2c34" stroke="#ffffff" stroke-width="2.2"/><path d="M2 12 Q15 -2 28 12" fill="#1c1c22" stroke="#ffffff" stroke-width="2.2"/><rect x="12.5" y="12" width="5" height="6" rx="1.2" fill="#ffffff"/></svg>{{H(v.Total)}}</div>
             {{state}}
             {{Row(L.T("Session", "Session", "Sesión"), v.Session, "")}}
             {{squad}}
@@ -1285,19 +1322,19 @@ public static class ReportWriter
             <!doctype html><html lang="{{L.Code}}"><head><meta charset="utf-8"><meta http-equiv="refresh" content="5">
             <title>{{L.T("Overlay coffres", "Chest overlay", "Overlay de cofres")}}</title>
             <style>
-            html,body{margin:0;background:transparent;color:#e2e2e8;font:500 16px/1.3 "Segoe UI",system-ui,sans-serif}
-            .box{display:inline-block;min-width:260px;padding:14px 18px 12px;border-radius:16px;background:rgba(18,18,22,.86);border:1px solid #3a3a42;text-shadow:0 1px 3px rgba(0,0,0,.6)}
-            .head{display:flex;justify-content:space-between;gap:16px;font:700 12px "Segoe UI",sans-serif;letter-spacing:.08em;color:#9696a2}
-            .live{color:#60d680}
-            .counters{display:flex;align-items:stretch;gap:18px;margin:4px 0 10px}
+            html,body{margin:0;background:transparent;color:#f5f5f7;font:500 15px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+            .box{display:inline-block;min-width:268px;padding:16px 20px 14px;border-radius:20px;background:rgba(12,12,15,.88);backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.12);box-shadow:0 14px 36px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08)}
+            .head{display:flex;justify-content:space-between;gap:16px;font:700 11px -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;letter-spacing:.1em;color:#8e8e93}
+            .live{color:#30d158}
+            .counters{display:flex;align-items:stretch;gap:20px;margin:6px 0 12px}
             .counters>div{display:flex;flex-direction:column}
-            .sep{width:1px;background:#2c2c34;margin:8px 0 2px}
-            .big{font-size:40px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
-            .total{color:#f2b84b}.cur{color:#6ee096}.none{color:#50505c}
-            .cap{font-size:11px;font-weight:600;color:#82828e}
-            .rows{border-top:1px solid #2c2c34;padding-top:8px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px}
-            .row{display:contents}.row span{font-size:13px;font-weight:600;color:#82828e}.row b{font-weight:500}
-            .row.t b{color:#c4a0ff}.row small{font-size:11px;font-weight:600;color:#82828e}
+            .sep{width:1px;background:rgba(255,255,255,.1);margin:8px 0 2px}
+            .big{font-size:40px;font-weight:700;line-height:1.08;letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+            .total{color:#ffffff}.cur{color:#30d158}.none{color:#48484a}
+            .cap{font-size:11px;font-weight:600;color:#8e8e93;margin-top:2px}
+            .rows{border-top:1px solid rgba(255,255,255,.09);padding-top:10px;display:grid;grid-template-columns:auto 1fr;gap:5px 14px}
+            .row{display:contents}.row span{font-size:13px;font-weight:500;color:#8e8e93}.row b{font-weight:600;color:#f5f5f7;font-variant-numeric:tabular-nums}
+            .row.t b{color:#bf5af2}.row small{font-size:11px;font-weight:500;color:#8e8e93}
             </style></head><body><div class="box">
             <div class="head"><span>{{L.T("COFFRES", "CHESTS", "COFRES")}}</span>{{(v.Badge != null ? $"<span class=\"live\">{H(v.Badge)}</span>" : "")}}</div>
             <div class="counters">
