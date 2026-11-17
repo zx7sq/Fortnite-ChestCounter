@@ -22,13 +22,20 @@ public static class ChestEstimate
         }
         var average = (double)view.CountedChests / counted;
         var missing = careerMatches - counted;
-        return new Result(careerMatches, counted, missing, average, (int)Math.Round(missing * average, MidpointRounding.AwayFromZero));
+        var estimated = (int)Math.Clamp(Math.Round(missing * average, MidpointRounding.AwayFromZero), 0, 10_000_000);
+        return new Result(careerMatches, counted, missing, average, estimated);
     }
 
     /// <summary>"2 500", "2,500", "2.500" or "-40": thousands separators are dropped.</summary>
     public static int? ParseNumber(string text)
     {
-        var digits = new string(text.Where(ch => char.IsAsciiDigit(ch) || ch == '-').ToArray());
-        return int.TryParse(digits, System.Globalization.NumberStyles.AllowLeadingSign, System.Globalization.CultureInfo.InvariantCulture, out var n) ? n : null;
+        var trimmed = text.TrimStart();
+        var negative = trimmed.StartsWith('-');
+        var digits = new string(trimmed.Where(char.IsAsciiDigit).ToArray());
+        if (digits.Length == 0)
+        {
+            return null;
+        }
+        return int.TryParse(negative ? "-" + digits : digits, System.Globalization.NumberStyles.AllowLeadingSign, System.Globalization.CultureInfo.InvariantCulture, out var n) ? n : null;
     }
 }

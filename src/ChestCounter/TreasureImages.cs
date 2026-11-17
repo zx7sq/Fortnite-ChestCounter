@@ -59,7 +59,7 @@ public static class TreasureImages
         try
         {
             Directory.CreateDirectory(Folder);
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20), MaxResponseContentBufferSize = MaxBytes };
             http.DefaultRequestHeaders.UserAgent.ParseAdd($"ChestCounter/{AppInfo.VersionText} (+{AppInfo.RepoUrl})");
             foreach (var url in Urls())
             {

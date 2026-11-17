@@ -25,6 +25,7 @@ public class FortniteReplayBuilder
 
     private readonly HashSet<uint> _onlySpectatingPlayers = new();
     private readonly Dictionary<uint, PlayerData> _players = new();
+    private readonly List<PlayerData> _closedPlayers = new();
     private readonly Dictionary<int?, TeamData> _teams = new();
     private readonly Dictionary<uint, Llama> _llamas = new();
     private readonly Dictionary<int, RebootVan> _rebootVans = new();
@@ -47,6 +48,15 @@ public class FortniteReplayBuilder
     {
         _weapons.Remove(channelIndex);
         _unknownWeapons.Remove(channelIndex);
+        _onlySpectatingPlayers.Remove(channelIndex);
+        if (_players.Remove(channelIndex, out var closedPlayer))
+        {
+            _closedPlayers.Add(closedPlayer);
+        }
+        if (_channelToActor.Remove(channelIndex, out var guid))
+        {
+            _actorToChannel.Remove(guid);
+        }
     }
 
     /// <summary>
@@ -61,7 +71,7 @@ public class FortniteReplayBuilder
         replay.MapData = MapData;
         replay.KillFeed = KillFeed;
         replay.TeamData = _teams.Values;
-        replay.PlayerData = _players.Values;
+        replay.PlayerData = _closedPlayers.Count > 0 ? _closedPlayers.Concat(_players.Values).ToList() : _players.Values;
         return replay;
     }
 
@@ -141,6 +151,10 @@ public class FortniteReplayBuilder
         GameData.WinningPlayerIds ??= state.WinningPlayerList;
         GameData.WinningTeam ??= state.WinningTeam;
         GameData.RecorderId ??= state.RecorderPlayerState?.Value;
+        if (GameData.RecorderId is uint recorderActor && _actorToChannel.TryGetValue(recorderActor, out var recorderChannel) && _players.TryGetValue(recorderChannel, out var recorderPlayer))
+        {
+            recorderPlayer.IsReplayOwner = true;
+        }
     }
 
     public void UpdatePrivateName(uint channelIndex, PlayerNameData playerNameData)
@@ -157,7 +171,7 @@ public class FortniteReplayBuilder
 
     public void UpdateTeamData()
     {
-        foreach (var playerData in _players.Values)
+        foreach (var playerData in _closedPlayers.Concat(_players.Values))
         {
             if (playerData?.TeamIndex == null)
             {
@@ -215,6 +229,23 @@ public class FortniteReplayBuilder
             }
 
             _players[channelIndex] = playerData;
+        }
+        else
+        {
+            playerData!.Id ??= state.PlayerId is null ? state.PlayerID : (int?)state.PlayerId;
+            if (string.IsNullOrEmpty(playerData.EpicId) || playerData.EpicId == "NULL")
+            {
+                playerData.EpicId = state.UniqueId ?? state.UniqueID;
+            }
+            playerData.BotId ??= state.BotUniqueId;
+            if (state.bIsABot == true)
+            {
+                playerData.IsBot = true;
+            }
+            if (_channelToActor.TryGetValue(channelIndex, out var actorId) && actorId == GameData.RecorderId)
+            {
+                playerData.IsReplayOwner = true;
+            }
         }
 
         if (state.RebootCounter > 0 && state.RebootCounter > playerData.RebootCounter)

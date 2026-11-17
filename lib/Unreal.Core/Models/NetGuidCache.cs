@@ -176,13 +176,43 @@ public class NetGuidCache
 
             foreach (var groupPathKvp in NetFieldExportGroupMap)
             {
-                var groupPath = groupPathKvp.Key;
-
                 if (!_cleanedPaths.TryGetValue(groupPathKvp.Value.PathNameIndex, out var groupPathFixed))
                 {
-                    groupPathFixed = groupPath.RemoveAllPathPrefixes();
+                    groupPathFixed = groupPathKvp.Key.RemoveAllPathPrefixes();
                     _cleanedPaths[groupPathKvp.Value.PathNameIndex] = groupPathFixed;
                 }
+                if (path.Equals(groupPathFixed, StringComparison.Ordinal))
+                {
+                    NetFieldExportGroupMapPathFixed[netguid.Value] = groupPathKvp.Value;
+                    _archTypeToExportGroup[netguid.Value] = groupPathKvp.Value;
+                    return groupPathKvp.Value;
+                }
+            }
+
+            // ChestCounter patch: level placed actors whose instance name is not their class name, e.g.
+            // "Tiered_Chest_Athena47_UAID_387C..._1632776713" or "Tiered_Chest_Athena5_6e02a0a859c897db_11" (class
+            // Tiered_Chest_Athena_C). Strip the UAID / instance hash part and the number suffix and accept an exact
+            // "<name>_C" class before falling back to substring checks, so a wrong subclass layout is never used.
+            var baseName = StaticInstanceSuffix.Replace(path.RemoveAllPathPrefixes(), "").CleanPathSuffix();
+            if (baseName.Length > 0)
+            {
+                var className = baseName + "_C";
+                foreach (var groupPathKvp in NetFieldExportGroupMap)
+                {
+                    if (_cleanedPaths.TryGetValue(groupPathKvp.Value.PathNameIndex, out var groupPathFixed)
+                        && (groupPathFixed == className || groupPathFixed == baseName))
+                    {
+                        NetFieldExportGroupMapPathFixed[netguid.Value] = groupPathKvp.Value;
+                        _archTypeToExportGroup[netguid.Value] = groupPathKvp.Value;
+                        return groupPathKvp.Value;
+                    }
+                }
+            }
+
+            foreach (var groupPathKvp in NetFieldExportGroupMap)
+            {
+                var groupPath = groupPathKvp.Key;
+                var groupPathFixed = _cleanedPaths[groupPathKvp.Value.PathNameIndex];
 
                 if (path.Contains(groupPathFixed, StringComparison.Ordinal))
                 {
@@ -206,25 +236,6 @@ public class NetGuidCache
                         _archTypeToExportGroup[netguid.Value] = NetFieldExportGroupMap[groupPath];
 
                         return NetFieldExportGroupMap[groupPath];
-                    }
-                }
-            }
-
-            // ChestCounter patch: level placed actors whose instance name is not their class name, e.g.
-            // "Tiered_Chest_Athena47_UAID_387C..._1632776713" or "Tiered_Chest_Athena5_6e02a0a859c897db_11" (class
-            // Tiered_Chest_Athena_C). Strip the UAID / instance hash part and the number suffix and accept only an exact
-            // "<name>_C" class, so a wrong layout is never used.
-            var baseName = StaticInstanceSuffix.Replace(path.RemoveAllPathPrefixes(), "").CleanPathSuffix();
-            if (baseName.Length > 0)
-            {
-                var className = baseName + "_C";
-                foreach (var groupPathKvp in NetFieldExportGroupMap)
-                {
-                    if (_cleanedPaths.TryGetValue(groupPathKvp.Value.PathNameIndex, out var groupPathFixed) && groupPathFixed == className)
-                    {
-                        NetFieldExportGroupMapPathFixed[netguid.Value] = groupPathKvp.Value;
-                        _archTypeToExportGroup[netguid.Value] = groupPathKvp.Value;
-                        return groupPathKvp.Value;
                     }
                 }
             }

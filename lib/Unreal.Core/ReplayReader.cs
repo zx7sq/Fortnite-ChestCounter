@@ -55,6 +55,7 @@ public abstract class ReplayReader<T> where T : Replay, new()
     protected ParseMode _parseMode;
     protected bool IsDebugMode => _parseMode == ParseMode.Debug;
 
+    [ThreadStatic]
     public static float CurrentTime;
 
     /// <summary>ChestCounter patch: true when the file ended in the middle of a chunk (replay still being written).</summary>
@@ -107,6 +108,7 @@ public abstract class ReplayReader<T> where T : Replay, new()
     /// </summary>
     public virtual T ReadReplay(FArchive archive)
     {
+        CurrentTime = 0;
         Replay = new T();
 
         ReadReplayInfo(archive);

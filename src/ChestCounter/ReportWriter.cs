@@ -707,7 +707,7 @@ public static class ReportWriter
     private static string ChancesSection(int chests, IReadOnlyList<MatchRecord> matches, IReadOnlyList<ManualEntry> manualEntries)
     {
         var now = DateTime.UtcNow;
-        if (now >= TreasureCatalog.Weeks[^1].To.AddDays(14))
+        if (TreasureCatalog.Weeks.Count == 0 || now >= TreasureCatalog.Weeks[^1].To.AddDays(14))
         {
             return ""; // the hunt is over: odds and prizes no longer apply
         }
@@ -1008,7 +1008,7 @@ public static class ReportWriter
     private static string CollectionSection(IReadOnlyList<MatchRecord> matches, IReadOnlyList<string> obtained)
     {
         var now = DateTime.UtcNow;
-        if (now >= TreasureCatalog.Weeks[^1].To.AddDays(14))
+        if (TreasureCatalog.Weeks.Count == 0 || now >= TreasureCatalog.Weeks[^1].To.AddDays(14))
         {
             return ""; // the hunt is over
         }
@@ -1312,6 +1312,17 @@ public static class ReportWriter
 
     public static string Csv(TrackerData data)
     {
+        static string Cell(object? v)
+        {
+            var s = v?.ToString() ?? "";
+            if (s.Length > 0 && s[0] is '=' or '+' or '-' or '@' or '\t' or '\r')
+            {
+                s = "'" + s;
+            }
+            return s.IndexOfAny(new[] { ';', '"', '\r', '\n' }) >= 0
+                ? "\"" + s.Replace("\"", "\"\"") + "\""
+                : s;
+        }
         var sb = new StringBuilder();
         sb.AppendLine(L.T("date;mode;joueur;place;joueurs;coffres;coffres_coequipiers;caisses_munitions;tresors;fichier", "date;mode;player;placement;players;chests;teammate_chests;ammo_boxes;treasures;file", "fecha;modo;jugador;puesto;jugadores;cofres;cofres_companeros;cajas_municion;tesoros;archivo"));
 
@@ -1320,8 +1331,8 @@ public static class ReportWriter
             var t = string.Join(" + ", m.TreasureFinds.Select(f => f.DisplayName));
             sb.AppendLine(string.Join(";",
                 When(m).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
-                Pretty.Playlist(m.Playlist), m.PlayerName, m.Placement, m.TotalPlayers,
-                m.ChestsOpened, m.TeamChestsOpened, m.AmmoBoxesOpened, t, m.ReplayFile));
+                Cell(Pretty.Playlist(m.Playlist)), Cell(m.PlayerName), m.Placement, m.TotalPlayers,
+                m.ChestsOpened, m.TeamChestsOpened, m.AmmoBoxesOpened, Cell(t), Cell(m.ReplayFile)));
         }
         return sb.ToString();
     }

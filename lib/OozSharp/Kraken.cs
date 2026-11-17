@@ -89,7 +89,7 @@ public unsafe class Kraken
             }
 
             //throw new NotImplementedException($"memmove(dst_start + offset, src, dst_bytes_left);");
-            Buffer.MemoryCopy(source, destination + destinationOffset, sourceBytesleft, sourceBytesleft);
+            Buffer.MemoryCopy(source, destination + destinationOffset, remainingDestinationBytes, destinationBytesLeft);
 
             decoder.SourceUsed = (int)((source - sourceIn) + destinationBytesLeft);
             decoder.DestinationUsed = destinationBytesLeft;
@@ -118,10 +118,7 @@ public unsafe class Kraken
         // Too few bytes in buffer to make any progress?
         if (sourceEnd - source < quantumHeader.CompressedSize)
         {
-            decoder.SourceUsed = 0;
-            decoder.DestinationUsed = 0;
-
-            return true;
+            throw new DecoderException($"Truncated quantum: available bytes ({sourceEnd - source}) < CompressedSize ({quantumHeader.CompressedSize})");
         }
 
         if (quantumHeader.CompressedSize > remainingDestinationBytes)
@@ -142,8 +139,7 @@ public unsafe class Kraken
             }
             else
             {
-                var val = quantumHeader.Checksum;
-                Buffer.MemoryCopy(&val, destination + destinationOffset, destinationBytesLeft, destinationBytesLeft);
+                System.Runtime.CompilerServices.Unsafe.InitBlockUnaligned(destination + destinationOffset, (byte)quantumHeader.Checksum, (uint)destinationBytesLeft);
             }
 
             decoder.SourceUsed = (int)(source - sourceIn);

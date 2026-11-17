@@ -27,7 +27,13 @@ public static class ErrorLog
             if (info.Length > 1_000_000)
             {
                 var text = File.ReadAllText(FilePath);
-                File.WriteAllText(FilePath, text[^500_000..], new UTF8Encoding(false));
+                if (text.Length > 500_000)
+                {
+                    var cut = text.Length - 500_000;
+                    if (cut < text.Length && char.IsLowSurrogate(text[cut])) cut++;
+                    text = text[cut..];
+                }
+                File.WriteAllText(FilePath, text, new UTF8Encoding(false));
             }
         }
         catch

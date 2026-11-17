@@ -14,9 +14,16 @@ if (args.Contains("--standby"))
 
 // The counter is a window (graphical interface). The command line options write into the terminal they come from.
 var gui = !args.Any(a => a is "--once" or "--help" or "-h" or "--overlay-preview");
-if (OperatingSystem.IsWindows() && !gui)
+if (OperatingSystem.IsWindows())
 {
-    NativeConsole.Ensure(attachToParent: true);
+    if (gui || args.Contains("--overlay-preview"))
+    {
+        try { System.Windows.Forms.Application.SetHighDpiMode(System.Windows.Forms.HighDpiMode.PerMonitorV2); } catch { }
+    }
+    if (!gui)
+    {
+        NativeConsole.Ensure(attachToParent: true);
+    }
 }
 try { Console.OutputEncoding = Encoding.UTF8; } catch { /* no console (graphical interface) */ }
 
@@ -46,12 +53,12 @@ for (var i = 0; i < args.Length; i++)
 {
     switch (args[i])
     {
-        case "--data": dataDir = args[++i]; break;
-        case "--demos": demosArg = args[++i]; break;
-        case "--lang": langArg = args[++i]; break;
+        case "--data": if (i + 1 < args.Length) dataDir = args[++i]; break;
+        case "--demos": if (i + 1 < args.Length) demosArg = args[++i]; break;
+        case "--lang": if (i + 1 < args.Length) langArg = args[++i]; break;
         case "--once": once = true; break;
         case "--reset-config": reset = true; break;
-        case "--overlay-preview": previewPath = args[++i]; break;
+        case "--overlay-preview": if (i + 1 < args.Length) previewPath = args[++i]; break;
         case "--auto": auto = true; break;
         case "--after-update": afterUpdate = true; break;
         case "--gui": case "--console": break; // shortcuts of earlier versions: the window is the only interface now
@@ -185,6 +192,7 @@ if (previewPath != null)
             Console.WriteLine(NativeOverlay.Snapshot(file) ? L.T($"Aperçu : {file}", $"Preview: {file}", $"Vista previa: {file}") : L.T($"Échec de la capture : {file}", $"Capture failed: {file}", $"Error de captura: {file}"));
         }
     }
+    NativeOverlay.Stop();
     return 0;
 }
 
@@ -227,6 +235,9 @@ DateTime? fortniteSeenAt = null;  // when Fortnite was first seen running this s
 var startedAt = DateTime.UtcNow;
 var uninstalled = false;      // "uninstall": a script deletes the exe once the counter has quit
 var wake = new AutoResetEvent(false);
+var guiActions = new ConcurrentQueue<Action>();
+var stateLock = new object();
+var installingUpdate = false;
 var log = new ActivityLog();
 UpdateInfo? update = null;
 var updateAnnounced = false;
@@ -353,7 +364,6 @@ Console.CancelKeyPress += (_, e) => { e.Cancel = true; quit = true; wake.Set(); 
 // Graphical interface: the local page, opened now (not when opened with Fortnite: the game keeps the screen).
 GuiServer? guiServer = null;
 var guiWindowed = false; // the page is shown in the counter's own window (WebView2), not in a browser
-var guiActions = new ConcurrentQueue<Action>();
 object? lastGuiState = null;
 var welcome = firstRun;
 if (gui)
@@ -390,27 +400,38 @@ if (gui)
 }
 
 // Launched a second time: the window comes to the front (and out of the tray), or the page opens again.
+EventWaitHandle? showMe = null;
 if (OperatingSystem.IsWindows())
 {
-    var showMe = new EventWaitHandle(false, EventResetMode.AutoReset, AppInfo.ShowEventFor(dataDir));
+    showMe = new EventWaitHandle(false, EventResetMode.AutoReset, AppInfo.ShowEventFor(dataDir));
     new Thread(() =>
     {
-        while (showMe.WaitOne())
+        try
         {
-            if (guiWindowed && OperatingSystem.IsWindows())
+            while (showMe.WaitOne())
             {
-                GuiWindow.Restore();
+                if (Volatile.Read(ref quit))
+                {
+                    break;
+                }
+                if (guiWindowed && OperatingSystem.IsWindows())
+                {
+                    GuiWindow.Restore();
+                }
+                else
+                {
+                    guiServer?.Open();
+                }
+                if (autoCloseAt != null)
+                {
+                    autoCloseAt = null; // the player wants it: it stays open after Fortnite
+                    auto = false;
+                }
+                wake.Set();
             }
-            else
-            {
-                guiServer?.Open();
-            }
-            if (autoCloseAt != null)
-            {
-                autoCloseAt = null; // the player wants it: it stays open after Fortnite
-                auto = false;
-            }
-            wake.Set();
+        }
+        catch (ObjectDisposedException)
+        {
         }
     }) { IsBackground = true, Name = "ShowRequests" }.Start();
 }
@@ -422,7 +443,10 @@ tracker.BetweenFiles = () =>
 {
     while (!quit && guiActions.TryDequeue(out var pending))
     {
-        pending();
+        lock (stateLock)
+        {
+            pending();
+        }
     }
 };
 tracker.StopRequested = () => quit;
@@ -435,17 +459,20 @@ while (!quit)
     {
         try
         {
-            tracker.Scan();
-            if (ReportWriter.Progress != null)
+            lock (stateLock)
             {
-                // The replays left at startup are read (a batch clears it itself, a single replay does not).
-                ReportWriter.Progress = null;
-                ReportWriter.WriteAll(store, config, data);
+                tracker.Scan();
+                if (ReportWriter.Progress != null)
+                {
+                    // The replays left at startup are read (a batch clears it itself, a single replay does not).
+                    ReportWriter.Progress = null;
+                    ReportWriter.WriteAll(store, config, data);
+                }
+                AnnounceNewProfiles();
+                // Match in progress: re-read the replay being recorded (throttled inside).
+                tracker.UpdateLive();
+                UpdateOverlay(store, config, data, tracker.LiveMatch, tracker.IsLive);
             }
-            AnnounceNewProfiles();
-            // Match in progress: re-read the replay being recorded (throttled inside).
-            tracker.UpdateLive();
-            UpdateOverlay(store, config, data, tracker.LiveMatch, tracker.IsLive);
         }
         catch (Exception ex)
         {
@@ -471,13 +498,19 @@ while (!quit)
     if (shownWeek != reportWeek)
     {
         reportWeek = shownWeek;
-        ReportWriter.WriteAll(store, config, data);
+        lock (stateLock)
+        {
+            ReportWriter.WriteAll(store, config, data);
+        }
     }
 
     if (Volatile.Read(ref imagesAdded))
     {
         imagesAdded = false;
-        ReportWriter.WriteAll(store, config, data); // the report shows the pictures just downloaded
+        lock (stateLock)
+        {
+            ReportWriter.WriteAll(store, config, data); // the report shows the pictures just downloaded
+        }
     }
 
     var pendingUpdate = Volatile.Read(ref update);
@@ -522,11 +555,16 @@ while (!quit)
 
     while (!quit && guiActions.TryDequeue(out var guiAction))
     {
-        guiAction();
+        lock (stateLock)
+        {
+            guiAction();
+        }
     }
 }
 
 watcher?.Dispose();
+guiServer?.Stop();
+showMe?.Dispose();
 if (OperatingSystem.IsWindows())
 {
     NativeOverlay.Stop();
@@ -540,9 +578,13 @@ if (OperatingSystem.IsWindows())
 if (restart && !uninstalled && AppInfo.ExePath is { } newExe)
 {
     try { instance.ReleaseMutex(); } catch { }
-    var restartArgs = string.Join(" ", args.Where(a => a is not ("--after-update" or "--reset-config"))
-        .Select(a => a.Contains(' ') ? $"\"{a}\"" : a).Append("--after-update"));
-    Process.Start(new ProcessStartInfo(newExe, restartArgs) { UseShellExecute = true })?.Dispose();
+    var psi = new ProcessStartInfo(newExe) { UseShellExecute = false };
+    foreach (var a in args.Where(a => a is not ("--after-update" or "--reset-config")))
+    {
+        psi.ArgumentList.Add(a);
+    }
+    psi.ArgumentList.Add("--after-update");
+    Process.Start(psi)?.Dispose();
 }
 return 0;
 
@@ -563,14 +605,22 @@ void StartOverlay()
     NativeOverlay.Start(config.OverlayX, config.OverlayY, config.OverlayLocked,
         (x, y) =>
         {
-            config.OverlayX = x;
-            config.OverlayY = y;
-            try { store.SaveConfig(config); } catch { /* ignore */ }
+            guiActions.Enqueue(() =>
+            {
+                config.OverlayX = x;
+                config.OverlayY = y;
+                try { store.SaveConfig(config); } catch { /* ignore */ }
+            });
+            wake.Set();
         },
         locked =>
         {
-            config.OverlayLocked = locked;
-            try { store.SaveConfig(config); } catch { /* ignore */ }
+            guiActions.Enqueue(() =>
+            {
+                config.OverlayLocked = locked;
+                try { store.SaveConfig(config); } catch { /* ignore */ }
+            });
+            wake.Set();
         });
     UpdateOverlay(store, config, data, tracker.LiveMatch, tracker.IsLive);
 }
@@ -641,22 +691,24 @@ string? UninstallNow(bool deleteData)
         try { store.SaveConfig(config); } catch { /* the folder is kept as it is */ }
     }
 
+    static string EscBat(string p) => p.Replace("%", "%%");
+    var safeExe = EscBat(exe);
     var lines = new List<string>
     {
         "@echo off",
         "chcp 65001 >nul",
         // Wait for the counter (and the standby) to quit: deleting fails while the exe is in use.
         "for /l %%i in (1,1,60) do (",
-        $"  del /f /q \"{exe}\" >nul 2>&1",
-        $"  if not exist \"{exe}\" goto done",
+        $"  del /f /q \"{safeExe}\" >nul 2>&1",
+        $"  if not exist \"{safeExe}\" goto done",
         "  ping -n 2 127.0.0.1 >nul",
         ")",
         ":done",
-        $"del /f /q \"{exe}.old\" >nul 2>&1",
+        $"del /f /q \"{safeExe}.old\" >nul 2>&1",
     };
     if (deleteData)
     {
-        lines.Add($"rmdir /s /q \"{Path.GetFullPath(store.Folder)}\" >nul 2>&1");
+        lines.Add($"rmdir /s /q \"{EscBat(Path.GetFullPath(store.Folder))}\" >nul 2>&1");
         // Native libraries unpacked by the single-file exe.
         lines.Add("rmdir /s /q \"%TEMP%\\.net\\ChestCounter\" >nul 2>&1");
     }
@@ -665,7 +717,7 @@ string? UninstallNow(bool deleteData)
     {
         var script = Path.Combine(Path.GetTempPath(), $"ChestCounter-uninstall-{Environment.ProcessId}.cmd");
         File.WriteAllText(script, string.Join("\r\n", lines) + "\r\n", new System.Text.UTF8Encoding(false));
-        Process.Start(new ProcessStartInfo("cmd.exe", $"/c \"{script}\"") { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = Path.GetTempPath() })?.Dispose();
+        Process.Start(new ProcessStartInfo("cmd.exe", $"/d /s /c \"\"{script}\"\"") { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = Path.GetTempPath() })?.Dispose();
     }
     catch (Exception ex)
     {
@@ -697,23 +749,35 @@ void CheckForUpdate()
 
 void InstallUpdate(UpdateInfo u)
 {
-    Console.ForegroundColor = ConsoleColor.Cyan;
-    Console.WriteLine(L.T($"Téléchargement de la version {u.Version.ToString(3)}…", $"Downloading version {u.Version.ToString(3)}…", $"Descargando la versión {u.Version.ToString(3)}…"));
-    Console.ResetColor();
-    var error = Updater.Install(u);
-    if (error != null)
+    if (installingUpdate)
     {
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine(L.T($"Mise à jour impossible : {error}", $"Update failed: {error}", $"No se pudo actualizar: {error}"));
-        Console.ResetColor();
-        Console.WriteLine(L.T($"Tu peux la télécharger à la main : {u.PageUrl}", $"You can download it manually: {u.PageUrl}", $"Puedes descargarla a mano: {u.PageUrl}"));
         return;
     }
-    Console.ForegroundColor = ConsoleColor.Green;
-    Console.WriteLine(L.T("Mise à jour installée : redémarrage du compteur…", "Update installed: restarting the counter…", "Actualización instalada: reiniciando el contador…"));
-    Console.ResetColor();
-    restart = true;
-    quit = true;
+    installingUpdate = true;
+    try
+    {
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine(L.T($"Téléchargement de la version {u.Version.ToString(3)}…", $"Downloading version {u.Version.ToString(3)}…", $"Descargando la versión {u.Version.ToString(3)}…"));
+        Console.ResetColor();
+        var error = Updater.Install(u);
+        if (error != null)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(L.T($"Mise à jour impossible : {error}", $"Update failed: {error}", $"No se pudo actualizar: {error}"));
+            Console.ResetColor();
+            Console.WriteLine(L.T($"Tu peux la télécharger à la main : {u.PageUrl}", $"You can download it manually: {u.PageUrl}", $"Puedes descargarla a mano: {u.PageUrl}"));
+            return;
+        }
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine(L.T("Mise à jour installée : redémarrage du compteur…", "Update installed: restarting the counter…", "Actualización instalada: reiniciando el contador…"));
+        Console.ResetColor();
+        restart = true;
+        quit = true;
+    }
+    finally
+    {
+        installingUpdate = false;
+    }
 }
 
 void AnnounceNewProfiles()
@@ -828,9 +892,12 @@ object GuiState()
 {
     try
     {
-        var state = BuildGuiState();
-        lastGuiState = state;
-        return state;
+        lock (stateLock)
+        {
+            var state = BuildGuiState();
+            lastGuiState = state;
+            return state;
+        }
     }
     catch
     {

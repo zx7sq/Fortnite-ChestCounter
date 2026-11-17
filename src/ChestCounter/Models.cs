@@ -272,6 +272,7 @@ public sealed class TrackerData
 /// <summary>Reads/writes JSON files atomically in the data folder.</summary>
 public sealed class Store
 {
+    private static readonly object IoGate = new();
     private static readonly JsonSerializerOptions Json = new()
     {
         WriteIndented = true,
@@ -347,30 +348,49 @@ public sealed class Store
 
     private static T? Load<T>(string path) where T : class
     {
-        if (!File.Exists(path))
+        lock (IoGate)
         {
-            return null;
-        }
+            if (!File.Exists(path))
+            {
+                return null;
+            }
 
-        try
-        {
-            return JsonSerializer.Deserialize<T>(File.ReadAllText(path), Json);
-        }
-        catch (Exception ex)
-        {
-            // Keep a copy of the unreadable file rather than silently losing the history.
-            var backup = path + $".corrupt-{DateTime.Now:yyyyMMdd-HHmmss}";
-            File.Copy(path, backup, overwrite: true);
-            Console.WriteLine(L.T($"Fichier illisible ({ex.Message}), copie de sauvegarde : {backup}", $"Unreadable file ({ex.Message}), backup copy: {backup}", $"Archivo ilegible ({ex.Message}), copia de seguridad: {backup}"));
+            try
+            {
+                string? text = null;
+                for (var attempt = 0; attempt < 3; attempt++)
+                {
+                    try
+                    {
+                        text = File.ReadAllText(path);
+                        break;
+                    }
+                    catch (IOException) when (attempt < 2)
+                    {
+                        Thread.Sleep(50);
+                    }
+                }
+                return text == null ? null : JsonSerializer.Deserialize<T>(text, Json);
+            }
+            catch (Exception ex)
+            {
+                // Keep a copy of the unreadable file rather than silently losing the history.
+                var backup = path + $".corrupt-{DateTime.Now:yyyyMMdd-HHmmss}";
+                try { File.Copy(path, backup, overwrite: true); } catch { }
+                Console.WriteLine(L.T($"Fichier illisible ({ex.Message}), copie de sauvegarde : {backup}", $"Unreadable file ({ex.Message}), backup copy: {backup}", $"Archivo ilegible ({ex.Message}), copia de seguridad: {backup}"));
 
-            return null;
+                return null;
+            }
         }
     }
 
     private static void Save<T>(string path, T value)
     {
-        var tmp = path + ".tmp";
-        File.WriteAllText(tmp, JsonSerializer.Serialize(value, Json));
-        File.Move(tmp, path, overwrite: true);
+        lock (IoGate)
+        {
+            var tmp = path + ".tmp";
+            File.WriteAllText(tmp, JsonSerializer.Serialize(value, Json));
+            File.Move(tmp, path, overwrite: true);
+        }
     }
 }

@@ -54,7 +54,7 @@ public static class GuiWindow
         var ready = new ManualResetEventSlim();
         var thread = new Thread(() =>
         {
-            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+            try { Application.SetHighDpiMode(HighDpiMode.PerMonitorV2); } catch { }
             Application.EnableVisualStyles();
             var icon = AppInfo.ExePath is { } exe ? System.Drawing.Icon.ExtractAssociatedIcon(exe) : null;
             var form = new ChromelessForm
@@ -137,7 +137,8 @@ public static class GuiWindow
             _form = form;
             if (startHidden)
             {
-                // Opened with Fortnite: no web engine until the player opens the window.
+                // Opened with Fortnite: no web engine until the player opens the window, and no tray balloon tip.
+                _trayNoticeShown = true;
                 form.WindowState = FormWindowState.Minimized;
                 form.ShowInTaskbar = !MinimizeToTray;
                 if (MinimizeToTray)
@@ -172,7 +173,15 @@ public static class GuiWindow
         try
         {
             var env = await CoreWebView2Environment.CreateAsync(null, _cacheFolder);
+            if (view.IsDisposed || _view != view || _closing)
+            {
+                return;
+            }
             await view.EnsureCoreWebView2Async(env);
+            if (view.IsDisposed || _view != view || _closing || view.CoreWebView2 == null)
+            {
+                return;
+            }
             var core = view.CoreWebView2;
             core.Settings.AreDevToolsEnabled = false;
             core.Settings.IsStatusBarEnabled = false;
@@ -208,12 +217,20 @@ public static class GuiWindow
             core.NewWindowRequested += (_, e) =>
             {
                 e.Handled = true;
-                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(e.Uri) { UseShellExecute = true })?.Dispose(); } catch { }
+                if (Uri.TryCreate(e.Uri, UriKind.Absolute, out var u)
+                    && (u.Scheme == Uri.UriSchemeHttps || (u.Scheme == Uri.UriSchemeHttp && u.IsLoopback)))
+                {
+                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(u.AbsoluteUri) { UseShellExecute = true })?.Dispose(); } catch { }
+                }
             };
             view.Source = new Uri(_url);
         }
         catch
         {
+            if (view.IsDisposed || _view != view || _closing)
+            {
+                return;
+            }
             // WebView2 could not start: the page in a browser window, as without it
             try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(_url) { UseShellExecute = true })?.Dispose(); } catch { }
         }
@@ -281,6 +298,12 @@ public static class GuiWindow
             view.CoreWebView2.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
             view.Visible = false; // a page can only be suspended when it is not shown
             await view.CoreWebView2.TrySuspendAsync();
+            if (!_asleep && _view == view && !view.IsDisposed)
+            {
+                view.CoreWebView2?.Resume();
+                if (view.CoreWebView2 != null) view.CoreWebView2.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
+                view.Visible = true;
+            }
         }
         catch
         {
@@ -346,7 +369,15 @@ public static class GuiWindow
         {
             return;
         }
-        try { form.Invoke(form.Close); } catch { }
+        try
+        {
+            form.Invoke(() =>
+            {
+                ReleaseView();
+                form.Close();
+            });
+        }
+        catch { }
     }
 }
 

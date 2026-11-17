@@ -55,6 +55,11 @@ public sealed class GuiServer
         new Thread(Loop) { IsBackground = true, Name = "Gui" }.Start();
     }
 
+    public void Stop()
+    {
+        try { _listener.Stop(); } catch { }
+    }
+
     /// <summary>Opens the interface: an app window of Edge or Chrome (no tabs, no address bar), else the default browser.</summary>
     public void Open()
     {
@@ -118,6 +123,7 @@ public sealed class GuiServer
             try
             {
                 client.ReceiveTimeout = 5000;
+                client.SendTimeout = 5000;
                 var stream = client.GetStream();
                 var (method, target, headers, body) = Read(stream);
                 if (method == null)
@@ -191,6 +197,7 @@ public sealed class GuiServer
     {
         var buffer = new MemoryStream();
         var one = new byte[1];
+        var headerComplete = false;
         // Headers, up to the empty line (at most 32 KB).
         while (buffer.Length < 32768)
         {
@@ -203,8 +210,13 @@ public sealed class GuiServer
             var n = (int)buffer.Length;
             if (n >= 4 && b[n - 4] == '\r' && b[n - 3] == '\n' && b[n - 2] == '\r' && b[n - 1] == '\n')
             {
+                headerComplete = true;
                 break;
             }
+        }
+        if (!headerComplete)
+        {
+            return (null, "", new(), Array.Empty<byte>());
         }
         var lines = Encoding.ASCII.GetString(buffer.ToArray()).Split("\r\n");
         var first = lines[0].Split(' ');
@@ -227,7 +239,10 @@ public sealed class GuiServer
         while (read < length)
         {
             var r = stream.Read(body, read, length - read);
-            if (r <= 0) break;
+            if (r <= 0)
+            {
+                return (null, "", new(), Array.Empty<byte>());
+            }
             read += r;
         }
         return (first[0], first[1], headers, body);
@@ -236,7 +251,7 @@ public sealed class GuiServer
     private static void Write(NetworkStream stream, int status, string type, byte[] content)
     {
         var reason = status switch { 200 => "OK", 403 => "Forbidden", _ => "Not Found" };
-        var head = $"HTTP/1.1 {status} {reason}\r\nContent-Type: {type}\r\nContent-Length: {content.Length}\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nConnection: close\r\n\r\n";
+        var head = $"HTTP/1.1 {status} {reason}\r\nContent-Type: {type}\r\nContent-Length: {content.Length}\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\nConnection: close\r\n\r\n";
         stream.Write(Encoding.ASCII.GetBytes(head));
         stream.Write(content);
     }

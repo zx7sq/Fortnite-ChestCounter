@@ -28,12 +28,20 @@ public class ReplayReader : Unreal.Core.ReplayReader<FortniteReplay>
     public FortniteReplay ReadReplay(string fileName)
     {
         var bytes = File.ReadAllBytes(fileName);
+        return ReadReplay(bytes.AsMemory());
+    }
+
+    public FortniteReplay ReadReplay(ReadOnlyMemory<byte> bytes)
+    {
         using var archive = new Unreal.Core.BinaryReader(bytes);
 
         Builder = new FortniteReplayBuilder();
         ReadReplay(archive);
 
-        return Builder.Build(Replay);
+        var built = Builder.Build(Replay);
+        Builder = null!;
+        Replay = null!;
+        return built;
     }
 
     public FortniteReplay ReadReplay(Stream stream)
@@ -43,7 +51,10 @@ public class ReplayReader : Unreal.Core.ReplayReader<FortniteReplay>
         Builder = new FortniteReplayBuilder();
         ReadReplay(archive);
 
-        return Builder.Build(Replay);
+        var built = Builder.Build(Replay);
+        Builder = null!;
+        Replay = null!;
+        return built;
     }
 
     private string _branch;
@@ -75,10 +86,7 @@ public class ReplayReader : Unreal.Core.ReplayReader<FortniteReplay>
 
     protected override void OnChannelClosed(uint channelIndex, NetworkGUID? actor)
     {
-        if (actor != null)
-        {
-            Builder.RemoveChannel(channelIndex);
-        }
+        Builder.RemoveChannel(channelIndex);
     }
 
     protected override void OnNetDeltaRead(uint channelIndex, NetDeltaUpdate update)

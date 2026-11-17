@@ -54,6 +54,7 @@ public static class FortniteWatch
                     return false;
                 }
                 key.SetValue(RunValue, $"\"{exe}\" --standby {DataArg(dataDir)}"); // refreshed at each launch: follows the exe if it is moved
+                StopStandby();
                 StartStandby(exe, dataDir);
             }
             else
@@ -87,6 +88,15 @@ public static class FortniteWatch
         {
             stop.Set();
             stop.Dispose();
+            for (var i = 0; i < 40; i++)
+            {
+                if (!Mutex.TryOpenExisting(AppInfo.StandbyMutex, out var m))
+                {
+                    break;
+                }
+                m.Dispose();
+                Thread.Sleep(50);
+            }
         }
     }
 

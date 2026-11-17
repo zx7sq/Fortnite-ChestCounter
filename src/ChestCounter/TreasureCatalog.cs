@@ -229,7 +229,7 @@ public static class TreasureCatalog
             static Dictionary<string, string> Langs(System.Text.Json.JsonElement e, int max) =>
                 e.EnumerateObject().Where(t => t.Name is "fr" or "en" or "es").ToDictionary(t => t.Name, t => Text(t.Value, max));
             static Version? Ver(System.Text.Json.JsonElement n, string name) =>
-                n.TryGetProperty(name, out var v) ? (Version.TryParse(v.GetString(), out var x) ? x : throw new InvalidDataException(name)) : null;
+                n.TryGetProperty(name, out var v) ? (Version.TryParse(v.GetString(), out var x) ? new Version(x.Major, x.Minor, Math.Max(0, x.Build)) : throw new InvalidDataException(name)) : null;
             var notices = root.TryGetProperty("notices", out var nt) ? nt.EnumerateArray().Take(10).Select(n => new Notice(
                 n.GetProperty("id").GetString() is { } nid && SafeId.IsMatch(nid) ? nid : throw new InvalidDataException("notice id"),
                 When(n.GetProperty("from")), When(n.GetProperty("to")),
@@ -264,7 +264,7 @@ public static class TreasureCatalog
 
     /// <summary>The multiplier of a kind of treasure at a moment (1 outside the Treasure Hours).</summary>
     public static double Boost(string kind, DateTime utc) =>
-        TreasureHours.FirstOrDefault(h => utc >= h.StartUtc && utc < h.EndUtc)?.Boosts.GetValueOrDefault(kind, 1) is { } b and > 0 ? b : 1;
+        TreasureHours.FirstOrDefault(h => h.Confirmed && utc >= h.StartUtc && utc < h.EndUtc)?.Boosts.GetValueOrDefault(kind, 1) is { } b and > 0 ? b : 1;
 
     /// <summary>The week a moment falls in (null outside the hunt).</summary>
     public static TreasureWeek? WeekOf(DateTime utc) => Weeks.FirstOrDefault(w => utc >= w.From && utc < w.To);

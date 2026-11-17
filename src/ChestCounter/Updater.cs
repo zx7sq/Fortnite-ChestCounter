@@ -147,8 +147,16 @@ public static class Updater
                 {
                     sha = d[7..];
                 }
-                return new UpdateInfo(version, tag, asset.GetProperty("browser_download_url").GetString()!, asset.GetProperty("size").GetInt64(), sha,
-                    root.TryGetProperty("html_url", out var page) ? page.GetString() ?? AppInfo.RepoUrl : AppInfo.RepoUrl,
+                var assetUrl = asset.GetProperty("browser_download_url").GetString();
+                if (!Uri.TryCreate(assetUrl, UriKind.Absolute, out var assetUri) || assetUri.Scheme != Uri.UriSchemeHttps)
+                {
+                    return null;
+                }
+                var pageUrl = root.TryGetProperty("html_url", out var page) && page.GetString() is { } p && Uri.TryCreate(p, UriKind.Absolute, out var pageUri) && pageUri.Scheme == Uri.UriSchemeHttps
+                    ? p
+                    : AppInfo.RepoUrl;
+                return new UpdateInfo(version, tag, assetUrl!, asset.GetProperty("size").GetInt64(), sha,
+                    pageUrl,
                     root.TryGetProperty("body", out var body) ? body.GetString() : null);
             }
             return null;
@@ -217,6 +225,10 @@ public static class Updater
         }
         catch (Exception ex)
         {
+            if (!File.Exists(exe) && File.Exists(old))
+            {
+                try { File.Move(old, exe); } catch { }
+            }
             try { File.Delete(download); } catch { }
             return ex.Message;
         }

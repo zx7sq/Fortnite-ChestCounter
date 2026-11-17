@@ -45,7 +45,12 @@ public sealed class ActivityLog : TextWriter
                 if (c is '\n' or '\r')
                 {
                     if (i > start) _current.Add(new Seg(value[start..i], fg));
-                    if (c == '\n')
+                    if (c == '\r' && i + 1 < value.Length && value[i + 1] == '\n')
+                    {
+                        Commit();
+                        i++;
+                    }
+                    else if (c == '\n')
                     {
                         Commit();
                     }

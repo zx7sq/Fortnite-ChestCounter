@@ -170,10 +170,22 @@ public sealed class Tracker
             bar.Clear();
             ReportWriter.Progress = null;
             PrintBatchSummary(outcomes);
-            if (profilesBefore < 2 && Profiles.List(_data).Count >= 2)
+            var latestMatch = outcomes.Where(o => o.Match != null && !o.Updated).Select(o => o.Match!)
+                .OrderByDescending(m => m.MatchStartUtc ?? m.AnalyzedAtUtc).FirstOrDefault();
+            if (latestMatch != null)
             {
-                NewProfilesFound = true;
+                var current = Profiles.Current(_data, _config);
+                var end = (latestMatch.MatchStartUtc ?? latestMatch.AnalyzedAtUtc).AddSeconds(latestMatch.DurationSeconds ?? 0);
+                if (current != null && Profiles.Key(latestMatch) != current.Key && DateTime.UtcNow - end < TimeSpan.FromMinutes(15))
+                {
+                    _config.Profile = Profiles.Key(latestMatch);
+                    try { _store.SaveConfig(_config); } catch { /* ignore */ }
+                }
             }
+        }
+        if (profilesBefore < 2 && Profiles.List(_data).Count >= 2)
+        {
+            NewProfilesFound = true;
         }
 
         var added = outcomes.Count(o => o.Match != null);
@@ -228,7 +240,7 @@ public sealed class Tracker
 
         // Recording cut in the middle of the match: Fortnite never wrote the decryption key, nothing can be read.
         // Without this, the replay would stay "pending" forever (no auto update, auto close delayed every time).
-        if (ReplayHeaderProbe.IsLive(file.FullName) == true && ReplayHeaderProbe.KeyMissing(file.FullName))
+        if (ReplayHeaderProbe.KeyMissing(file.FullName))
         {
             _data.ProcessedFiles[key] = "incomplete";
             _store.SaveData(_data);
@@ -406,9 +418,8 @@ public sealed class Tracker
         {
             try
             {
-                using var ms = new MemoryStream(bytes, writable: false);
                 // The replays saved on a PC are those of its player: the replay owner is tracked (one profile per account).
-                result = new ReplayAnalyzer().Analyze(ms, file.Name, "");
+                result = new ReplayAnalyzer().Analyze(bytes.AsMemory(), file.Name, "");
             }
             catch (Exception e)
             {
@@ -495,12 +506,12 @@ public sealed class Tracker
         if (!_liveMapKnown)
         {
             var map = ReplayHeaderProbe.Map(file.FullName);
-            if (map == null && !started)
+            if (map == null)
             {
-                return false; // header not written yet: try again at the next check
+                return started; // header not written yet: try again at the next check
             }
-            _liveMapKnown = map != null;
-            _liveNotCounted = map != null && !GameModes.IsSeasonMap(map);
+            _liveMapKnown = true;
+            _liveNotCounted = !GameModes.IsSeasonMap(map);
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.WriteLine(_liveNotCounted
                 ? L.T($"{L.Stamp} Partie en cours dans un autre mode (carte {map}) : elle ne sera pas comptée.", $"{L.Stamp} Match in progress in another mode (map {map}): it will not be counted.", $"{L.Stamp} Partida en curso en otro modo (mapa {map}): no se contará.")
@@ -685,9 +696,8 @@ public static class ReplayHeaderProbe
                 bytes = new byte[Math.Min(fs.Length, 256 * 1024)];
                 fs.ReadExactly(bytes);
             }
-            using var ms = new MemoryStream(bytes, writable: false);
             var reader = new FortniteReplayReader.ReplayReader(null, Unreal.Core.Models.Enums.ParseMode.EventsOnly);
-            var replay = reader.ReadReplay(ms);
+            var replay = reader.ReadReplay(bytes.AsMemory());
             return replay.Header?.LevelNamesAndTimes?.Select(l => l.Item1).FirstOrDefault(l => !string.IsNullOrEmpty(l));
         }
         catch
@@ -725,7 +735,8 @@ public static class ReplayHeaderProbe
             if (br.ReadUInt32() == 0) return false; // not encrypted
             var keyLen = br.ReadInt32();
             if (keyLen <= 0 || keyLen > 256) return true;
-            return br.ReadBytes(keyLen).All(b => b == 0);
+            var key = br.ReadBytes(keyLen);
+            return key.Length < keyLen || key.All(b => b == 0);
         }
         catch
         {

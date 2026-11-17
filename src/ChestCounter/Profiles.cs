@@ -11,7 +11,10 @@ public sealed record Profile(string Key, string Name, int Matches, int Chests, D
 public static class Profiles
 {
     /// <summary>Stable key of a match's account: Epic id (survives a name change), else the display name.</summary>
-    public static string Key(MatchRecord m) => !string.IsNullOrEmpty(m.EpicId) ? m.EpicId : m.PlayerName ?? "";
+    public static string Key(MatchRecord m) =>
+        !string.IsNullOrEmpty(m.EpicId) && !m.EpicId.Equals("NULL", StringComparison.OrdinalIgnoreCase)
+            ? m.EpicId
+            : !string.IsNullOrWhiteSpace(m.PlayerName) ? m.PlayerName : "__unknown__";
 
     /// <summary>Matches that count (Battle Royale of the season): those of other modes saved by older versions are left out.</summary>
     public static IEnumerable<MatchRecord> Counted(TrackerData d) => d.Matches.Where(GameModes.Counts);
@@ -123,8 +126,13 @@ public static class Profiles
     public static List<ManualEntry> ManualHistory(TrackerData d, Config c)
     {
         var key = Current(d, c)?.Key ?? "";
+        var raw = d.ManualHistory.GetValueOrDefault(key) ?? new List<ManualEntry>();
+        if (key.Length > 0 && d.ManualHistory.TryGetValue("", out var early) && early.Count > 0)
+        {
+            raw = early.Concat(raw).ToList();
+        }
         // Copies: the "earlier" entry is adjusted for the display only.
-        var list = (d.ManualHistory.GetValueOrDefault(key) ?? new List<ManualEntry>())
+        var list = raw
             .Select(e => new ManualEntry { Id = e.Id, Chests = e.Chests, AddedUtc = e.AddedUtc, Kind = e.Kind, CareerMatches = e.CareerMatches, WeekFromUtc = e.WeekFromUtc })
             .ToList();
         Explain(list, Manual(d, key));
@@ -171,6 +179,10 @@ public static class Profiles
         var list = d.ManualHistory.GetValueOrDefault(key) ?? new List<ManualEntry>();
         if (key.Length > 0)
         {
+            if (d.ManualHistory.TryGetValue("", out var early) && early.Count > 0)
+            {
+                list = early.Concat(list).ToList();
+            }
             d.ManualChests.Remove("");
             d.ManualHistory.Remove("");
         }

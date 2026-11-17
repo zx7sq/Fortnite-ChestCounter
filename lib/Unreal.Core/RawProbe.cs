@@ -9,9 +9,23 @@ public static class RawProbe
 {
     public delegate void SinkHandler(uint channelIndex, string group, string field, byte[] data, int bits);
 
-    public static Func<string, bool>? Filter { get; set; }
+    [ThreadStatic]
+    private static Func<string, bool>? _filter;
 
-    public static SinkHandler? Sink { get; set; }
+    [ThreadStatic]
+    private static SinkHandler? _sink;
 
-    internal static bool Matches(string path) => Sink != null && Filter?.Invoke(path) == true;
+    public static Func<string, bool>? Filter
+    {
+        get => _filter;
+        set => _filter = value;
+    }
+
+    public static SinkHandler? Sink
+    {
+        get => _sink;
+        set => _sink = value;
+    }
+
+    internal static bool Matches(string path) => _sink != null && _filter?.Invoke(path) == true;
 }

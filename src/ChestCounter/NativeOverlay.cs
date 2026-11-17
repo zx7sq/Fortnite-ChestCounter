@@ -37,7 +37,7 @@ public static class NativeOverlay
     private static int _stableW;
     private static RECT _lockRect; // lock button, client coordinates
     private static IntPtr _fontIcon;
-    private static WndProcDelegate? _wndProc; // keep the delegate alive
+    private static readonly WndProcDelegate _wndProc = WndProc; // keep the delegate alive for the lifetime of the process
     private static IntPtr _fontBig, _fontSmall, _brushBg;
     private static float _scale = 1f;    // display scaling × size chosen by the player
     private static float _dpiScale = 1f; // display scaling only
@@ -180,7 +180,10 @@ public static class NativeOverlay
         DeleteObject(bmp);
         DeleteDC(mem);
         ReleaseDC(IntPtr.Zero, screen);
-        Png.Write(path, w, h, bgra);
+        if (ok)
+        {
+            Png.Write(path, w, h, bgra);
+        }
         return ok;
     }
 
@@ -202,8 +205,6 @@ public static class NativeOverlay
 
     private static void Run(int? x, int? y, ManualResetEventSlim ready)
     {
-        try { SetProcessDPIAware(); } catch { /* old Windows */ }
-
         var screenDc = GetDC(IntPtr.Zero);
         _dpiScale = GetDeviceCaps(screenDc, LOGPIXELSY) / 96f;
         ReleaseDC(IntPtr.Zero, screenDc);
@@ -214,53 +215,70 @@ public static class NativeOverlay
         _brushBg = CreateSolidBrush(Rgb(18, 18, 22));
         _brushBorder = CreateSolidBrush(Rgb(58, 58, 66));
         _brushLine = CreateSolidBrush(Rgb(44, 44, 52));
+        try
+        {
+            var hInstance = GetModuleHandleW(null);
+            var wc = new WNDCLASSEXW
+            {
+                cbSize = (uint)Marshal.SizeOf<WNDCLASSEXW>(),
+                lpfnWndProc = Marshal.GetFunctionPointerForDelegate(_wndProc),
+                hInstance = hInstance,
+                hCursor = LoadCursorW(IntPtr.Zero, IDC_SIZEALL),
+                hbrBackground = IntPtr.Zero,
+                lpszClassName = "ChestCounterOverlay",
+            };
+            // Already registered when the overlay is turned off and on again in the same run (ERROR_CLASS_ALREADY_EXISTS).
+            if (RegisterClassExW(ref wc) == 0 && Marshal.GetLastWin32Error() != 1410)
+            {
+                throw new InvalidOperationException("RegisterClassEx failed");
+            }
 
-        var hInstance = GetModuleHandleW(null);
-        _wndProc = WndProc;
-        var wc = new WNDCLASSEXW
-        {
-            cbSize = (uint)Marshal.SizeOf<WNDCLASSEXW>(),
-            lpfnWndProc = Marshal.GetFunctionPointerForDelegate(_wndProc),
-            hInstance = hInstance,
-            hCursor = LoadCursorW(IntPtr.Zero, IDC_SIZEALL),
-            hbrBackground = _brushBg,
-            lpszClassName = "ChestCounterOverlay",
-        };
-        // Already registered when the overlay is turned off and on again in the same run (ERROR_CLASS_ALREADY_EXISTS).
-        if (RegisterClassExW(ref wc) == 0 && Marshal.GetLastWin32Error() != 1410)
-        {
-            throw new InvalidOperationException("RegisterClassEx failed");
+            int w = S(MinWidth), h = S(90);
+            var posX = x ?? S(24);
+            var posY = y ?? S(24);
+
+            _hwnd = CreateWindowExW(
+                // Opaque (no WS_EX_LAYERED alpha): nothing for the compositor to blend every frame.
+                WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
+                wc.lpszClassName, L.T("Coffres", "Chests", "Cofres"), WS_POPUP,
+
+                posX, posY, w, h, IntPtr.Zero, IntPtr.Zero, hInstance, IntPtr.Zero);
+            if (_hwnd == IntPtr.Zero)
+            {
+                throw new InvalidOperationException("CreateWindowEx failed");
+            }
+
+            var winDpi = GetDpiForWindow(_hwnd);
+            if (winDpi > 0 && Math.Abs(winDpi / 96f - _dpiScale) > 0.01f)
+            {
+                _dpiScale = winDpi / 96f;
+                CreateFonts();
+            }
+
+            ApplyLock(_hwnd, _locked, notify: false);
+            Relayout(_hwnd);
+            ShowWindow(_hwnd, SW_SHOWNOACTIVATE);
+            // No timer at all: the thread sleeps in GetMessage and only wakes up when the counter changes,
+            // when you drag/hide the window or press the shortcut.
+            // Global shortcut, works even when the game has the focus.
+            HotkeyRegistered = RegisterHotKey(_hwnd, 1, MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, VK_O);
+            LockHotkeyRegistered = RegisterHotKey(_hwnd, 2, MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, VK_L);
+            ready.Set();
+
+            while (GetMessageW(out var msg, IntPtr.Zero, 0, 0) > 0)
+            {
+                TranslateMessage(ref msg);
+                DispatchMessageW(ref msg);
+            }
         }
-
-        int w = S(MinWidth), h = S(90);
-        var posX = x ?? S(24);
-        var posY = y ?? S(24);
-
-        _hwnd = CreateWindowExW(
-            // Opaque (no WS_EX_LAYERED alpha): nothing for the compositor to blend every frame.
-            WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
-            wc.lpszClassName, L.T("Coffres", "Chests", "Cofres"), WS_POPUP,
-
-            posX, posY, w, h, IntPtr.Zero, IntPtr.Zero, hInstance, IntPtr.Zero);
-        if (_hwnd == IntPtr.Zero)
+        finally
         {
-            throw new InvalidOperationException("CreateWindowEx failed");
-        }
-
-        ApplyLock(_hwnd, _locked, notify: false);
-        Relayout(_hwnd);
-        ShowWindow(_hwnd, SW_SHOWNOACTIVATE);
-        // No timer at all: the thread sleeps in GetMessage and only wakes up when the counter changes,
-        // when you drag/hide the window or press the shortcut.
-        // Global shortcut, works even when the game has the focus.
-        HotkeyRegistered = RegisterHotKey(_hwnd, 1, MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, VK_O);
-        LockHotkeyRegistered = RegisterHotKey(_hwnd, 2, MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, VK_L);
-        ready.Set();
-
-        while (GetMessageW(out var msg, IntPtr.Zero, 0, 0) > 0)
-        {
-            TranslateMessage(ref msg);
-            DispatchMessageW(ref msg);
+            foreach (var obj in new[] { _fontBig, _fontSmall, _fontHeader, _fontCaption, _fontLabel, _fontIcon, _fontHudBig, _fontHudSmall, _brushBg, _brushBorder, _brushLine })
+            {
+                if (obj != IntPtr.Zero) DeleteObject(obj);
+            }
+            _fontBig = _fontSmall = _fontHeader = _fontCaption = _fontLabel = _fontIcon = _fontHudBig = _fontHudSmall = IntPtr.Zero;
+            _brushBg = _brushBorder = _brushLine = IntPtr.Zero;
         }
     }
 
@@ -355,6 +373,17 @@ public static class NativeOverlay
                 _stableW = 0; // the width may shrink when the overlay gets smaller
                 ApplyLock(hwnd, _locked, notify: false); // also applies the opacity
                 Relayout(hwnd);
+                return IntPtr.Zero;
+
+            case WM_DPICHANGED:
+                var newDpi = (uint)((long)wParam & 0xFFFF);
+                if (newDpi > 0)
+                {
+                    _dpiScale = newDpi / 96f;
+                    CreateFonts();
+                    _stableW = 0;
+                    Relayout(hwnd);
+                }
                 return IntPtr.Zero;
 
             case WM_PAINT:
@@ -841,7 +870,7 @@ public static class NativeOverlay
     private const uint LWA_ALPHA = 0x2, LWA_COLORKEY = 0x1;
     private const int SW_HIDE = 0, SW_SHOWNOACTIVATE = 4;
     private const uint WM_DESTROY = 0x0002, WM_PAINT = 0x000F, WM_NCHITTEST = 0x0084, WM_NCRBUTTONUP = 0x00A5,
-        WM_TIMER = 0x0113, WM_EXITSIZEMOVE = 0x0232, WM_APP_TOGGLE = 0x8001, WM_PRINTCLIENT = 0x0318, WM_APP_RELAYOUT = 0x8002, WM_HOTKEY = 0x0312, WM_APP_APPEARANCE = 0x8004, WM_APP_STOP = 0x8005;
+        WM_TIMER = 0x0113, WM_EXITSIZEMOVE = 0x0232, WM_DPICHANGED = 0x02E0, WM_APP_TOGGLE = 0x8001, WM_PRINTCLIENT = 0x0318, WM_APP_RELAYOUT = 0x8002, WM_HOTKEY = 0x0312, WM_APP_APPEARANCE = 0x8004, WM_APP_STOP = 0x8005;
     private const uint MOD_CONTROL = 0x2, MOD_SHIFT = 0x4, MOD_NOREPEAT = 0x4000, VK_O = 0x4F;
     private const int HTCAPTION = 2;
     private const int TRANSPARENT = 1, LOGPIXELSY = 90;
@@ -915,6 +944,7 @@ public static class NativeOverlay
     [DllImport("user32.dll")] private static extern IntPtr LoadCursorW(IntPtr instance, IntPtr name);
     [DllImport("user32.dll")] private static extern IntPtr GetDC(IntPtr hwnd);
     [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr hwnd, IntPtr hdc);
+    [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr hwnd);
     [DllImport("user32.dll")] private static extern bool SetProcessDPIAware();
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtrW(IntPtr hwnd, int index);
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] private static extern IntPtr SetWindowLongPtrW(IntPtr hwnd, int index, IntPtr value);
