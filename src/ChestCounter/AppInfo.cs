@@ -11,13 +11,17 @@ public static class AppInfo
     public static string RepoUrl => "https://github.com/" + Repo;
     public static string IssuesUrl => RepoUrl + "/issues";
 
-    /// <summary>Path of ChestCounter.exe when running as the published exe (null under "dotnet ChestCounter.dll").</summary>
+    /// <summary>Path of the published exe (null under "dotnet ChestCounter.dll").</summary>
     public static string? ExePath
     {
         get
         {
             var p = Environment.ProcessPath;
-            return p != null && Path.GetFileName(p).Equals("ChestCounter.exe", StringComparison.OrdinalIgnoreCase) ? p : null;
+            return p != null
+                && Path.GetExtension(p).Equals(".exe", StringComparison.OrdinalIgnoreCase)
+                && !Path.GetFileName(p).Equals("dotnet.exe", StringComparison.OrdinalIgnoreCase)
+                ? p
+                : null;
         }
     }
 
