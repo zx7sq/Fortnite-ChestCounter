@@ -1271,7 +1271,8 @@ static void UpdateOverlay(Store store, Config config, TrackerData d, MatchRecord
         ? L.T($"En partie · Session : {view.Session} coffres", $"In a match · Session: {view.Session} chests", $"En partida · Sesión: {view.Session} cofres")
         : L.T($"Session : {view.Session} coffres ({sessionMatches} parties)", $"Session: {view.Session} chests ({sessionMatches} matches)", $"Sesión: {view.Session} cofres ({sessionMatches} partidas)");
     var state = L.T($"Total : {view.Total} coffres · {view.Treasures} trésors", $"Total: {view.Total} chests · {view.Treasures} treasures", $"Total: {view.Total} cofres · {view.Treasures} tesoros");
-    DiscordRpc.Update(config.DiscordPresence, config.DiscordAppId, details, state);
+    var discordId = string.IsNullOrWhiteSpace(config.DiscordAppId) ? "1572700278841679962" : config.DiscordAppId;
+    DiscordRpc.Update(config.DiscordPresence, discordId, details, state);
 }
 
 // Below-normal priority + Windows 11 "efficiency mode" (EcoQoS): the game always comes first.

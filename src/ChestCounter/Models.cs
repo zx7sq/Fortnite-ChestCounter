@@ -176,7 +176,7 @@ public sealed class Config
     public bool DiscordPresence { get; set; } = true;
 
     /// <summary>Discord Application ID (from discord.com/developers/applications) for Rich Presence.</summary>
-    public string DiscordAppId { get; set; } = "";
+    public string DiscordAppId { get; set; } = "1572700278841679962";
 
     /// <summary>"auto" (install new versions on open), "prompt" (offer them) or "off" (never check GitHub).</summary>
     public string UpdateMode { get; set; } = "auto";
