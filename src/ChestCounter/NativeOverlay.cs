@@ -24,7 +24,7 @@ public static class NativeOverlay
     private static IntPtr _hwnd;
     private static volatile OverlayView _view = new("0", null, OverlayModel.LastMatchCaption, false, null, Array.Empty<OverlayRow>());
     private static OverlayView _displayView = new("0", null, OverlayModel.LastMatchCaption, false, null, Array.Empty<OverlayRow>());
-    private static bool _hasInitialView, _animating;
+    private static bool _hasInitialView, _animating, _hasSavedPosition;
     private static long _animStartMs;
     private static int _fromTotal, _toTotal, _fromSession, _toSession, _fromTreasures, _toTreasures, _fromLast, _toLast;
     private const long AnimDurationMs = 550;
@@ -242,6 +242,7 @@ public static class NativeOverlay
             }
 
             int w = S(MinWidth), h = S(90);
+            _hasSavedPosition = x.HasValue && y.HasValue;
             var posX = x ?? S(24);
             var posY = y ?? S(24);
 
@@ -536,24 +537,11 @@ public static class NativeOverlay
                 h += 1 + S(10) + v.Rows.Count * (_rowH + S(4)) + S(4);
             }
             _lockRect = new RECT { Left = w - S(Pad) - S(18), Top = S(6), Right = w - S(6), Bottom = S(12) + _headerH + S(6) };
-            // Keep it fully on its screen: on the right half of the screen it grows to the left, and it is
-            // pushed back inside when it would overflow (a wider overlay used to be cut by the screen edge).
-            GetWindowRect(hwnd, out var cur);
-            int nx = cur.Left, ny = cur.Top;
-            var mi = new MONITORINFO { cbSize = (uint)Marshal.SizeOf<MONITORINFO>() };
-            if (!_offscreen && GetMonitorInfoW(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), ref mi))
-            {
-                var work = mi.rcWork;
-                if (cur.Right - cur.Left > 0 && (cur.Left + cur.Right) / 2 > (work.Left + work.Right) / 2)
-                {
-                    nx = cur.Right - w; // anchored on the right edge
-                }
-                nx = Math.Max(work.Left, Math.Min(nx, work.Right - w));
-                ny = Math.Max(work.Top, Math.Min(ny, work.Bottom - h));
-            }
+            // Keep it fully on its screen (or place cleanly under the Fortnite minimap on first launch).
+            var (nx, ny, moved) = ClampOrPlaceUnderMinimap(hwnd, w, h);
             SetWindowPos(hwnd, HWND_TOPMOST, nx, ny, w, h, SWP_NOACTIVATE);
             SetWindowRgn(hwnd, CreateRoundRectRgn(0, 0, w + 1, h + 1, S(18), S(18)), true); // window owns the region
-            if (nx != cur.Left || ny != cur.Top)
+            if (moved)
             {
                 _onMoved?.Invoke(nx, ny);
             }
@@ -815,22 +803,10 @@ public static class NativeOverlay
             _stableW = w;
             _lockRect = new RECT { Left = Sc(2), Top = 0, Right = lockW, Bottom = h };
 
-            GetWindowRect(hwnd, out var cur);
-            int nx = cur.Left, ny = cur.Top;
-            var mi = new MONITORINFO { cbSize = (uint)Marshal.SizeOf<MONITORINFO>() };
-            if (!_offscreen && GetMonitorInfoW(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), ref mi))
-            {
-                var work = mi.rcWork;
-                if (cur.Right - cur.Left > 0 && (cur.Left + cur.Right) / 2 > (work.Left + work.Right) / 2)
-                {
-                    nx = cur.Right - w; // anchored on the right edge (under the minimap)
-                }
-                nx = Math.Max(work.Left, Math.Min(nx, work.Right - w));
-                ny = Math.Max(work.Top, Math.Min(ny, work.Bottom - h));
-            }
+            var (nx, ny, moved) = ClampOrPlaceUnderMinimap(hwnd, w, h);
             SetWindowPos(hwnd, HWND_TOPMOST, nx, ny, w, h, SWP_NOACTIVATE);
             SetWindowRgn(hwnd, IntPtr.Zero, true); // plain rectangle: the corners are made invisible by the key color
-            if (nx != cur.Left || ny != cur.Top)
+            if (moved)
             {
                 _onMoved?.Invoke(nx, ny);
             }
@@ -841,6 +817,34 @@ public static class NativeOverlay
         }
         InvalidateRect(hwnd, IntPtr.Zero, true);
         UpdateWindow(hwnd);
+    }
+
+    private static (int X, int Y, bool Moved) ClampOrPlaceUnderMinimap(IntPtr hwnd, int w, int h)
+    {
+        GetWindowRect(hwnd, out var cur);
+        int nx = cur.Left, ny = cur.Top;
+        var mi = new MONITORINFO { cbSize = (uint)Marshal.SizeOf<MONITORINFO>() };
+        if (!_offscreen && GetMonitorInfoW(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), ref mi))
+        {
+            if (!_hasSavedPosition)
+            {
+                var screen = mi.rcMonitor;
+                nx = screen.Right - w - Sc(20);
+                ny = screen.Top + (int)Math.Round((screen.Bottom - screen.Top) * 0.255);
+                _hasSavedPosition = true;
+            }
+            else
+            {
+                var work = mi.rcWork;
+                if (cur.Right - cur.Left > 0 && (cur.Left + cur.Right) / 2 > (work.Left + work.Right) / 2)
+                {
+                    nx = cur.Right - w; // anchored on the right edge (under the minimap)
+                }
+                nx = Math.Max(work.Left, Math.Min(nx, work.Right - w));
+                ny = Math.Max(work.Top, Math.Min(ny, work.Bottom - h));
+            }
+        }
+        return (nx, ny, nx != cur.Left || ny != cur.Top);
     }
 
     /// <summary>Text outlined in near black, like the game's own HUD figures (readable on any background).</summary>
