@@ -818,40 +818,44 @@ public static class NativeOverlay
     private static void RelayoutStyled(IntPtr hwnd)
     {
         var v = _view;
-        var hdc = GetDC(hwnd);
-        int w, h;
-        try
-        {
-            var pad = Sc(8);
-            var lockW = Sc(22);
-            var bigW = TextWidth(hdc, _fontHudBig, v.Total, out _hudBigH);
-            var state = StateRow(v);
-            var sessionLabel = L.T("Session", "Session", "Sesión");
-            var rowsW = new[]
-            {
-                TextWidth(hdc, _fontHudSmall, state.Label + Sep + state.Value, out _hudSmallH),
-                TextWidth(hdc, _fontHudSmall, sessionLabel + Sep + v.Session, out _),
-                v.Squad != null ? TextWidth(hdc, _fontHudSmall, OverlayModel.SquadLabel + Sep + v.Squad, out _) : 0,
-                Sc(22) + TextWidth(hdc, _fontHudSmall, v.Treasures, out _),
-            }.Max();
-            // Room for the in-match dot is always kept: the overlay does not widen when a match starts.
-            w = lockW + pad + Math.Max(Sc(18) + Sc(26) + Sc(8) + bigW, rowsW) + pad + Sc(14);
-            h = pad + _hudBigH + (v.Squad != null ? 4 : 3) * (_hudSmallH + Sc(2)) + pad;
-            w = Math.Max(_stableW, w);
-            _stableW = w;
-            _lockRect = new RECT { Left = Sc(2), Top = 0, Right = lockW, Bottom = h };
+        EnsureHudAssets();
+        using var tmp = new Bitmap(1, 1, PixelFormat.Format32bppPArgb);
+        using var g = Graphics.FromImage(tmp);
+        g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+        g.PageUnit = GraphicsUnit.Pixel;
 
-            var (nx, ny, moved) = ClampOrPlaceUnderMinimap(hwnd, w, h);
-            SetWindowPos(hwnd, HWND_TOPMOST, nx, ny, w, h, SWP_NOACTIVATE);
-            SetWindowRgn(hwnd, IntPtr.Zero, true); // plain rectangle: the corners are made invisible by the key color
-            if (moved)
-            {
-                _onMoved?.Invoke(nx, ny);
-            }
-        }
-        finally
+        using var fontBig = CreateHudFont(Math.Max(18f, Sc(38)), FontStyle.Bold);
+        using var fontSmall = CreateHudFont(Math.Max(11f, Sc(16)), FontStyle.Bold);
+
+        var pad = Sc(8);
+        var lockW = Sc(22);
+        var bigW = (int)Math.Ceiling(MeasureHudText(g, fontBig, v.Total));
+        _hudBigH = (int)Math.Ceiling(fontBig.GetHeight(g));
+        _hudSmallH = (int)Math.Ceiling(fontSmall.GetHeight(g));
+
+        var state = StateRow(v);
+        var sessionLabel = L.T("Session", "Session", "Sesión");
+        var rowsW = new[]
         {
-            ReleaseDC(hwnd, hdc);
+            (int)Math.Ceiling(MeasureHudText(g, fontSmall, state.Label + Sep + state.Value)) + Sc(6),
+            (int)Math.Ceiling(MeasureHudText(g, fontSmall, sessionLabel + Sep + v.Session)) + Sc(6),
+            v.Squad != null ? (int)Math.Ceiling(MeasureHudText(g, fontSmall, OverlayModel.SquadLabel + Sep + v.Squad)) + Sc(6) : 0,
+            Sc(24) + (int)Math.Ceiling(MeasureHudText(g, fontSmall, v.Treasures)),
+        }.Max();
+
+        // Room for the in-match dot + real chest icon + spacing is always kept.
+        var w = lockW + pad + Math.Max(Sc(18) + Sc(30) + Sc(12) + bigW, rowsW) + pad + Sc(10);
+        var h = pad + _hudBigH + (v.Squad != null ? 4 : 3) * (_hudSmallH + Sc(4)) + pad;
+        w = Math.Max(_stableW, w);
+        _stableW = w;
+        _lockRect = new RECT { Left = Sc(2), Top = 0, Right = lockW, Bottom = h };
+
+        var (nx, ny, moved) = ClampOrPlaceUnderMinimap(hwnd, w, h);
+        SetWindowPos(hwnd, HWND_TOPMOST, nx, ny, w, h, SWP_NOACTIVATE);
+        SetWindowRgn(hwnd, IntPtr.Zero, true);
+        if (moved)
+        {
+            _onMoved?.Invoke(nx, ny);
         }
         UpdateHudLayeredWindow(hwnd);
     }
@@ -1016,11 +1020,67 @@ public static class NativeOverlay
         }
     }
 
-    private static Font CreateHudFont(string primary, float pixelSize, FontStyle style)
+    private static PrivateFontCollection? _hudFontCollection;
+    private static FontFamily? _hudFontFamily;
+    private static Bitmap? _chestIconBitmap;
+    private static bool _hudAssetsLoaded;
+
+    private static void EnsureHudAssets()
     {
+        if (_hudAssetsLoaded)
+        {
+            return;
+        }
+        _hudAssetsLoaded = true;
+        var asm = typeof(NativeOverlay).Assembly;
+
         try
         {
-            return new Font(primary, pixelSize, style, GraphicsUnit.Pixel);
+            using var fontStream = asm.GetManifestResourceStream("hellafine.ttf");
+            if (fontStream != null)
+            {
+                var bytes = new byte[fontStream.Length];
+                fontStream.ReadExactly(bytes);
+                var ptr = Marshal.AllocCoTaskMem(bytes.Length);
+                Marshal.Copy(bytes, 0, ptr, bytes.Length);
+                _hudFontCollection = new PrivateFontCollection();
+                _hudFontCollection.AddMemoryFont(ptr, bytes.Length);
+                if (_hudFontCollection.Families.Length > 0)
+                {
+                    _hudFontFamily = _hudFontCollection.Families[0];
+                }
+            }
+        }
+        catch
+        {
+            // Fallback to system font if embedded font fails to load.
+        }
+
+        try
+        {
+            using var iconStream = asm.GetManifestResourceStream("ChestIcon.png");
+            if (iconStream != null)
+            {
+                _chestIconBitmap = new Bitmap(iconStream);
+            }
+        }
+        catch
+        {
+            // Fallback to vector chest if embedded icon fails to load.
+        }
+    }
+
+    private static Font CreateHudFont(float pixelSize, FontStyle style)
+    {
+        EnsureHudAssets();
+        if (_hudFontFamily != null)
+        {
+            var chosen = _hudFontFamily.IsStyleAvailable(style) ? style : FontStyle.Regular;
+            return new Font(_hudFontFamily, pixelSize, chosen, GraphicsUnit.Pixel);
+        }
+        try
+        {
+            return new Font("Segoe UI Variable Display", pixelSize, style, GraphicsUnit.Pixel);
         }
         catch
         {
@@ -1030,11 +1090,13 @@ public static class NativeOverlay
 
     private static Bitmap RenderHudBitmap(int w, int h)
     {
+        EnsureHudAssets();
         var bmp = new Bitmap(Math.Max(1, w), Math.Max(1, h), PixelFormat.Format32bppPArgb);
         using var g = Graphics.FromImage(bmp);
         g.SmoothingMode = SmoothingMode.AntiAlias;
         g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
         g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+        g.InterpolationMode = InterpolationMode.HighQualityBicubic;
         g.PageUnit = GraphicsUnit.Pixel;
         g.Clear(Color.Transparent);
 
@@ -1051,15 +1113,20 @@ public static class NativeOverlay
             g.FillPath(bgBrush, bgPath);
             g.DrawPath(bgPen, bgPath);
 
-            using var lockFont = CreateHudFont("Segoe MDL2 Assets", Math.Max(12f, Sc(14)), FontStyle.Regular);
+            using var lockFont = new Font("Segoe MDL2 Assets", Math.Max(12f, Sc(14)), FontStyle.Regular, GraphicsUnit.Pixel);
             using var lockBrush = new SolidBrush(Color.FromArgb(229, 229, 234));
             using var lockFmt = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
             g.DrawString("\uE785", lockFont, lockBrush, new RectangleF(_lockRect.Left, _lockRect.Top, _lockRect.Right - _lockRect.Left, _lockRect.Bottom - _lockRect.Top), lockFmt);
         }
 
-        using var fontBig = CreateHudFont("Segoe UI Variable Display", Math.Max(18f, Sc(38)), FontStyle.Bold);
-        using var fontSmall = CreateHudFont("Segoe UI Variable Text", Math.Max(11f, Sc(16)), FontStyle.Bold);
-        using var rightFmt = new StringFormat(StringFormatFlags.NoWrap) { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
+        using var fontBig = CreateHudFont(Math.Max(18f, Sc(38)), FontStyle.Bold);
+        using var fontSmall = CreateHudFont(Math.Max(11f, Sc(16)), FontStyle.Bold);
+        using var rightFmt = new StringFormat(StringFormat.GenericTypographic)
+        {
+            Alignment = StringAlignment.Far,
+            LineAlignment = StringAlignment.Center,
+            FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.MeasureTrailingSpaces,
+        };
 
         var white = Color.FromArgb(255, 255, 255, 255);
         var muted = Color.FromArgb(230, 200, 204, 214);
@@ -1072,42 +1139,47 @@ public static class NativeOverlay
 
         var bigRect = new RectangleF(left, y, Math.Max(10f, right - left), _hudBigH);
         var bigW = MeasureHudText(g, fontBig, v.Total);
-        DrawHudText(g, v.Total, fontBig, live ? green : white, bigRect, rightFmt, Math.Max(2.2f, Sc(3.0)));
+        DrawHudText(g, v.Total, fontBig, live ? green : white, bigRect, rightFmt);
 
-        var iw = (float)Sc(24);
-        var ih = (float)Sc(20);
-        var ix = right - bigW - Sc(8) - iw;
+        var iw = (float)Sc(28);
+        var ih = (float)Sc(28);
+        var ix = right - bigW - Sc(10) - iw;
         var iy = y + (_hudBigH - ih) / 2f;
-        DrawHudChest(g, ix, iy, iw, ih);
+        if (_chestIconBitmap != null)
+        {
+            g.DrawImage(_chestIconBitmap, ix, iy, iw, ih);
+        }
+        else
+        {
+            DrawHudChest(g, ix, iy + Sc(4), Sc(24), Sc(20));
+        }
 
         if (v.CurrentLive)
         {
             var d = (float)Sc(10);
-            var dx = ix - Sc(7) - d;
+            var dx = ix - Sc(8) - d;
             var dy = y + (_hudBigH - d) / 2f;
-            using var dotShadow = new SolidBrush(Color.FromArgb(160, 0, 0, 0));
+            using var dotShadow = new SolidBrush(Color.FromArgb(140, 0, 0, 0));
             using var dotBrush = new SolidBrush(Color.FromArgb(255, 255, 69, 58));
-            using var dotPen = new Pen(Color.FromArgb(220, 10, 12, 16), Math.Max(1.2f, Sc(1.5)));
-            g.FillEllipse(dotShadow, dx, dy + 1f, d, d);
+            g.FillEllipse(dotShadow, dx, dy + 1.5f, d, d);
             g.FillEllipse(dotBrush, dx, dy, d, d);
-            g.DrawEllipse(dotPen, dx, dy, d, d);
         }
-        y += _hudBigH + Sc(2);
+        y += _hudBigH + Sc(4);
 
         var rowH = (float)_hudSmallH;
         DrawHudLabelValue(g, fontSmall, state.Label, state.Value, left, right, y, rowH, muted, white);
-        y += rowH + Sc(2);
+        y += rowH + Sc(4);
         DrawHudLabelValue(g, fontSmall, L.T("Session", "Session", "Sesión"), v.Session, left, right, y, rowH, muted, white);
-        y += rowH + Sc(2);
+        y += rowH + Sc(4);
         if (v.Squad != null)
         {
             DrawHudLabelValue(g, fontSmall, OverlayModel.SquadLabel, v.Squad, left, right, y, rowH, muted, white);
-            y += rowH + Sc(2);
+            y += rowH + Sc(4);
         }
 
         var tw = MeasureHudText(g, fontSmall, v.Treasures);
-        DrawHudText(g, v.Treasures, fontSmall, purple, new RectangleF(left, y, Math.Max(10f, right - left), rowH), rightFmt, Math.Max(1.6f, Sc(2.2)));
-        DrawHudStar(g, right - tw - Sc(12), y + rowH / 2f, Sc(7.5));
+        DrawHudText(g, v.Treasures, fontSmall, purple, new RectangleF(left, y, Math.Max(10f, right - left), rowH), rightFmt);
+        DrawHudStar(g, right - tw - Sc(15), y + rowH / 2f, Sc(7));
 
         return bmp;
     }
@@ -1120,39 +1192,35 @@ public static class NativeOverlay
 
     private static void DrawHudLabelValue(Graphics g, Font font, string label, string value, float left, float right, float top, float height, Color labelColor, Color valueColor)
     {
-        using var rightFmt = new StringFormat(StringFormatFlags.NoWrap) { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
-        var outline = Math.Max(1.6f, Sc(2.2));
+        using var rightFmt = new StringFormat(StringFormat.GenericTypographic)
+        {
+            Alignment = StringAlignment.Far,
+            LineAlignment = StringAlignment.Center,
+            FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.MeasureTrailingSpaces,
+        };
         if (string.IsNullOrEmpty(value))
         {
-            DrawHudText(g, label, font, labelColor, new RectangleF(left, top, Math.Max(10f, right - left), height), rightFmt, outline);
+            DrawHudText(g, label, font, labelColor, new RectangleF(left, top, Math.Max(10f, right - left), height), rightFmt);
             return;
         }
         var valueW = MeasureHudText(g, font, value);
-        DrawHudText(g, value, font, valueColor, new RectangleF(left, top, Math.Max(10f, right - left), height), rightFmt, outline);
+        DrawHudText(g, value, font, valueColor, new RectangleF(left, top, Math.Max(10f, right - left), height), rightFmt);
         var labelRight = right - valueW - Sc(2);
-        DrawHudText(g, label + Sep, font, labelColor, new RectangleF(left, top, Math.Max(10f, labelRight - left), height), rightFmt, outline);
+        DrawHudText(g, label + Sep, font, labelColor, new RectangleF(left, top, Math.Max(10f, labelRight - left), height), rightFmt);
     }
 
-    private static void DrawHudText(Graphics g, string text, Font font, Color fillColor, RectangleF rect, StringFormat fmt, float outlineWidth)
+    private static void DrawHudText(Graphics g, string text, Font font, Color fillColor, RectangleF rect, StringFormat fmt)
     {
         if (string.IsNullOrEmpty(text))
         {
             return;
         }
-        using var path = new GraphicsPath();
-        path.AddString(text, font.FontFamily, (int)font.Style, font.Size, rect, fmt);
-
-        using var shadowMatrix = new Matrix();
-        shadowMatrix.Translate(0f, Math.Max(1f, Sc(1.5)));
-        using var shadowPath = (GraphicsPath)path.Clone();
-        shadowPath.Transform(shadowMatrix);
-        using var shadowPen = new Pen(Color.FromArgb(115, 0, 0, 0), outlineWidth + 1.2f) { LineJoin = LineJoin.Round };
-        g.DrawPath(shadowPen, shadowPath);
-
-        using var outlinePen = new Pen(Color.FromArgb(205, 8, 10, 15), outlineWidth) { LineJoin = LineJoin.Round };
+        var dy = Math.Max(1.2f, Sc(1.6));
+        using var shadowBrush = new SolidBrush(Color.FromArgb(145, 0, 0, 0));
         using var fillBrush = new SolidBrush(fillColor);
-        g.DrawPath(outlinePen, path);
-        g.FillPath(fillBrush, path);
+        var shadowRect = new RectangleF(rect.X, rect.Y + dy, rect.Width, rect.Height);
+        g.DrawString(text, font, shadowBrush, shadowRect, fmt);
+        g.DrawString(text, font, fillBrush, rect, fmt);
     }
 
     private static GraphicsPath RoundedRectPath(RectangleF r, float radius)
