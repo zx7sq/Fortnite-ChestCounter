@@ -94,6 +94,10 @@ public static class GuiPage
         ["withFortniteHelp"] = L.T("Un petit processus invisible attend Fortnite et ouvre le compteur, qui se ferme après.", "A tiny invisible process waits for Fortnite and opens the counter, which closes afterwards.", "Un pequeño proceso invisible espera a Fortnite y abre el contador, que se cierra después."),
         ["zapMode"] = L.T("Mode Zap", "Zap mode", "Modo Zap"),
         ["zapModeHelp"] = L.T("Supprime les fichiers UnsavedReplay après comptage pour libérer de l'espace disque (les replays renommés sont conservés).", "Deletes UnsavedReplay files after counting to save disk space (manually saved replays are kept).", "Elimina los archivos UnsavedReplay después de contarlos para ahorrar espacio (las repeticiones guardadas se conservan)."),
+        ["discordStatus"] = L.T("Statut Discord", "Discord status", "Estado de Discord"),
+        ["discordStatusHelp"] = L.T("Affiche ta session actuelle sur ton profil Discord (nécessite un ID d'application depuis discord.com/developers/applications).", "Shows your current session on your Discord profile (requires an Application ID from discord.com/developers/applications).", "Muestra tu sesión actual en tu perfil de Discord (requiere un ID de aplicación de discord.com/developers/applications)."),
+        ["discordAppId"] = L.T("ID d'application Discord", "Discord Application ID", "ID de aplicación de Discord"),
+        ["saveId"] = L.T("Enregistrer l'ID", "Save ID", "Guardar ID"),
         ["updates"] = L.T("Mises à jour", "Updates", "Actualizaciones"),
         ["upPrompt"] = L.T("Proposées", "Offered", "Propuestas"),
         ["upAuto"] = L.T("Installées automatiquement", "Installed automatically", "Instaladas automáticamente"),
@@ -432,6 +436,8 @@ public static class GuiPage
             ${s.windowed?row(esc(T.tray),esc(T.trayHelp),sw('tr',s.minimizeToTray,'minimizeToTray')):''}
             ${s.canStartWithFortnite?row(esc(T.withFortnite),esc(T.withFortniteHelp),sw('wf',s.startWithFortnite,'startWithFortnite')):''}
             ${row(esc(T.zapMode),esc(T.zapModeHelp),sw('zm',s.zapMode,'zapMode'))}
+            ${row(esc(T.discordStatus),esc(T.discordStatusHelp),sw('drpc',s.discordPresence,'discordPresence'))}
+            ${s.discordPresence?`<div class="row"><div style="flex:1"><div class="t">${esc(T.discordAppId)}</div><div class="actions" style="margin-top:6px"><input type="text" id="discordAppId" placeholder="1234567890123456789" value="${esc(s.discordAppId||'')}"><button class="b" onclick="api('discordAppId',$('#discordAppId').value)">${esc(T.saveId)}</button></div></div></div>`:''}
             ${row(esc(T.updates),'',sel('updateMode',s.updateMode,[['prompt',T.upPrompt],['auto',T.upAuto],['off',T.upOff]]))}
             <div class="row"><div style="flex:1"><div class="t">${esc(T.demos)}</div>${s.demosExists?'':`<div class="h">${esc(T.demosMissing)}</div>`}<div class="actions" style="margin-top:6px"><input type="text" id="demos" value="${esc(s.demos)}"><button class="b" onclick="api('demosFolder',$('#demos').value)">${esc(T.save)}</button></div></div></div></div>`;
           return h;

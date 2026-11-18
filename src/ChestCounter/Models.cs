@@ -172,6 +172,12 @@ public sealed class Config
     /// <summary>Zap mode: deletes UnsavedReplay-*.replay files after they have been counted to save disk space.</summary>
     public bool ZapMode { get; set; }
 
+    /// <summary>Show current session chest stats in Discord Rich Presence.</summary>
+    public bool DiscordPresence { get; set; } = true;
+
+    /// <summary>Discord Application ID (from discord.com/developers/applications) for Rich Presence.</summary>
+    public string DiscordAppId { get; set; } = "";
+
     /// <summary>"auto" (install new versions on open), "prompt" (offer them) or "off" (never check GitHub).</summary>
     public string UpdateMode { get; set; } = "auto";
 

@@ -573,6 +573,7 @@ while (!quit)
 watcher?.Dispose();
 guiServer?.Stop();
 showMe?.Dispose();
+DiscordRpc.Clear();
 if (OperatingSystem.IsWindows())
 {
     NativeOverlay.Stop();
@@ -1027,6 +1028,8 @@ object BuildGuiState()
             minimizeToTray = config.MinimizeToTray,
             startWithFortnite = config.StartWithFortnite,
             zapMode = config.ZapMode,
+            discordPresence = config.DiscordPresence,
+            discordAppId = config.DiscordAppId,
             canStartWithFortnite = OperatingSystem.IsWindows() && AppInfo.ExePath != null,
             updateMode = config.UpdateMode,
             timeZone = config.TimeZone,
@@ -1123,6 +1126,14 @@ object? RunGuiAction(string name, System.Text.Json.JsonElement value)
             {
                 tracker.PurgeCountedReplays();
             }
+            break;
+        case "discordPresence":
+            config.DiscordPresence = Bool();
+            UpdateOverlay(store, config, data, tracker.LiveMatch, tracker.IsLive);
+            break;
+        case "discordAppId":
+            config.DiscordAppId = Str().Trim();
+            UpdateOverlay(store, config, data, tracker.LiveMatch, tracker.IsLive);
             break;
         case "updateMode": config.UpdateMode = Str() is "auto" or "off" ? Str() : "prompt"; break;
         case "timeZone": config.TimeZone = Str(); config.ApplyTimeSettings(); break;
@@ -1248,12 +1259,19 @@ static bool AcquireInstance(Mutex m, TimeSpan wait)
 static void UpdateOverlay(Store store, Config config, TrackerData d, MatchRecord? live, bool inProgress)
 {
     ReportWriter.OverlayStyle = config.OverlayStyle;
-    var view = OverlayModel.Build(Profiles.View(d, config), live, inProgress, showSquad: false);
+    var pView = Profiles.View(d, config);
+    var view = OverlayModel.Build(pView, live, inProgress, showSquad: false);
     ReportWriter.WriteOverlay(store, view);
     if (OperatingSystem.IsWindows() && NativeOverlay.IsRunning)
     {
         NativeOverlay.Update(view);
     }
+    var sessionMatches = pView.Matches.Count(ReportWriter.IsThisSession);
+    var details = inProgress
+        ? L.T($"En partie · Session : {view.Session} coffres", $"In a match · Session: {view.Session} chests", $"En partida · Sesión: {view.Session} cofres")
+        : L.T($"Session : {view.Session} coffres ({sessionMatches} parties)", $"Session: {view.Session} chests ({sessionMatches} matches)", $"Sesión: {view.Session} cofres ({sessionMatches} partidas)");
+    var state = L.T($"Total : {view.Total} coffres · {view.Treasures} trésors", $"Total: {view.Total} chests · {view.Treasures} treasures", $"Total: {view.Total} cofres · {view.Treasures} tesoros");
+    DiscordRpc.Update(config.DiscordPresence, config.DiscordAppId, details, state);
 }
 
 // Below-normal priority + Windows 11 "efficiency mode" (EcoQoS): the game always comes first.
