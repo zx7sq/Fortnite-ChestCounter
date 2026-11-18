@@ -36,7 +36,15 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
     }
 
     /// <summary>A closed chest destroyed with no instigator given by the server (its support was broken...).</summary>
-    private sealed record OrphanDestroy(float Time, string ActorKey, string Label, uint Actor);
+    private sealed class OrphanDestroy
+    {
+        public float Time { get; init; }
+        public string ActorKey { get; init; } = "";
+        public string Label { get; init; } = "";
+        public uint Actor { get; init; }
+        public Pt? FallbackLoc { get; init; }
+        public uint? KnownDestroyer { get; set; }
+    }
 
     private static readonly Regex VehicleClass = new(@"_Vehicle(_Static)?_C$|MeatballVehicle", RegexOptions.Compiled);
     private sealed record EquipEvent(float Time, string Item, uint Pawn);
@@ -125,6 +133,7 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
     private readonly Dictionary<(uint Vehicle, int Seat), SeatSpan> _seated = new();
     private readonly List<OrphanDestroy> _orphans = new();
     private readonly HashSet<uint> _orphanChannels = new();
+    private readonly Dictionary<uint, OrphanDestroy> _activeOrphanByChannel = new();
     /// <summary>Containers the replay shows opened or destroyed (actor ids): the loot they dropped is explained.</summary>
     private readonly HashSet<uint> _openedContainers = new();
 
@@ -212,7 +221,7 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
     private readonly List<GrantEvent> _grants = new();
 
     /// <summary>Bump when the analysis changes so that existing replays are re-analyzed.</summary>
-    public const int CurrentVersion = 19; // 19: attribute collapsed/support-broken upper-floor chests up to 35 m away
+    public const int CurrentVersion = 20; // 20: resolve late/prior SearchingPawn on destroyed chests, actor-loc fallback, 3s loot window
 
     private static readonly bool ProbeDebug = Environment.GetEnvironmentVariable("CHESTCOUNTER_DEBUG") == "4";
 
@@ -486,11 +495,13 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
         _equipChannelsSeen.Remove(channelIndex);
         _prizeChannelsSeen.Remove(channelIndex);
         _orphanChannels.Remove(channelIndex);
+        _activeOrphanByChannel.Remove(channelIndex);
     }
 
     protected override void OnChannelClosing(uint channelIndex, UChannel channel, ChannelCloseReason reason)
     {
         base.OnChannelClosing(channelIndex, channel, reason);
+        _activeOrphanByChannel.Remove(channelIndex);
         if (channel?.ActorId is uint closingActor && _vehicleTrack.ContainsKey(closingActor))
         {
             foreach (var key in _seated.Keys.Where(k => k.Vehicle == closingActor).ToList())
@@ -525,6 +536,10 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
                 if (container.SearchingPawn is uint searcher && searcher != 0)
                 {
                     _lastSearcher[channelIndex] = searcher;
+                    if (_activeOrphanByChannel.TryGetValue(channelIndex, out var activeOrphan) && activeOrphan.KnownDestroyer == null)
+                    {
+                        activeOrphan.KnownDestroyer = searcher;
+                    }
                 }
 
                 var containerKey = _channelKey.GetValueOrDefault(channelIndex, $"ch:{channelIndex}");
@@ -548,6 +563,10 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
                     }
                 }
 
+                var destroyer = container.SearchingPawn is uint d && d != 0
+                    ? d
+                    : (_lastSearcher.TryGetValue(channelIndex, out var prevSearcher) ? prevSearcher : 0u);
+
                 if (container.bAlreadySearched == true && !_channelSearched.GetValueOrDefault(channelIndex))
                 {
                     _channelSearched[channelIndex] = true;
@@ -569,7 +588,7 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
                         Console.Error.WriteLine($"DBG seen-again {Now,7:F1}s {containerLabel} {containerKey}");
                     }
                 }
-                else if (container.bDestroyed && container.SearchingPawn is uint destroyer && destroyer != 0
+                else if (container.bDestroyed && destroyer != 0
                     && (_searched.Add(containerKey) || (!_channelSearched.GetValueOrDefault(channelIndex) && !stale)))
                 {
                     // Broken instead of opened (support destroyed, explosion...): the loot spills out and the
@@ -579,13 +598,25 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
                     _lastOpener[containerKey] = destroyer;
                     _searches.Add(new SearchEvent(Now, containerKey, containerLabel, destroyer, Destroyed: true, Stale: stale, ActorId: containerActor));
                 }
-                else if (container.bDestroyed && container.SearchingPawn is null or 0 && !stale && StableKey(containerKey)
+                else if (container.bDestroyed && destroyer == 0 && !stale && StableKey(containerKey)
                     && !_channelSearched.GetValueOrDefault(channelIndex)
                     && containerActor is uint orphanActor && _orphanChannels.Add(channelIndex))
                 {
                     // A closed chest destroyed without an instigator (its support was broken, it fell...). Who did it is
-                    // worked out at the end, from the loot that spilled and who stood right there (ResolveOrphans).
-                    _orphans.Add(new OrphanDestroy(Now, containerKey, containerLabel, orphanActor));
+                    // worked out at the end, from late SearchingPawn, spilled loot, or chest location (ResolveOrphans).
+                    var fallbackLoc = Channels[channelIndex]?.Actor?.Location is { } actorLoc
+                        ? new Pt(Now, (float)actorLoc.X, (float)actorLoc.Y, (float)actorLoc.Z)
+                        : (Pt?)null;
+                    var orphan = new OrphanDestroy
+                    {
+                        Time = Now,
+                        ActorKey = containerKey,
+                        Label = containerLabel,
+                        Actor = orphanActor,
+                        FallbackLoc = fallbackLoc,
+                    };
+                    _orphans.Add(orphan);
+                    _activeOrphanByChannel[channelIndex] = orphan;
                 }
 
                 // Shown opened or broken (counted or not): the loot it dropped is explained (see VehicleRuns). Kept out
@@ -821,11 +852,12 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
                 continue;
             }
 
+            var lootEnd = search.Time + (search.Destroyed ? 3.0f : 1.0f);
             var hasOwnerMatch = search.ActorId is uint cid && cid != 0
-                && _tosses.Any(t => t.Owner == cid && t.Time >= search.Time - 0.5f && t.Time <= search.Time + 1.0f);
+                && _tosses.Any(t => t.Owner == cid && t.Time >= search.Time - 0.5f && t.Time <= lootEnd);
             var items = _tosses
                 .Where(t => hasOwnerMatch
-                    ? t.Owner == search.ActorId && t.Time >= search.Time - 0.5f && t.Time <= search.Time + 1.0f
+                    ? t.Owner == search.ActorId && t.Time >= search.Time - 0.5f && t.Time <= lootEnd
                     : t.Time >= search.Time - 0.25f && t.Time <= search.Time + 0.6f && (t.Owner == null || t.Owner == 0 || t.Owner == search.ActorId))
                 .Select(t => t.Item)
                 .ToList();
@@ -1172,25 +1204,32 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
     {
         foreach (var orphan in _orphans)
         {
-            var loot = _tosses.Where(x => x.Loc != null && x.Owner == orphan.Actor && Math.Abs(x.Time - orphan.Time) <= 3f).Select(x => x.Loc!.Value).ToList();
-            if (loot.Count == 0)
-            {
-                continue;
-            }
-
-            uint nearest = 0;
+            uint nearest = orphan.KnownDestroyer ?? 0;
             var nearestDistance = 3500f;
-            foreach (var pawn in _pawnToPlayerState.Keys)
+            if (nearest == 0)
             {
-                if (PositionOf(pawn, orphan.Time) is not { } at)
+                var loot = _tosses.Where(x => x.Loc != null && x.Owner == orphan.Actor && Math.Abs(x.Time - orphan.Time) <= 3f).Select(x => x.Loc!.Value).ToList();
+                if (loot.Count == 0 && orphan.FallbackLoc is { } fallback)
+                {
+                    loot.Add(fallback);
+                }
+                if (loot.Count == 0)
                 {
                     continue;
                 }
-                var d = loot.Min(l => Distance(at, l));
-                if (d < nearestDistance)
+
+                foreach (var pawn in _pawnToPlayerState.Keys)
                 {
-                    nearestDistance = d;
-                    nearest = pawn;
+                    if (PositionOf(pawn, orphan.Time) is not { } at)
+                    {
+                        continue;
+                    }
+                    var d = loot.Min(l => Distance(at, l));
+                    if (d < nearestDistance)
+                    {
+                        nearestDistance = d;
+                        nearest = pawn;
+                    }
                 }
             }
             if (nearest == 0)
@@ -1200,7 +1239,9 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
 
             if (Debug == "1")
             {
-                Console.Error.WriteLine($"DBG orphan {orphan.Time,7:F1}s {orphan.Label} nearest pawn {nearest} at {nearestDistance / 100:F1} m");
+                Console.Error.WriteLine(orphan.KnownDestroyer != null
+                    ? $"DBG orphan {orphan.Time,7:F1}s {orphan.Label} late SearchingPawn {nearest}"
+                    : $"DBG orphan {orphan.Time,7:F1}s {orphan.Label} nearest pawn {nearest} at {nearestDistance / 100:F1} m");
             }
             if (!_searches.Any(s => s.ActorKey == orphan.ActorKey && Math.Abs(s.Time - orphan.Time) <= 5f)
                 && _searched.Add(orphan.ActorKey + "#orphan" + orphan.Time.ToString("F0")))
