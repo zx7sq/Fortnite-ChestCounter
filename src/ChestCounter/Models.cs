@@ -169,6 +169,9 @@ public sealed class Config
     /// <summary>Minimizing the window sends the counter to the notification area (system tray) instead of the taskbar.</summary>
     public bool MinimizeToTray { get; set; }
 
+    /// <summary>Zap mode: deletes UnsavedReplay-*.replay files after they have been counted to save disk space.</summary>
+    public bool ZapMode { get; set; }
+
     /// <summary>"prompt" (offer new versions), "auto" (install them) or "off" (never check GitHub).</summary>
     public string UpdateMode { get; set; } = "prompt";
 

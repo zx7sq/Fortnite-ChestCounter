@@ -1018,6 +1018,7 @@ object BuildGuiState()
             windowed = guiWindowed,
             minimizeToTray = config.MinimizeToTray,
             startWithFortnite = config.StartWithFortnite,
+            zapMode = config.ZapMode,
             canStartWithFortnite = OperatingSystem.IsWindows() && AppInfo.ExePath != null,
             updateMode = config.UpdateMode,
             timeZone = config.TimeZone,
@@ -1108,6 +1109,13 @@ object? RunGuiAction(string name, System.Text.Json.JsonElement value)
             if (OperatingSystem.IsWindows()) GuiWindow.MinimizeToTray = config.MinimizeToTray;
             break;
         case "startWithFortnite": if (Bool() != config.StartWithFortnite) ToggleStartWithFortnite(); break;
+        case "zapMode":
+            config.ZapMode = Bool();
+            if (config.ZapMode)
+            {
+                tracker.PurgeCountedReplays();
+            }
+            break;
         case "updateMode": config.UpdateMode = Str() is "auto" or "off" ? Str() : "prompt"; break;
         case "timeZone": config.TimeZone = Str(); config.ApplyTimeSettings(); break;
         case "clockFormat": config.ClockFormat = Str(); config.ApplyTimeSettings(); break;

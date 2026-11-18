@@ -89,6 +89,44 @@ public sealed class Tracker
         _store.SaveData(_data);
     }
 
+    /// <summary>Zap mode: deletes counted UnsavedReplay files so replays don't fill up disk space.</summary>
+    public void PurgeCountedReplays()
+    {
+        foreach (var file in ReplayFiles().ToList())
+        {
+            TryZapReplay(file);
+        }
+    }
+
+    private void TryZapReplay(FileInfo file)
+    {
+        if (!file.Name.StartsWith("UnsavedReplay-", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+        if (!_data.ProcessedFiles.TryGetValue(FileKey(file), out var status)
+            || status.StartsWith("error:", StringComparison.Ordinal))
+        {
+            return;
+        }
+        if (ReplayHeaderProbe.IsLive(file.FullName) == true)
+        {
+            return;
+        }
+        try
+        {
+            file.Refresh();
+            if (file.Exists)
+            {
+                file.Delete();
+            }
+        }
+        catch
+        {
+            // Retry on next scan if Fortnite still holds a handle.
+        }
+    }
+
     /// <summary>Result of the analysis of one replay.</summary>
     private sealed record Outcome(MatchRecord? Match = null, bool Updated = false, string? Skipped = null, string? Error = null);
 
@@ -118,6 +156,10 @@ public sealed class Tracker
         }
         if (ready.Count == 0)
         {
+            if (_config.ZapMode)
+            {
+                PurgeCountedReplays();
+            }
             return 0;
         }
 
@@ -150,6 +192,10 @@ public sealed class Tracker
             if (_liveFile == file.FullName)
             {
                 ClearLive(); // read (counted, skipped or unreadable): the match is over, whatever the outcome
+            }
+            if (_config.ZapMode)
+            {
+                TryZapReplay(file);
             }
             if (!batch)
             {
