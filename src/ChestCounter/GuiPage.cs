@@ -38,8 +38,8 @@ public static class GuiPage
         ["analyzing"] = L.T("Analyse de tes replays…", "Analyzing your replays…", "Analizando tus repeticiones…"),
         ["whatsNew"] = L.T("Nouveautés de la {0}", "What's new in {0}", "Novedades de la {0}"),
         ["newVersion"] = L.T("Nouvelle version {0} disponible", "New version {0} available", "Nueva versión {0} disponible"),
-        ["install"] = L.T("Installer", "Install", "Instalar"),
-        ["checkUpdate"] = L.T("Rechercher une mise à jour", "Check for updates", "Buscar actualizaciones"),
+        ["install"] = L.T("Installer la mise à jour", "Install update", "Instalar actualización"),
+        ["checkUpdate"] = L.T("Vérifier les mises à jour sur GitHub", "Check GitHub for updates", "Buscar actualizaciones en GitHub"),
         ["welcome"] = L.T("Bienvenue !", "Welcome!", "¡Bienvenido!"),
         ["welcomeText"] = L.T("Active d'abord les rediffusions dans Fortnite : Paramètres → Jeu → Rediffusions → Enregistrer les rediffusions. Ensuite, laisse le compteur ouvert : chaque partie est comptée quelques secondes après sa fin. Des coffres ouverts avant ? Le crayon de « Coffres au total » permet de les ajouter.",
             "First turn on replays in Fortnite: Settings → Game → Replays → Record Replays. Then keep the counter open: each match is counted a few seconds after it ends. Chests opened before? The pencil of \"Chests in total\" adds them.",
@@ -100,8 +100,8 @@ public static class GuiPage
         ["upOff"] = L.T("Désactivées", "Off", "Desactivadas"),
         ["profile"] = L.T("Compte (profil)", "Account (profile)", "Cuenta (perfil)"),
         ["demos"] = L.T("Dossier des replays", "Replays folder", "Carpeta de repeticiones"),
-        ["demosMissing"] = L.T("Introuvable : Fortnite le crée à la première partie enregistrée.", "Not found: Fortnite creates it with the first recorded match.", "No encontrada: Fortnite la crea con la primera partida grabada."),
-        ["save"] = L.T("Enregistrer", "Save", "Guardar"),
+        ["demosMissing"] = L.T("Dossier pas encore créé — joue une partie avec les rediffusions activées dans Fortnite.", "Folder not created yet — play one match with Replays enabled in Fortnite.", "Carpeta aún no creada — juega una partida con las repeticiones activadas en Fortnite."),
+        ["save"] = L.T("Enregistrer le dossier", "Save folder", "Guardar carpeta"),
         ["editChests"] = L.T("Modifier mon nombre de coffres", "Edit my number of chests", "Modificar mi número de cofres"),
         ["close"] = L.T("Fermer", "Close", "Cerrar"),
         ["manual"] = L.T("Coffres ajoutés à la main", "Chests added by hand", "Cofres añadidos a mano"),
@@ -132,7 +132,8 @@ public static class GuiPage
         ["quit"] = L.T("Quitter le compteur", "Quit the counter", "Salir del contador"),
         ["quitConfirm"] = L.T("Arrêter le compteur ? Les parties jouées ensuite ne seront comptées qu'à sa prochaine ouverture.", "Stop the counter? Matches played afterwards are only counted when it is opened again.", "¿Detener el contador? Las partidas jugadas después solo se cuentan cuando se vuelva a abrir."),
         ["closed"] = L.T("Le compteur est arrêté. Tu peux fermer cette fenêtre.", "The counter is stopped. You can close this window.", "El contador está detenido. Puedes cerrar esta ventana."),
-        ["offline"] = L.T("Le compteur ne répond plus (fermé ?). Relance ChestCounter.exe.", "The counter does not answer (closed?). Start ChestCounter.exe again.", "El contador no responde (¿cerrado?). Vuelve a abrir ChestCounter.exe."),
+        ["offline"] = L.T("Connexion au compteur perdue. Relance ChestCounter.exe pour te reconnecter.", "Lost connection to ChestCounter. Reopen ChestCounter.exe to reconnect.", "Se perdió la conexión con ChestCounter. Vuelve a abrir ChestCounter.exe para reconectar."),
+        ["emptyMatches"] = L.T("Aucune partie comptée pour l'instant. Laisse ChestCounter ouvert pendant que tu joues à Fortnite : ta première partie apparaîtra ici quelques secondes après sa fin.", "No matches counted yet. Keep ChestCounter open while you play Fortnite — your first match will show up here a few seconds after it ends.", "Aún no hay partidas contadas. Mantén ChestCounter abierto mientras juegas a Fortnite: tu primera partida aparecerá aquí unos segundos después de terminar."),
         ["footer"] = L.T("Fermer cette fenêtre ne coupe pas le compteur.", "Closing this window does not stop the counter.", "Cerrar esta ventana no detiene el contador."),
     };
 
@@ -143,121 +144,131 @@ public static class GuiPage
         <title>Chest Counter</title>
         <style>
         :root{
-          --bg:#060608;
-          --bg-elevated:#0d0d11;
+          --bg:#0b0b0e;
+          --bg-elevated:#141419;
           --ink:#f5f5f7;
-          --muted:#86868b;
+          --muted:#8e8e93;
           --title:#ffffff;
-          --card:rgba(22,22,26,.78);
-          --card-solid:#16161a;
+          --card:#141419;
+          --card-solid:#141419;
           --cink:#f5f5f7;
           --cmuted:#8e8e93;
           --line:rgba(255,255,255,.09);
           --line-strong:rgba(255,255,255,.18);
-          --track:rgba(255,255,255,.06);
-          --gold:#ffffff;
+          --track:rgba(255,255,255,.08);
+          --brand:#f59e0b;
+          --brand-ink:#0b0b0e;
+          --brand-soft:rgba(245,158,11,.14);
+          --gold:#f59e0b;
           --team:#30d158;
           --warn:#ff453a;
-          --accent:#0a84ff;
+          --accent:#f59e0b;
           --purple:#bf5af2;
+          --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:20px;--s6:24px;--s8:32px;
           --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
           --ease:cubic-bezier(.16,1,.3,1);
         }
         *{box-sizing:border-box;-webkit-font-smoothing:antialiased}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(10px) scale(.992)}to{opacity:1;transform:translateY(0) scale(1)}}
-        @keyframes modalIn{from{opacity:0;transform:scale(.95) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(6px)}to{opacity:1;transform:scale(1) translateY(0)}}
         @keyframes pulseGlow{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.22);opacity:.72}}
-        @keyframes barShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+        @keyframes spin{to{transform:rotate(360deg)}}
         body{
           margin:0;
-          background:radial-gradient(1100px 540px at 50% -180px,rgba(255,255,255,.07),transparent 70%),linear-gradient(180deg,#09090c 0%,#050507 100%);
-          background-attachment:fixed;
+          background:var(--bg);
           color:var(--ink);
-          font:400 15px/1.5 var(--font);
+          font:400 15px/1.55 var(--font);
           letter-spacing:-.011em;
+          text-align:left;
         }
-        main{max-width:1080px;margin:0 auto;padding:28px 20px 44px;display:flex;flex-direction:column;gap:22px;animation:fadeUp .45s var(--ease) both}
-        .pirate{font-family:var(--font);font-weight:700;letter-spacing:-.03em}
-        .num{font-family:var(--font);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.035em}
-        #app{display:flex;flex-direction:column;gap:20px}
-        #hdr{display:flex;flex-direction:column;gap:18px}
-        #view{display:flex;flex-direction:column;gap:18px}
-        #view.tab-anim,#activityPane.tab-anim,#reportPane.tab-anim{animation:fadeUp .34s var(--ease) both}
+        main{max-width:1080px;margin:0 auto;padding:var(--s8) var(--s5) 48px;display:flex;flex-direction:column;gap:var(--s6);animation:fadeUp .38s var(--ease) both}
+        .pirate{font-family:var(--font);font-weight:700;letter-spacing:-.025em}
+        .num{font-family:var(--font);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+        .ico{width:16px;height:16px;display:inline-block;vertical-align:-3px;flex:none}
+        .ico-lg{width:24px;height:24px;vertical-align:-4px}
+        #app{display:flex;flex-direction:column;gap:var(--s5)}
+        #hdr{display:flex;flex-direction:column;gap:var(--s4)}
+        #view{display:flex;flex-direction:column;gap:var(--s5)}
+        #view.tab-anim,#activityPane.tab-anim,#reportPane.tab-anim{animation:fadeUp .3s var(--ease) both}
         #view:empty{display:none}
         #rep{width:100%;min-height:400px;border:0;display:block;background:transparent;overflow:hidden}
-        .who{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:13px;font-weight:500;margin-top:3px}
-        .who select{min-height:30px;padding:3px 10px;font-size:13px;border-radius:999px;border:1px solid var(--line-strong);background:rgba(255,255,255,.05);color:var(--ink);transition:border-color .2s var(--ease),background .2s var(--ease)}
-        .who select:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.28)}
-        .who select option{color:#f5f5f7;background:#16161a}
-        header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;border-bottom:1px solid var(--line);padding-bottom:18px}
-        .brand{display:flex;align-items:center;gap:14px}
-        .brand img,.brand svg{filter:drop-shadow(0 4px 14px rgba(0,0,0,.45));transition:transform .3s var(--ease)}
-        .brand:hover img,.brand:hover svg{transform:scale(1.06) translateY(-1px)}
-        h1{margin:0;font-size:30px;line-height:1.08;font-weight:700;letter-spacing:-.035em;background:linear-gradient(180deg,#ffffff 0%,#b8b8bf 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:var(--title)}
-        .pill{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--line);backdrop-filter:blur(20px);color:var(--ink);font-weight:600;font-size:13px;letter-spacing:-.01em;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:all .25s var(--ease)}
-        .pill i{width:8px;height:8px;border-radius:50%;background:#30d158;box-shadow:0 0 10px rgba(48,209,88,.6)}
-        .pill.live i{background:#ff453a;box-shadow:0 0 12px rgba(255,69,58,.8);animation:pulseGlow 1.6s ease-in-out infinite}
-        .pill.busy i{background:#ffd60a;box-shadow:0 0 12px rgba(255,214,10,.7);animation:pulseGlow 1.6s ease-in-out infinite}
-        .pill.warn i{background:#ff9f0a;box-shadow:0 0 12px rgba(255,159,10,.7)}
-        nav{display:inline-flex;gap:4px;flex-wrap:wrap;padding:4px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid var(--line);align-self:flex-start;backdrop-filter:blur(20px)}
-        nav button{min-height:36px;padding:6px 18px;border-radius:10px;border:1px solid transparent;background:transparent;color:var(--muted);font:600 14px var(--font);letter-spacing:-.01em;cursor:pointer;transition:color .22s var(--ease),background .22s var(--ease),transform .16s var(--ease),box-shadow .22s var(--ease)}
+        .who{display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap;color:var(--muted);font-size:13px;font-weight:500;margin-top:var(--s1)}
+        .who select{min-height:30px;padding:3px var(--s3);font-size:13px;border-radius:999px;border:1px solid var(--line-strong);background:var(--bg-elevated);color:var(--ink);transition:border-color .2s var(--ease)}
+        .who select:hover{border-color:var(--brand)}
+        .who select option{color:#f5f5f7;background:#141419}
+        header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--s4);border-bottom:1px solid var(--line);padding-bottom:var(--s5)}
+        .brand{display:flex;align-items:center;gap:var(--s4)}
+        .brand img,.brand svg{transition:transform .25s var(--ease)}
+        .brand:hover img,.brand:hover svg{transform:scale(1.04)}
+        h1{margin:0;font-size:32px;line-height:1.1;font-weight:700;letter-spacing:-.03em;color:var(--title)}
+        .pill{display:inline-flex;align-items:center;gap:var(--s2);padding:7px var(--s4);border-radius:999px;background:var(--bg-elevated);border:1px solid var(--line);color:var(--ink);font-weight:600;font-size:13px;letter-spacing:-.01em;transition:border-color .2s var(--ease)}
+        .pill i{width:8px;height:8px;border-radius:50%;background:#30d158}
+        .pill.live i{background:#ff453a;animation:pulseGlow 1.6s ease-in-out infinite}
+        .pill.busy i{background:var(--brand);animation:pulseGlow 1.6s ease-in-out infinite}
+        .pill.warn i{background:#ff9f0a}
+        nav{display:inline-flex;gap:var(--s1);flex-wrap:wrap;padding:var(--s1);border-radius:12px;background:var(--bg-elevated);border:1px solid var(--line);align-self:flex-start}
+        nav button{min-height:36px;padding:6px var(--s4);border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font:600 14px var(--font);letter-spacing:-.01em;cursor:pointer;transition:color .2s var(--ease),background .2s var(--ease),transform .15s var(--ease)}
         nav button:hover{color:var(--ink);background:rgba(255,255,255,.05)}
-        nav button:active{transform:scale(.96)}
-        nav button.on{background:#ffffff;color:#050507;box-shadow:0 2px 10px rgba(255,255,255,.18),0 1px 2px rgba(0,0,0,.4)}
-        h2{margin:0 0 10px;font-size:20px;font-weight:700;letter-spacing:-.025em;color:var(--title)}
-        .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:14px}
-        .tile{position:relative;background:var(--card);backdrop-filter:blur(24px) saturate(180%);color:var(--cink);border:1px solid var(--line);border-radius:18px;padding:18px 20px;box-shadow:0 8px 28px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);transition:transform .28s var(--ease),border-color .28s var(--ease),box-shadow .28s var(--ease),background .28s var(--ease)}
-        .tile:hover{transform:translateY(-3px);border-color:var(--line-strong);background:rgba(28,28,34,.86);box-shadow:0 16px 36px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1)}
-        .tile .v{font-size:36px;font-weight:700;line-height:1.08;color:#ffffff;letter-spacing:-.035em}
-        .tile .l{font-size:13px;color:var(--cmuted);margin-top:4px;font-weight:500}
-        .tile.hero{background:linear-gradient(145deg,rgba(42,42,50,.92) 0%,rgba(18,18,22,.96) 100%);color:#ffffff;border:1px solid rgba(255,255,255,.22);box-shadow:0 14px 40px rgba(0,0,0,.55),0 0 40px rgba(255,255,255,.04),inset 0 1px 0 rgba(255,255,255,.18)}
-        .tile.hero:hover{border-color:rgba(255,255,255,.35);box-shadow:0 18px 46px rgba(0,0,0,.65),0 0 48px rgba(255,255,255,.07),inset 0 1px 0 rgba(255,255,255,.24)}
-        .editbtn{position:absolute;top:14px;right:14px;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#ffffff;cursor:pointer;display:grid;place-items:center;transition:all .2s var(--ease)}
-        .editbtn:hover{background:#ffffff;color:#050507;border-color:#ffffff;transform:scale(1.06)}
+        nav button:active{transform:scale(.97)}
+        nav button.on{background:var(--brand);color:var(--brand-ink)}
+        h2{margin:0 0 var(--s3);font-size:20px;line-height:1.25;font-weight:700;letter-spacing:-.02em;color:var(--title)}
+        .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:var(--s4)}
+        .tile{position:relative;background:var(--card);color:var(--cink);border:1px solid var(--line);border-radius:16px;padding:var(--s5);transition:transform .22s var(--ease),border-color .22s var(--ease)}
+        .tile:hover{transform:translateY(-2px);border-color:var(--line-strong)}
+        .tile .v{font-size:32px;font-weight:700;line-height:1.1;color:#ffffff;letter-spacing:-.03em;display:flex;align-items:center;gap:var(--s2)}
+        .tile .l{font-size:13px;color:var(--cmuted);margin-top:var(--s2);font-weight:500;line-height:1.4}
+        .tile.hero{background:var(--bg-elevated);color:#ffffff;border:1px solid rgba(245,158,11,.38);padding:var(--s6)}
+        .tile.hero:hover{border-color:var(--brand)}
+        .editbtn{position:absolute;top:var(--s4);right:var(--s4);width:34px;height:34px;padding:0;border-radius:10px;border:1px solid var(--line-strong);background:rgba(255,255,255,.05);color:#ffffff;cursor:pointer;display:grid;place-items:center;transition:all .2s var(--ease)}
+        .editbtn:hover{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
         .editbtn:active{transform:scale(.95)}
-        .editbtn:focus-visible{outline:2px solid #ffffff;outline-offset:2px}
-        dialog{width:min(540px,calc(100% - 32px));padding:24px 26px;border:1px solid var(--line-strong);border-radius:22px;background:rgba(20,20,24,.94);backdrop-filter:blur(32px) saturate(180%);color:var(--cink);box-shadow:0 28px 80px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.1);animation:modalIn .28s var(--ease) both}
-        dialog::backdrop{background:rgba(0,0,0,.68);backdrop-filter:blur(10px)}
-        .dhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+        .editbtn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+        dialog{width:min(540px,calc(100% - 32px));padding:var(--s6);border:1px solid var(--line-strong);border-radius:18px;background:var(--bg-elevated);color:var(--cink);box-shadow:0 24px 64px rgba(0,0,0,.7);animation:modalIn .24s var(--ease) both}
+        dialog::backdrop{background:rgba(0,0,0,.72)}
+        .dhead{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);margin-bottom:var(--s3)}
         .dhead h2{margin:0;color:#ffffff}
-        .dclose{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.07);color:var(--cink);font-size:20px;line-height:1;cursor:pointer;display:grid;place-items:center;transition:all .2s var(--ease)}
-        .dclose:hover{background:rgba(255,255,255,.16);transform:scale(1.06)}
-        .tile.hero .v{font-size:52px;background:linear-gradient(180deg,#ffffff 0%,#d1d1d6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#ffffff;margin:2px 0}
-        .tile.hero .l{color:#a1a1a6}
-        .card{background:var(--card);backdrop-filter:blur(24px) saturate(180%);color:var(--cink);border:1px solid var(--line);border-radius:18px;padding:18px 20px;box-shadow:0 8px 28px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.05);transition:border-color .25s var(--ease),box-shadow .25s var(--ease)}
-        .card:hover{border-color:rgba(255,255,255,.14)}
-        .row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}
+        .dclose{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--cink);cursor:pointer;display:grid;place-items:center;transition:all .2s var(--ease)}
+        .dclose:hover{background:rgba(255,255,255,.14)}
+        .tile.hero .v{font-size:52px;color:#ffffff;margin:var(--s1) 0}
+        .tile.hero .l{color:var(--cmuted)}
+        .card{background:var(--card);color:var(--cink);border:1px solid var(--line);border-radius:16px;padding:var(--s5);transition:border-color .2s var(--ease)}
+        .card:hover{border-color:var(--line-strong)}
+        .empty-state{display:flex;align-items:flex-start;gap:var(--s4);padding:var(--s6);text-align:left}
+        .empty-state .es-title{font-size:16px;font-weight:700;color:#ffffff;margin-bottom:var(--s1)}
+        .empty-state .es-body{font-size:14px;color:var(--cmuted);line-height:1.5}
+        .spin{width:20px;height:20px;flex:none;margin-top:2px;border:2.5px solid var(--line-strong);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
+        .row{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);padding:var(--s4) 0;border-bottom:1px solid var(--line)}
         .row:last-child{border-bottom:none}
-        .row .t{font-weight:600;color:#ffffff}.row .h{font-size:13px;color:var(--cmuted);margin-top:3px;line-height:1.45}
-        .actions{display:flex;flex-wrap:wrap;gap:10px}
-        button.b{min-height:38px;padding:8px 18px;border-radius:999px;border:1px solid var(--line-strong);background:rgba(255,255,255,.06);color:var(--cink);font:600 14px var(--font);letter-spacing:-.01em;cursor:pointer;transition:all .2s var(--ease)}
-        button.b:hover{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.28);transform:translateY(-1px)}
+        .row .t{font-size:15px;font-weight:600;color:#ffffff}.row .h{font-size:13px;color:var(--cmuted);margin-top:var(--s1);line-height:1.45}
+        .actions{display:flex;flex-wrap:wrap;gap:var(--s3)}
+        button.b{min-height:38px;padding:var(--s2) var(--s5);border-radius:10px;border:1px solid var(--line-strong);background:rgba(255,255,255,.05);color:var(--cink);font:600 14px var(--font);letter-spacing:-.01em;cursor:pointer;transition:all .18s var(--ease)}
+        button.b:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.28)}
         button.b:active{transform:scale(.97)}
-        button.b.main{background:#ffffff;color:#050507;border-color:#ffffff;box-shadow:0 4px 16px rgba(255,255,255,.16)}
-        button.b.main:hover{background:#e5e5ea;border-color:#e5e5ea;box-shadow:0 6px 22px rgba(255,255,255,.24)}
+        button.b.main{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+        button.b.main:hover{filter:brightness(1.08)}
         button.b.danger{border-color:rgba(255,69,58,.4);color:#ff453a;background:rgba(255,69,58,.08)}
         button.b.danger:hover{background:rgba(255,69,58,.18);border-color:#ff453a}
-        select,input[type=text],input[type=number]{min-height:38px;padding:6px 12px;border-radius:10px;border:1px solid var(--line-strong);background:rgba(255,255,255,.06);color:var(--cink);font:500 14px var(--font);transition:border-color .2s var(--ease),background .2s var(--ease),box-shadow .2s var(--ease)}
-        select:hover,input[type=text]:hover,input[type=number]:hover{border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.09)}
-        select:focus,input[type=text]:focus,input[type=number]:focus{outline:none;border-color:#ffffff;box-shadow:0 0 0 3px rgba(255,255,255,.15);background:rgba(255,255,255,.1)}
-        select option{background:#16161a;color:#f5f5f7}
+        select,input[type=text],input[type=number]{min-height:38px;padding:6px var(--s3);border-radius:10px;border:1px solid var(--line-strong);background:rgba(255,255,255,.05);color:var(--cink);font:500 14px var(--font);transition:border-color .18s var(--ease)}
+        select:hover,input[type=text]:hover,input[type=number]:hover{border-color:rgba(255,255,255,.28)}
+        select:focus,input[type=text]:focus,input[type=number]:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+        select option{background:#141419;color:#f5f5f7}
         input[type=text]{width:min(520px,100%)}
         .switch{position:relative;display:inline-block;width:50px;height:30px;flex:none;vertical-align:middle}
         .switch input{opacity:0;width:100%;height:100%;margin:0;cursor:pointer;position:absolute;z-index:1}
-        .switch span{position:absolute;inset:0;border-radius:999px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.08);transition:background .25s var(--ease),border-color .25s var(--ease)}
-        .switch span:after{content:"";position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#ffffff;box-shadow:0 2px 6px rgba(0,0,0,.45);transition:transform .25s var(--ease)}
-        .switch input:checked+span{background:var(--team);border-color:var(--team)}.switch input:checked+span:after{transform:translateX(20px)}
-        .switch input:focus-visible+span{outline:2px solid #ffffff;outline-offset:2px}
-        .badge{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:rgba(255,159,10,.15);border:1px solid rgba(255,159,10,.3);color:#ff9f0a;font-size:11px;font-weight:600;vertical-align:1px;cursor:help}
-        .log{font:13px/1.6 "SF Mono","Cascadia Mono",Consolas,monospace;max-height:260px;overflow:auto;white-space:pre-wrap;background:rgba(10,10,14,.85);border-color:var(--line)}
+        .switch span{position:absolute;inset:0;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.08);transition:background .22s var(--ease),border-color .22s var(--ease)}
+        .switch span:after{content:"";position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#ffffff;box-shadow:0 2px 6px rgba(0,0,0,.45);transition:transform .22s var(--ease)}
+        .switch input:checked+span{background:var(--brand);border-color:var(--brand)}.switch input:checked+span:after{transform:translateX(20px)}
+        .switch input:focus-visible+span{outline:2px solid var(--brand);outline-offset:2px}
+        .badge{display:inline-block;margin-left:6px;padding:2px var(--s2);border-radius:999px;background:var(--brand-soft);border:1px solid rgba(245,158,11,.35);color:var(--brand);font-size:11px;font-weight:600;vertical-align:1px;cursor:help}
+        .log{font:13px/1.6 "SF Mono","Cascadia Mono",Consolas,monospace;max-height:260px;overflow:auto;white-space:pre-wrap;background:#0f0f13;border-color:var(--line)}
         .log .err{color:#ff453a}.log .warn{color:#ffd60a}.log .ok{color:#30d158}.log .info{color:#64d2ff}.log .tre{color:#bf5af2}.log .mut{color:var(--cmuted)}
-        .bar{height:8px;background:var(--track);border-radius:999px;overflow:hidden;margin-top:10px}.bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ffffff,#a1a1a6,#ffffff);background-size:200% 100%;animation:barShimmer 2.2s linear infinite;transition:width .35s var(--ease)}
-        .path{font:13px "SF Mono","Cascadia Mono",Consolas,monospace;word-break:break-all;background:rgba(255,255,255,.05);border:1px solid var(--line);padding:8px 12px;border-radius:10px;display:block;margin:8px 0;color:#d1d1d6}
+        .bar{height:8px;background:var(--track);border-radius:999px;overflow:hidden;margin-top:var(--s3)}.bar i{display:block;height:100%;border-radius:999px;background:var(--brand);transition:width .35s var(--ease)}
+        .path{font:13px "SF Mono","Cascadia Mono",Consolas,monospace;word-break:break-all;background:rgba(255,255,255,.04);border:1px solid var(--line);padding:var(--s2) var(--s3);border-radius:10px;display:block;margin:var(--s2) 0;color:#d1d1d6}
         .note{font-size:13px;color:var(--muted)}
         .hidden{display:none!important}
-        footer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:13px}
-        .estimate{margin-top:10px;font-weight:600;color:#ffffff}
-        .mtotal{font-weight:600;margin-bottom:8px;color:#ffffff}
+        footer{display:flex;justify-content:space-between;align-items:center;gap:var(--s3);flex-wrap:wrap;border-top:1px solid var(--line);padding-top:var(--s4);color:var(--muted);font-size:13px}
+        .estimate{margin-top:var(--s3);font-weight:600;color:#ffffff}
+        .mtotal{font-weight:600;margin-bottom:var(--s2);color:#ffffff}
         .mweek{display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer}
         .mweek input{accent-color:#ffffff;width:16px;height:16px}
         .mweek b{white-space:nowrap;color:#ffffff}
@@ -302,8 +313,8 @@ public static class GuiPage
           <button type="button" id="wmin"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5.5h10" stroke="currentColor" stroke-width="1.1"/></svg></button>
           <button type="button" id="wmax"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><rect id="wmaxicon" x=".55" y=".55" width="8.9" height="8.9" fill="none" stroke="currentColor" stroke-width="1.1"/><path id="wresicon" d="M2.5 2.5V.55h6.95v6.95H7.5M.55 2.5h6.95v6.95H.55z" fill="none" stroke="currentColor" stroke-width="1.1" style="display:none"/></svg></button>
           <button type="button" id="wclose" class="x"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M.5.5l9 9M9.5.5l-9 9" stroke="currentColor" stroke-width="1.2"/></svg></button>
-        </div></div><div id="scroll"><main><div id="app"><p class="note">…</p></div><section id="activityPane" class="hidden"><h2 class="pirate"></h2><div class="card log"></div></section><section id="reportPane" class="hidden"><iframe id="rep" title="Report" scrolling="no"></iframe></section><div id="foot"></div></main></div>
-        <dialog id="dlg" aria-labelledby="dlgT"><div class="dhead"><h2 class="pirate" id="dlgT"></h2><button type="button" class="dclose" id="dlgX">×</button></div><div id="dlgB"></div></dialog>
+        </div></div><div id="scroll"><main><div id="app"><div class="card empty-state"><div class="spin" aria-hidden="true"></div><div><div class="es-title">Chest Counter</div><div class="es-body">Loading replays and match stats…</div></div></div></div><section id="activityPane" class="hidden"><h2 class="pirate"></h2><div class="card log"></div></section><section id="reportPane" class="hidden"><iframe id="rep" title="Report" scrolling="no"></iframe></section><div id="foot"></div></main></div>
+        <dialog id="dlg" aria-labelledby="dlgT"><div class="dhead"><h2 class="pirate" id="dlgT"></h2><button type="button" class="dclose" id="dlgX" aria-label="Close"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div><div id="dlgB"></div></dialog>
         <script>
         const TOKEN='__TOKEN__';let S=null,tab=(()=>{const h=location.hash.slice(1);if(['home','report','overlay','settings','help'].includes(h))return h;try{return localStorage.getItem('cc-gui-tab')||'home'}catch(e){return 'home'}})(),estimate=null,stopped=false,copied=false;
         const $=s=>document.querySelector(s);
@@ -375,7 +386,11 @@ public static class GuiPage
           f.src='/report?t='+TOKEN+'&v='+encodeURIComponent(repStamp);
         }
         // Messages of content.json (a known problem, a fix to install...): above every tab.
-        function notices(T){return (S.notices||[]).map(n=>`<div class="card notice ${n.level==='warning'?'warning':''}" role="${n.level==='warning'?'alert':'status'}"><span class="ni" aria-hidden="true">${n.level==='warning'?'!':'i'}</span><div class="nb">${n.title?`<div class="nt">${esc(n.title)}</div>`:''}<div class="nx">${esc(n.text)}</div>${n.link?`<div class="actions"><button class="b ${n.level==='warning'?'main':''}" data-link="${esc(n.link)}" onclick="window.open(this.dataset.link,'_blank','noopener,noreferrer')">${esc(T.moreInfo)}</button></div>`:''}</div>${n.level==='info'?`<button class="nclose" title="${esc(T.close)}" aria-label="${esc(T.close)}" data-id="${esc(n.id)}" onclick="api('dismissNotice',this.dataset.id)">×</button>`:''}</div>`).join('')}
+        const starIco=`<svg class="ico ico-lg" style="color:var(--brand)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+        const alertIco=`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+        const infoIco=`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`;
+        const xIco=`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
+        function notices(T){return (S.notices||[]).map(n=>`<div class="card notice ${n.level==='warning'?'warning':''}" role="${n.level==='warning'?'alert':'status'}"><span class="ni" aria-hidden="true">${n.level==='warning'?alertIco:infoIco}</span><div class="nb">${n.title?`<div class="nt">${esc(n.title)}</div>`:''}<div class="nx">${esc(n.text)}</div>${n.link?`<div class="actions"><button class="b ${n.level==='warning'?'main':''}" data-link="${esc(n.link)}" onclick="window.open(this.dataset.link,'_blank','noopener,noreferrer')">${esc(T.moreInfo)}</button></div>`:''}</div>${n.level==='info'?`<button class="nclose" title="${esc(T.close)}" aria-label="${esc(T.close)}" data-id="${esc(n.id)}" onclick="api('dismissNotice',this.dataset.id)">${xIco}</button>`:''}</div>`).join('')}
         function home(T){
           let h='';
           if(S.autoClose)h+=`<div class="card notice warning"><b>${esc(S.status.text)}</b><br>${esc(T.autoCloseText)}<div class="actions" style="margin-top:10px"><button class="b main" onclick="api('keepOpen')">${esc(T.keepOpen)}</button></div></div>`;
@@ -392,7 +407,8 @@ public static class GuiPage
             <div class="tile"><div class="v num">${esc(S.session)}</div><div class="l">${esc(T.session)} · ${esc(S.sessionMatches)} ${esc(T.matches)}</div></div>
             <div class="tile"><div class="v num">${esc(S.last?S.last.chests:'—')}</div><div class="l">${esc(T.last)}${S.last?'<br>'+esc(S.last.when)+' · '+esc(S.last.mode):''}</div></div>
             ${S.squad?`<div class="tile"><div class="v num">${esc(S.squad.total)}</div><div class="l">${esc(T.squad)}<span class="badge" title="${esc(T.inaccurateWhy)}">${esc(T.inaccurate)}</span><br>${esc(fmt(T.squadSub,S.squad.team))}</div></div>`:''}
-            <div class="tile"><div class="v num">★ ${esc(S.treasures)}</div><div class="l">${esc(T.treasures)} · ${esc(S.matches)} ${esc(T.matches)} · ${esc(fmt(T.perMatch,S.average))}</div></div></section>`;
+            <div class="tile"><div class="v num">${starIco}<span>${esc(S.treasures)}</span></div><div class="l">${esc(T.treasures)} · ${esc(S.matches)} ${esc(T.matches)} · ${esc(fmt(T.perMatch,S.average))}</div></div></section>`;
+          if(S.matches==='0'&&!S.firstRun)h+=`<div class="card empty-state"><div class="es-body"><div class="es-title">${esc(T.total)}</div>${esc(T.emptyMatches)}</div></div>`;
           h+=`<div class="actions"><button class="b main" onclick="setTab('report')">${esc(T.openReport)}</button>`;
           if(S.overlay.running)h+=`<button class="b" onclick="api('toggleOverlayVisible')">${esc(S.overlay.visible?T.hideOverlay:T.showOverlay)}</button><button class="b" onclick="api('toggleOverlayLock')">${esc(S.overlay.locked?T.unlock:T.lock)}</button>`;
           if(!S.update&&S.updatesOn)h+=`<button class="b" onclick="api('checkUpdate')">${esc(T.checkUpdate)}</button>`;

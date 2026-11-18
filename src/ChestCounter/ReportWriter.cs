@@ -127,64 +127,69 @@ public static class ReportWriter
     private const string Style = """
         :root{
           --bg:#060608;
+          --bg:#0b0b0e;
+          --bg-elevated:#141419;
           --ink:#f5f5f7;
           --ink2:#ffffff;
-          --muted:#86868b;
+          --muted:#8e8e93;
           --title:#ffffff;
-          --card:rgba(22,22,26,.78);
+          --card:#141419;
           --cink:#f5f5f7;
           --cmuted:#8e8e93;
           --line:rgba(255,255,255,.09);
           --line-strong:rgba(255,255,255,.18);
-          --track:rgba(255,255,255,.07);
-          --gold:#ffffff;
+          --track:rgba(255,255,255,.08);
+          --brand:#f59e0b;
+          --brand-ink:#0b0b0e;
+          --gold:#f59e0b;
           --star:#bf5af2;
           --team:#30d158;
           --warn:#ff453a;
           --warnbg:rgba(255,69,58,.10);
+          --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:20px;--s6:24px;--s8:32px;
           --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
           --ease:cubic-bezier(.16,1,.3,1);
         }
         *{box-sizing:border-box;-webkit-font-smoothing:antialiased}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(10px) scale(.992)}to{opacity:1;transform:translateY(0) scale(1)}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes barGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
-        @keyframes pulseBorder{0%,100%{box-shadow:inset 5px 0 0 #ff9f0a,0 8px 28px rgba(0,0,0,.35)}50%{box-shadow:inset 5px 0 0 #ffd60a,0 8px 32px rgba(255,159,10,.18)}}
+        @keyframes pulseBorder{0%,100%{box-shadow:inset 4px 0 0 #f59e0b}50%{box-shadow:inset 4px 0 0 #fbbf24}}
         body{
           margin:0;
-          background:radial-gradient(1100px 540px at 50% -180px,rgba(255,255,255,.07),transparent 70%),linear-gradient(180deg,#09090c 0%,#050507 100%);
-          background-attachment:fixed;
+          background:var(--bg);
           color:var(--ink);
-          font:400 15px/1.5 var(--font);
+          font:400 15px/1.55 var(--font);
           letter-spacing:-.011em;
+          text-align:left;
         }
-        main{max-width:1120px;margin:0 auto;padding:36px 20px 56px;display:flex;flex-direction:column;gap:28px;animation:fadeUp .42s var(--ease) both}
-        .pirate{font-family:var(--font);font-weight:700;letter-spacing:-.03em}
-        .num{font-family:var(--font);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.035em}
-        header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;border-bottom:1px solid var(--line);padding-bottom:18px}
-        .brand{display:flex;align-items:center;gap:14px}
-        h1{margin:0;font-size:38px;line-height:1.05;font-weight:700;letter-spacing:-.035em;background:linear-gradient(180deg,#ffffff 0%,#b8b8bf 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:var(--title)}
-        .who{font-size:14px;color:var(--muted);margin-top:4px}.who b{color:var(--ink2);font-weight:600}
+        main{max-width:1120px;margin:0 auto;padding:var(--s8) var(--s5) 56px;display:flex;flex-direction:column;gap:var(--s8);animation:fadeUp .38s var(--ease) both}
+        .pirate{font-family:var(--font);font-weight:700;letter-spacing:-.025em}
+        .num{font-family:var(--font);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+        header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--s4);border-bottom:1px solid var(--line);padding-bottom:var(--s5)}
+        .brand{display:flex;align-items:center;gap:var(--s4)}
+        h1{margin:0;font-size:34px;line-height:1.08;font-weight:700;letter-spacing:-.03em;color:var(--title)}
+        .who{font-size:14px;color:var(--muted);margin-top:var(--s1)}.who b{color:var(--ink2);font-weight:600}
         .muted{color:var(--muted)}
-        h2{margin:0 0 12px;font-size:22px;line-height:1.2;font-weight:700;letter-spacing:-.025em;color:var(--title)}
-        .tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
-        .tile{background:var(--card);backdrop-filter:blur(24px) saturate(180%);color:var(--cink);border:1px solid var(--line);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;box-shadow:0 8px 28px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);transition:transform .28s var(--ease),border-color .28s var(--ease),box-shadow .28s var(--ease),background .28s var(--ease)}
-        .tile:hover{transform:translateY(-3px);border-color:var(--line-strong);background:rgba(28,28,34,.86);box-shadow:0 16px 36px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1)}
-        .tile .v{font-size:34px;font-weight:700;line-height:1.08;color:#ffffff}
+        h2{margin:0 0 var(--s3);font-size:20px;line-height:1.25;font-weight:700;letter-spacing:-.02em;color:var(--title)}
+        .tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--s4)}
+        .tile{background:var(--card);color:var(--cink);border:1px solid var(--line);border-radius:16px;padding:var(--s4) var(--s5);display:flex;flex-direction:column;gap:var(--s1);transition:transform .22s var(--ease),border-color .22s var(--ease)}
+        .tile:hover{transform:translateY(-2px);border-color:var(--line-strong)}
+        .tile .v{font-size:32px;font-weight:700;line-height:1.1;color:#ffffff}
         .tile .l{font-size:13px;color:var(--cmuted);font-weight:500}
-        .tile .s{font-size:12px;color:var(--cmuted);margin-top:4px}
-        .tile.hero{position:relative;grid-column:span 2;background:linear-gradient(145deg,rgba(42,42,50,.92) 0%,rgba(18,18,22,.96) 100%);color:#ffffff;border:1px solid rgba(255,255,255,.22);justify-content:space-between;box-shadow:0 14px 40px rgba(0,0,0,.55),0 0 40px rgba(255,255,255,.04),inset 0 1px 0 rgba(255,255,255,.18)}
-        .tile.hero:hover{border-color:rgba(255,255,255,.35)}
-        .editbtn{display:none;position:absolute;top:14px;right:14px;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#ffffff;cursor:pointer;place-items:center;transition:all .2s var(--ease)}
-        .editbtn:hover{background:#ffffff;color:#050507;border-color:#ffffff;transform:scale(1.06)}
-        .editbtn:focus-visible{outline:2px solid #ffffff;outline-offset:2px}
+        .tile .s{font-size:12px;color:var(--cmuted);margin-top:var(--s1)}
+        .tile.hero{position:relative;grid-column:span 2;background:var(--bg-elevated);color:#ffffff;border:1px solid rgba(245,158,11,.38);padding:var(--s5) var(--s6);justify-content:space-between}
+        .tile.hero:hover{border-color:var(--brand)}
+        .editbtn{display:none;position:absolute;top:var(--s4);right:var(--s4);width:34px;height:34px;padding:0;border-radius:10px;border:1px solid var(--line-strong);background:rgba(255,255,255,.05);color:#ffffff;cursor:pointer;place-items:center;transition:all .2s var(--ease)}
+        .editbtn:hover{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+        .editbtn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
         html.incounter .editbtn{display:grid}
-        .tile.hero .k{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#a1a1a6}
-        .tile.hero .v{font-size:56px;background:linear-gradient(180deg,#ffffff 0%,#d1d1d6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:#ffffff;line-height:1}
-        .tile.hero .l{color:#a1a1a6}
+        .tile.hero .k{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--brand)}
+        .tile.hero .v{font-size:52px;color:#ffffff;line-height:1}
+        .tile.hero .l{color:var(--cmuted)}
         @media (max-width:820px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.tile.hero{grid-column:span 2}}
-        .card{background:var(--card);backdrop-filter:blur(24px) saturate(180%);color:var(--cink);border:1px solid var(--line);border-radius:18px;padding:8px 18px;overflow-x:auto;box-shadow:0 8px 28px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.05);transition:border-color .25s var(--ease)}
-        .card:hover{border-color:rgba(255,255,255,.14)}
+        .card{background:var(--card);color:var(--cink);border:1px solid var(--line);border-radius:16px;padding:var(--s2) var(--s5);overflow-x:auto;transition:border-color .2s var(--ease)}
+        .card:hover{border-color:var(--line-strong)}
         .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
         @media (max-width:820px){.two{grid-template-columns:1fr}}
         table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
@@ -542,7 +547,7 @@ public static class ReportWriter
         sb.Append($"<section><h2 class=\"pirate\">{L.T("D'où viennent tes trésors", "Where your treasures come from", "De dónde vienen tus tesoros")}</h2><div class=\"card\"><table>");
         if (treasureRows.Count == 0)
         {
-            sb.Append($"<tr><td class=\"items\">{L.T("Pas encore de trésor.", "No treasure yet.", "Todavía ningún tesoro.")}</td></tr>");
+            sb.Append($"<tr><td class=\"items\" style=\"padding:16px 8px\"><b>{L.T("Pas encore de trésor.", "No treasures pulled yet.", "Todavía ningún tesoro.")}</b><br>{L.T("Ouvre des coffres en jeu : chaque trésor trouvé apparaîtra ici avec sa source.", "Keep opening chests in-game — any treasure drops will appear here with their source.", "Sigue abriendo cofres en partida: los tesoros aparecerán aquí con su origen.")}</td></tr>");
         }
         foreach (var g in treasureRows.GroupBy(r => r.f.SourceLabel).OrderByDescending(g => g.Count()))
         {
@@ -1145,7 +1150,7 @@ public static class ReportWriter
               [].forEach.call(document.querySelectorAll('[data-kind]'),function(x){
                 var k=x.getAttribute('data-kind'),b=cur&&cur.b[k]>1?cur.b[k]:0,badge=x.querySelector('.boost'),line=x.querySelector('.sline'),pc=x.querySelector('.pc');
                 x.classList.toggle('boosted',!!b);
-                if(badge){badge.hidden=!b;badge.textContent=b?'⚡ ×'+b.toLocaleString(d.text.locale):''}
+                if(badge){badge.hidden=!b;badge.innerHTML=b?'<svg style="width:12px;height:12px;vertical-align:-2px;margin-right:3px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>×'+b.toLocaleString(d.text.locale):''}
                 if(line){
                   if(!line.hasAttribute('data-n'))line.setAttribute('data-n',line.innerHTML);
                   if(b){var one=d.odds[k]/b,p=+x.getAttribute('data-p'),s=d.text.boostPerChest.replace('{0}',f(one));
