@@ -185,7 +185,7 @@ if (previewPath != null)
         NativeOverlay.SetStyle(style);
         foreach (var (suffix, live, inProgress) in new[] { ("-idle", (MatchRecord?)null, false), ("-inprogress", null, true), ("-live", fakeLive, true) })
         {
-            NativeOverlay.Update(OverlayModel.Build(previewData, live, inProgress, config.ShowSquadTotal));
+            NativeOverlay.Update(OverlayModel.Build(previewData, live, inProgress, showSquad: false));
             Thread.Sleep(600);
             var name = Path.GetFileNameWithoutExtension(previewPath) + (style == "classic" ? "" : "-" + style) + suffix + ".png";
             var file = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(previewPath)) ?? ".", name);
@@ -994,7 +994,7 @@ object BuildGuiState()
         session = L.N(session.Sum(m => m.ChestsOpened)),
         sessionMatches = L.N(session.Count),
         last = last == null ? null : new { chests = L.N(last.ChestsOpened), when = L.DateTimeShort(L.Shown(last.MatchStartUtc ?? last.AnalyzedAtUtc)), mode = Pretty.Playlist(last.Playlist) },
-        squad = config.ShowSquadTotal && view.TeamChests > 0 ? new { total = L.N(view.SquadChests), team = L.N(view.TeamChests) } : null,
+        squad = (object?)null,
         treasures = L.N(matches.Sum(m => m.TreasureFinds.Count)),
         matches = L.N(matches.Count),
         average = matches.Count > 0 ? ((double)view.CountedChests / matches.Count).ToString("F1", L.Culture) : "0",
@@ -1248,7 +1248,7 @@ static bool AcquireInstance(Mutex m, TimeSpan wait)
 static void UpdateOverlay(Store store, Config config, TrackerData d, MatchRecord? live, bool inProgress)
 {
     ReportWriter.OverlayStyle = config.OverlayStyle;
-    var view = OverlayModel.Build(Profiles.View(d, config), live, inProgress, config.ShowSquadTotal);
+    var view = OverlayModel.Build(Profiles.View(d, config), live, inProgress, showSquad: false);
     ReportWriter.WriteOverlay(store, view);
     if (OperatingSystem.IsWindows() && NativeOverlay.IsRunning)
     {
