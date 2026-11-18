@@ -1,3 +1,7 @@
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.Drawing.Text;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -176,6 +180,12 @@ public static class NativeOverlay
             return false;
         }
         int w = r.Right - r.Left, h = r.Bottom - r.Top;
+        if (Keyed)
+        {
+            using var hudBmp = RenderHudBitmap(w, h);
+            hudBmp.Save(path, ImageFormat.Png);
+            return true;
+        }
         var screen = GetDC(IntPtr.Zero);
         var mem = CreateCompatibleDC(screen);
         var bmp = CreateCompatibleBitmap(screen, w, h);
@@ -445,16 +455,30 @@ public static class NativeOverlay
         var alpha = Alpha;
         var layered = effective || alpha < 255 || Keyed;
         var ex = (long)GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
-        ex = layered ? ex | WS_EX_LAYERED : ex & ~(long)WS_EX_LAYERED;
-        ex = effective ? ex | WS_EX_TRANSPARENT : ex & ~(long)WS_EX_TRANSPARENT;
-        SetWindowLongPtrW(hwnd, GWL_EXSTYLE, (IntPtr)ex);
-        if (layered)
+        if (Keyed)
         {
-            // Required for a layered window to be drawn; the key color makes the background of the game-like styles invisible.
-            SetLayeredWindowAttributes(hwnd, KeyColor, alpha, Keyed ? LWA_ALPHA | LWA_COLORKEY : LWA_ALPHA);
+            if ((ex & WS_EX_LAYERED) != 0)
+            {
+                SetWindowLongPtrW(hwnd, GWL_EXSTYLE, (IntPtr)(ex & ~(long)WS_EX_LAYERED));
+            }
+            ex |= WS_EX_LAYERED;
+            ex = effective ? ex | WS_EX_TRANSPARENT : ex & ~(long)WS_EX_TRANSPARENT;
+            SetWindowLongPtrW(hwnd, GWL_EXSTYLE, (IntPtr)ex);
+            SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+            UpdateHudLayeredWindow(hwnd);
         }
-        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-        InvalidateRect(hwnd, IntPtr.Zero, true);
+        else
+        {
+            ex = layered ? ex | WS_EX_LAYERED : ex & ~(long)WS_EX_LAYERED;
+            ex = effective ? ex | WS_EX_TRANSPARENT : ex & ~(long)WS_EX_TRANSPARENT;
+            SetWindowLongPtrW(hwnd, GWL_EXSTYLE, (IntPtr)ex);
+            if (layered)
+            {
+                SetLayeredWindowAttributes(hwnd, KeyColor, alpha, LWA_ALPHA);
+            }
+            SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+            InvalidateRect(hwnd, IntPtr.Zero, true);
+        }
 
         if (notify)
         {
@@ -671,8 +695,15 @@ public static class NativeOverlay
 
         if (repaint)
         {
-            InvalidateRect(hwnd, IntPtr.Zero, false);
-            UpdateWindow(hwnd);
+            if (Keyed)
+            {
+                UpdateHudLayeredWindow(hwnd);
+            }
+            else
+            {
+                InvalidateRect(hwnd, IntPtr.Zero, false);
+                UpdateWindow(hwnd);
+            }
         }
     }
 
@@ -681,7 +712,14 @@ public static class NativeOverlay
         var hdc = BeginPaint(hwnd, out var ps);
         try
         {
-            PaintTo(hwnd, hdc);
+            if (Keyed)
+            {
+                UpdateHudLayeredWindow(hwnd);
+            }
+            else
+            {
+                PaintTo(hwnd, hdc);
+            }
         }
         finally
         {
@@ -815,8 +853,7 @@ public static class NativeOverlay
         {
             ReleaseDC(hwnd, hdc);
         }
-        InvalidateRect(hwnd, IntPtr.Zero, true);
-        UpdateWindow(hwnd);
+        UpdateHudLayeredWindow(hwnd);
     }
 
     private static (int X, int Y, bool Moved) ClampOrPlaceUnderMinimap(IntPtr hwnd, int w, int h)
@@ -940,6 +977,236 @@ public static class NativeOverlay
         return labelRight - TextWidth(hdc, _fontHudSmall, label + Sep, out _);
     }
 
+    private static void UpdateHudLayeredWindow(IntPtr hwnd)
+    {
+        if (hwnd == IntPtr.Zero || !GetWindowRect(hwnd, out var wr))
+        {
+            return;
+        }
+        int w = wr.Right - wr.Left, h = wr.Bottom - wr.Top;
+        if (w <= 0 || h <= 0)
+        {
+            return;
+        }
+        using var bmp = RenderHudBitmap(w, h);
+        var screenDc = GetDC(IntPtr.Zero);
+        var memDc = CreateCompatibleDC(screenDc);
+        var hBitmap = bmp.GetHbitmap(Color.FromArgb(0));
+        var oldBmp = SelectObject(memDc, hBitmap);
+        try
+        {
+            var dst = new POINT { X = wr.Left, Y = wr.Top };
+            var src = new POINT { X = 0, Y = 0 };
+            var sz = new SIZE { cx = w, cy = h };
+            var blend = new BLENDFUNCTION
+            {
+                BlendOp = AC_SRC_OVER,
+                BlendFlags = 0,
+                SourceConstantAlpha = Alpha,
+                AlphaFormat = AC_SRC_ALPHA,
+            };
+            UpdateLayeredWindow(hwnd, screenDc, ref dst, ref sz, memDc, ref src, 0, ref blend, ULW_ALPHA);
+        }
+        finally
+        {
+            SelectObject(memDc, oldBmp);
+            DeleteObject(hBitmap);
+            DeleteDC(memDc);
+            ReleaseDC(IntPtr.Zero, screenDc);
+        }
+    }
+
+    private static Font CreateHudFont(string primary, float pixelSize, FontStyle style)
+    {
+        try
+        {
+            return new Font(primary, pixelSize, style, GraphicsUnit.Pixel);
+        }
+        catch
+        {
+            return new Font("Segoe UI", pixelSize, style, GraphicsUnit.Pixel);
+        }
+    }
+
+    private static Bitmap RenderHudBitmap(int w, int h)
+    {
+        var bmp = new Bitmap(Math.Max(1, w), Math.Max(1, h), PixelFormat.Format32bppPArgb);
+        using var g = Graphics.FromImage(bmp);
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+        g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+        g.PageUnit = GraphicsUnit.Pixel;
+        g.Clear(Color.Transparent);
+
+        var v = _displayView;
+        var pad = (float)Sc(8);
+        var right = w - pad - Sc(8);
+        var left = (float)_lockRect.Right;
+
+        if (!EffectiveLocked)
+        {
+            using var bgPath = RoundedRectPath(new RectangleF(0.5f, 0.5f, w - 1f, h - 1f), Sc(12));
+            using var bgBrush = new SolidBrush(Color.FromArgb(195, 14, 14, 18));
+            using var bgPen = new Pen(Color.FromArgb(75, 255, 255, 255), 1f);
+            g.FillPath(bgBrush, bgPath);
+            g.DrawPath(bgPen, bgPath);
+
+            using var lockFont = CreateHudFont("Segoe MDL2 Assets", Math.Max(12f, Sc(14)), FontStyle.Regular);
+            using var lockBrush = new SolidBrush(Color.FromArgb(229, 229, 234));
+            using var lockFmt = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+            g.DrawString("\uE785", lockFont, lockBrush, new RectangleF(_lockRect.Left, _lockRect.Top, _lockRect.Right - _lockRect.Left, _lockRect.Bottom - _lockRect.Top), lockFmt);
+        }
+
+        using var fontBig = CreateHudFont("Segoe UI Variable Display", Math.Max(18f, Sc(38)), FontStyle.Bold);
+        using var fontSmall = CreateHudFont("Segoe UI Variable Text", Math.Max(11f, Sc(16)), FontStyle.Bold);
+        using var rightFmt = new StringFormat(StringFormatFlags.NoWrap) { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
+
+        var white = Color.FromArgb(255, 255, 255, 255);
+        var muted = Color.FromArgb(230, 200, 204, 214);
+        var green = Color.FromArgb(255, 48, 209, 88);
+        var purple = Color.FromArgb(255, 218, 143, 255);
+
+        var state = StateRow(v);
+        var live = LiveFigures(v);
+        var y = pad;
+
+        var bigRect = new RectangleF(left, y, Math.Max(10f, right - left), _hudBigH);
+        var bigW = MeasureHudText(g, fontBig, v.Total);
+        DrawHudText(g, v.Total, fontBig, live ? green : white, bigRect, rightFmt, Math.Max(2.2f, Sc(3.0)));
+
+        var iw = (float)Sc(24);
+        var ih = (float)Sc(20);
+        var ix = right - bigW - Sc(8) - iw;
+        var iy = y + (_hudBigH - ih) / 2f;
+        DrawHudChest(g, ix, iy, iw, ih);
+
+        if (v.CurrentLive)
+        {
+            var d = (float)Sc(10);
+            var dx = ix - Sc(7) - d;
+            var dy = y + (_hudBigH - d) / 2f;
+            using var dotShadow = new SolidBrush(Color.FromArgb(160, 0, 0, 0));
+            using var dotBrush = new SolidBrush(Color.FromArgb(255, 255, 69, 58));
+            using var dotPen = new Pen(Color.FromArgb(220, 10, 12, 16), Math.Max(1.2f, Sc(1.5)));
+            g.FillEllipse(dotShadow, dx, dy + 1f, d, d);
+            g.FillEllipse(dotBrush, dx, dy, d, d);
+            g.DrawEllipse(dotPen, dx, dy, d, d);
+        }
+        y += _hudBigH + Sc(2);
+
+        var rowH = (float)_hudSmallH;
+        DrawHudLabelValue(g, fontSmall, state.Label, state.Value, left, right, y, rowH, muted, white);
+        y += rowH + Sc(2);
+        DrawHudLabelValue(g, fontSmall, L.T("Session", "Session", "Sesión"), v.Session, left, right, y, rowH, muted, white);
+        y += rowH + Sc(2);
+        if (v.Squad != null)
+        {
+            DrawHudLabelValue(g, fontSmall, OverlayModel.SquadLabel, v.Squad, left, right, y, rowH, muted, white);
+            y += rowH + Sc(2);
+        }
+
+        var tw = MeasureHudText(g, fontSmall, v.Treasures);
+        DrawHudText(g, v.Treasures, fontSmall, purple, new RectangleF(left, y, Math.Max(10f, right - left), rowH), rightFmt, Math.Max(1.6f, Sc(2.2)));
+        DrawHudStar(g, right - tw - Sc(12), y + rowH / 2f, Sc(7.5));
+
+        return bmp;
+    }
+
+    private static float MeasureHudText(Graphics g, Font font, string text)
+    {
+        using var fmt = new StringFormat(StringFormat.GenericTypographic) { FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.MeasureTrailingSpaces };
+        return g.MeasureString(text, font, 2000, fmt).Width;
+    }
+
+    private static void DrawHudLabelValue(Graphics g, Font font, string label, string value, float left, float right, float top, float height, Color labelColor, Color valueColor)
+    {
+        using var rightFmt = new StringFormat(StringFormatFlags.NoWrap) { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
+        var outline = Math.Max(1.6f, Sc(2.2));
+        if (string.IsNullOrEmpty(value))
+        {
+            DrawHudText(g, label, font, labelColor, new RectangleF(left, top, Math.Max(10f, right - left), height), rightFmt, outline);
+            return;
+        }
+        var valueW = MeasureHudText(g, font, value);
+        DrawHudText(g, value, font, valueColor, new RectangleF(left, top, Math.Max(10f, right - left), height), rightFmt, outline);
+        var labelRight = right - valueW - Sc(2);
+        DrawHudText(g, label + Sep, font, labelColor, new RectangleF(left, top, Math.Max(10f, labelRight - left), height), rightFmt, outline);
+    }
+
+    private static void DrawHudText(Graphics g, string text, Font font, Color fillColor, RectangleF rect, StringFormat fmt, float outlineWidth)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+        using var path = new GraphicsPath();
+        path.AddString(text, font.FontFamily, (int)font.Style, font.Size, rect, fmt);
+
+        using var shadowMatrix = new Matrix();
+        shadowMatrix.Translate(0f, Math.Max(1f, Sc(1.5)));
+        using var shadowPath = (GraphicsPath)path.Clone();
+        shadowPath.Transform(shadowMatrix);
+        using var shadowPen = new Pen(Color.FromArgb(115, 0, 0, 0), outlineWidth + 1.2f) { LineJoin = LineJoin.Round };
+        g.DrawPath(shadowPen, shadowPath);
+
+        using var outlinePen = new Pen(Color.FromArgb(205, 8, 10, 15), outlineWidth) { LineJoin = LineJoin.Round };
+        using var fillBrush = new SolidBrush(fillColor);
+        g.DrawPath(outlinePen, path);
+        g.FillPath(fillBrush, path);
+    }
+
+    private static GraphicsPath RoundedRectPath(RectangleF r, float radius)
+    {
+        var path = new GraphicsPath();
+        var d = Math.Min(radius * 2f, Math.Min(r.Width, r.Height));
+        path.AddArc(r.X, r.Y, d, d, 180, 90);
+        path.AddArc(r.Right - d, r.Y, d, d, 270, 90);
+        path.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90);
+        path.AddArc(r.X, r.Bottom - d, d, d, 90, 90);
+        path.CloseFigure();
+        return path;
+    }
+
+    private static void DrawHudChest(Graphics g, float x, float y, float w, float h)
+    {
+        var lidH = h * 0.42f;
+        using var outline = new Pen(Color.FromArgb(215, 8, 10, 15), Math.Max(1.4f, Sc(1.8))) { LineJoin = LineJoin.Round };
+        using var lidBrush = new SolidBrush(Color.FromArgb(255, 182, 186, 194));
+        using var bodyBrush = new SolidBrush(Color.FromArgb(255, 232, 234, 240));
+        using var latchBrush = new SolidBrush(Color.FromArgb(255, 22, 24, 30));
+
+        using var lidPath = new GraphicsPath();
+        lidPath.AddArc(x, y, w, lidH * 2f, 180, 180);
+        lidPath.CloseFigure();
+        g.FillPath(lidBrush, lidPath);
+        g.DrawPath(outline, lidPath);
+
+        using var bodyPath = RoundedRectPath(new RectangleF(x, y + lidH, w, h - lidH), Sc(3));
+        g.FillPath(bodyBrush, bodyPath);
+        g.DrawPath(outline, bodyPath);
+
+        var lw = Math.Max(3f, w / 5f);
+        var lh = Math.Max(4f, h / 4f);
+        g.FillRectangle(latchBrush, x + (w - lw) / 2f, y + lidH - Sc(1.5), lw, lh);
+    }
+
+    private static void DrawHudStar(Graphics g, float cx, float cy, float r)
+    {
+        var pts = new PointF[10];
+        for (var i = 0; i < 10; i++)
+        {
+            var a = -Math.PI / 2 + i * Math.PI / 5;
+            var rr = i % 2 == 0 ? r : r * 0.45;
+            pts[i] = new PointF(cx + (float)(rr * Math.Cos(a)), cy + (float)(rr * Math.Sin(a)));
+        }
+        using var path = new GraphicsPath();
+        path.AddPolygon(pts);
+        using var fill = new SolidBrush(Color.FromArgb(255, 191, 90, 242));
+        using var outline = new Pen(Color.FromArgb(215, 8, 10, 15), Math.Max(1.4f, Sc(1.8))) { LineJoin = LineJoin.Round };
+        g.FillPath(fill, path);
+        g.DrawPath(outline, path);
+    }
+
     private static void PaintStyled(IntPtr hwnd, IntPtr hdc)
     {
         GetClientRect(hwnd, out var rc);
@@ -1018,7 +1285,8 @@ public static class NativeOverlay
     private const int GWL_EXSTYLE = -20, HTCLIENT = 1;
     private const uint WM_SETCURSOR = 0x0020, WM_LBUTTONUP = 0x0202, WM_APP_LOCK = 0x8003, VK_L = 0x4C, SWP_FRAMECHANGED = 0x20;
     private static readonly IntPtr IDC_HAND = new(32649);
-    private const uint LWA_ALPHA = 0x2, LWA_COLORKEY = 0x1;
+    private const uint LWA_ALPHA = 0x2, LWA_COLORKEY = 0x1, ULW_ALPHA = 0x2;
+    private const byte AC_SRC_OVER = 0, AC_SRC_ALPHA = 1;
     private const int SW_HIDE = 0, SW_SHOWNOACTIVATE = 4;
     private const uint WM_DESTROY = 0x0002, WM_PAINT = 0x000F, WM_NCHITTEST = 0x0084, WM_NCRBUTTONUP = 0x00A5,
         WM_TIMER = 0x0113, WM_EXITSIZEMOVE = 0x0232, WM_DPICHANGED = 0x02E0, WM_APP_TOGGLE = 0x8001, WM_PRINTCLIENT = 0x0318, WM_APP_RELAYOUT = 0x8002, WM_HOTKEY = 0x0312, WM_APP_APPEARANCE = 0x8004, WM_APP_STOP = 0x8005;
@@ -1082,7 +1350,12 @@ public static class NativeOverlay
     [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
     [DllImport("user32.dll")] private static extern bool DestroyWindow(IntPtr hwnd);
     [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SIZE { public int cx, cy; }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct BLENDFUNCTION { public byte BlendOp, BlendFlags, SourceConstantAlpha, AlphaFormat; }
     [DllImport("user32.dll")] private static extern bool SetLayeredWindowAttributes(IntPtr hwnd, uint key, byte alpha, uint flags);
+    [DllImport("user32.dll", SetLastError = true)] private static extern bool UpdateLayeredWindow(IntPtr hwnd, IntPtr hdcDst, ref POINT pptDst, ref SIZE psize, IntPtr hdcSrc, ref POINT pptSrc, uint crKey, ref BLENDFUNCTION pblend, uint dwFlags);
     [DllImport("user32.dll")] private static extern int SetWindowRgn(IntPtr hwnd, IntPtr rgn, bool redraw);
     [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
     [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr hwnd, out RECT rect);
