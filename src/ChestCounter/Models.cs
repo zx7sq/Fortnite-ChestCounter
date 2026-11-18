@@ -172,8 +172,8 @@ public sealed class Config
     /// <summary>Zap mode: deletes UnsavedReplay-*.replay files after they have been counted to save disk space.</summary>
     public bool ZapMode { get; set; }
 
-    /// <summary>"prompt" (offer new versions), "auto" (install them) or "off" (never check GitHub).</summary>
-    public string UpdateMode { get; set; } = "prompt";
+    /// <summary>"auto" (install new versions on open), "prompt" (offer them) or "off" (never check GitHub).</summary>
+    public string UpdateMode { get; set; } = "auto";
 
     /// <summary>Times shown in "local" time (the PC's time zone) or in "utc".</summary>
     public string TimeZone { get; set; } = "local";

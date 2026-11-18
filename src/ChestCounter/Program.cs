@@ -350,11 +350,19 @@ if (config.UpdateMode != "off")
 {
     _ = Task.Run(async () =>
     {
-        var found = await Updater.CheckAsync();
-        if (found != null)
+        while (!Volatile.Read(ref quit) && Volatile.Read(ref update) == null)
         {
-            Volatile.Write(ref update, found);
-            wake.Set();
+            if (config.UpdateMode != "off")
+            {
+                var found = await Updater.CheckAsync();
+                if (found != null)
+                {
+                    Volatile.Write(ref update, found);
+                    wake.Set();
+                    break;
+                }
+            }
+            await Task.Delay(TimeSpan.FromMinutes(5));
         }
     });
 }
