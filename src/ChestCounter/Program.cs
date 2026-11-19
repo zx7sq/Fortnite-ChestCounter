@@ -287,6 +287,46 @@ if (config.ShowOverlay)
 if (OperatingSystem.IsWindows())
 {
     Updater.CleanupOld();
+    if (gui && !afterUpdate && config.UpdateMode == "auto" && AppInfo.ExePath is { } selfExe)
+    {
+        UpdateSplash.Show(L.T("Recherche de mises à jour…", "Checking for updates…", "Buscando actualizaciones…"));
+        try
+        {
+            var found = Updater.CheckAsync().GetAwaiter().GetResult();
+            if (found != null)
+            {
+                var ver = found.Version.ToString(3);
+                UpdateSplash.SetStatus(L.T($"Téléchargement de v{ver}…", $"Downloading v{ver}…", $"Descargando v{ver}…"), 0);
+                var err = Updater.Install(found, pct =>
+                    UpdateSplash.SetStatus(L.T($"Téléchargement de v{ver}… {pct} %", $"Downloading v{ver}… {pct}%", $"Descargando v{ver}… {pct}%"), pct));
+                if (err == null)
+                {
+                    UpdateSplash.SetStatus(L.T("Redémarrage…", "Restarting…", "Reiniciando…"), 100);
+                    Thread.Sleep(250);
+                    UpdateSplash.Close();
+                    var psi = new ProcessStartInfo(selfExe) { UseShellExecute = false };
+                    foreach (var a in args)
+                    {
+                        if (a != "--after-update") psi.ArgumentList.Add(a);
+                    }
+                    psi.ArgumentList.Add("--after-update");
+                    try { instance.ReleaseMutex(); } catch { }
+                    Process.Start(psi)?.Dispose();
+                    return 0;
+                }
+            }
+            else
+            {
+                UpdateSplash.SetStatus(L.T("À jour · Démarrage…", "Up to date · Starting…", "Al día · Iniciando…"), 100);
+                Thread.Sleep(250);
+            }
+        }
+        catch { }
+        finally
+        {
+            UpdateSplash.Close();
+        }
+    }
     if (config.StartWithFortnite)
     {
         FortniteWatch.Apply(true, dataDir); // follows the exe if it was moved or updated, and restarts the standby
@@ -775,14 +815,32 @@ void InstallUpdate(UpdateInfo u)
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine(L.T($"Téléchargement de la version {u.Version.ToString(3)}…", $"Downloading version {u.Version.ToString(3)}…", $"Descargando la versión {u.Version.ToString(3)}…"));
         Console.ResetColor();
-        var error = Updater.Install(u);
+        var ver = u.Version.ToString(3);
+        if (OperatingSystem.IsWindows() && gui)
+        {
+            UpdateSplash.Show(L.T($"Téléchargement de v{ver}…", $"Downloading v{ver}…", $"Descargando v{ver}…"));
+        }
+        var error = Updater.Install(u, pct =>
+        {
+            if (OperatingSystem.IsWindows() && gui)
+            {
+                UpdateSplash.SetStatus(L.T($"Téléchargement de v{ver}… {pct} %", $"Downloading v{ver}… {pct}%", $"Descargando v{ver}… {pct}%"), pct);
+            }
+        });
         if (error != null)
         {
+            if (OperatingSystem.IsWindows() && gui) UpdateSplash.Close();
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine(L.T($"Mise à jour impossible : {error}", $"Update failed: {error}", $"No se pudo actualizar: {error}"));
             Console.ResetColor();
             Console.WriteLine(L.T($"Tu peux la télécharger à la main : {u.PageUrl}", $"You can download it manually: {u.PageUrl}", $"Puedes descargarla a mano: {u.PageUrl}"));
             return;
+        }
+        if (OperatingSystem.IsWindows() && gui)
+        {
+            UpdateSplash.SetStatus(L.T("Redémarrage…", "Restarting…", "Reiniciando…"), 100);
+            Thread.Sleep(250);
+            UpdateSplash.Close();
         }
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine(L.T("Mise à jour installée : redémarrage du compteur…", "Update installed: restarting the counter…", "Actualización instalada: reiniciando el contador…"));

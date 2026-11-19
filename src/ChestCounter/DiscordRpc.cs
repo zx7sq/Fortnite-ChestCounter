@@ -18,6 +18,11 @@ public static class DiscordRpc
     private static long _lastAttemptMs;
     private static readonly long SessionStartUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
+    public static bool IsConnected
+    {
+        get { lock (Gate) return _pipe is { IsConnected: true }; }
+    }
+
     public static void Update(bool enabled, string? appId, string details, string state)
     {
         var id = appId?.Trim() ?? "";
@@ -35,7 +40,7 @@ public static class DiscordRpc
                 return;
             }
             var now = Environment.TickCount64;
-            if ((_pipe == null || !_pipe.IsConnected) && now - _lastAttemptMs < 15_000)
+            if ((_pipe == null || !_pipe.IsConnected) && now - _lastAttemptMs < 10_000)
             {
                 return;
             }
@@ -90,7 +95,7 @@ public static class DiscordRpc
                     nonce = Guid.NewGuid().ToString("N"),
                 });
                 WritePacket(_pipe, 1, frame);
-                DrainNonBlocking(_pipe);
+                ReadPacket(_pipe);
                 _lastPayloadKey = key;
             }
             catch
@@ -110,11 +115,15 @@ public static class DiscordRpc
             NamedPipeClientStream? pipe = null;
             try
             {
-                pipe = new NamedPipeClientStream(".", $"discord-ipc-{i}", PipeDirection.InOut, PipeOptions.Asynchronous);
-                pipe.Connect(120);
+                pipe = new NamedPipeClientStream(".", $"discord-ipc-{i}", PipeDirection.InOut);
+                pipe.Connect(800);
                 WritePacket(pipe, 0, JsonSerializer.Serialize(new { v = 1, client_id = appId }));
-                DrainNonBlocking(pipe);
-                return pipe;
+                var reply = ReadPacket(pipe);
+                if (reply != null && reply.Contains("\"READY\"", StringComparison.Ordinal))
+                {
+                    return pipe;
+                }
+                pipe.Dispose();
             }
             catch
             {
@@ -135,24 +144,17 @@ public static class DiscordRpc
         pipe.Flush();
     }
 
-    private static void DrainNonBlocking(NamedPipeClientStream pipe)
+    private static string? ReadPacket(NamedPipeClientStream pipe)
     {
-        // Read handshake/ack if ready within a short window without ever blocking the caller.
-        try
+        var header = new byte[8];
+        pipe.ReadExactly(header, 0, 8);
+        var len = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(4, 4));
+        if (len <= 0 || len > 131072)
         {
-            var header = new byte[8];
-            var readTask = pipe.ReadAsync(header, 0, 8);
-            if (!readTask.Wait(200) || readTask.Result < 8)
-            {
-                return;
-            }
-            var len = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(4, 4));
-            if (len is > 0 and < 65536)
-            {
-                var payload = new byte[len];
-                pipe.ReadAsync(payload, 0, len).Wait(200);
-            }
+            return null;
         }
-        catch { }
+        var payload = new byte[len];
+        pipe.ReadExactly(payload, 0, len);
+        return Encoding.UTF8.GetString(payload);
     }
 }

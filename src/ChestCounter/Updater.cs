@@ -170,7 +170,7 @@ public static class Updater
     private static Version Normalize(Version v) => new(v.Major, v.Minor, Math.Max(0, v.Build));
 
     /// <summary>Downloads and puts the new exe in place. Returns null when done, else the reason it failed.</summary>
-    public static string? Install(UpdateInfo update)
+    public static string? Install(UpdateInfo update, Action<int>? onProgress = null)
     {
         var exe = AppInfo.ExePath;
         if (exe == null)
@@ -185,7 +185,24 @@ public static class Updater
             using (var source = http.GetStreamAsync(update.AssetUrl).GetAwaiter().GetResult())
             using (var target = File.Create(download))
             {
-                source.CopyTo(target);
+                var buffer = new byte[65536];
+                long copied = 0;
+                var lastPct = -1;
+                int read;
+                while ((read = source.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    target.Write(buffer, 0, read);
+                    copied += read;
+                    if (update.Size > 0 && onProgress != null)
+                    {
+                        var pct = (int)Math.Clamp(copied * 100 / update.Size, 0, 100);
+                        if (pct != lastPct)
+                        {
+                            lastPct = pct;
+                            onProgress(pct);
+                        }
+                    }
+                }
             }
 
             var info = new FileInfo(download);
