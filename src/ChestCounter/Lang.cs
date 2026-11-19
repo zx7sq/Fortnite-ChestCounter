@@ -9,64 +9,34 @@ namespace ChestCounter;
 /// </summary>
 public static class L
 {
-    /// <summary>Languages offered, in menu order.</summary>
-    public static readonly string[] Codes = { "fr", "en", "es" };
+    public static readonly string[] Codes = { "en" };
 
-    /// <summary>"fr", "en" or "es".</summary>
-    public static string Code { get; private set; } = "fr";
+    public static string Code => "en";
 
-    public static bool En => Code == "en";
-    public static bool Es => Code == "es";
+    public static bool En => true;
+    public static bool Es => false;
 
-    public static CultureInfo Culture { get; private set; } = CultureInfo.GetCultureInfo("fr-FR");
+    public static CultureInfo Culture { get; } = CultureInfo.GetCultureInfo("en-GB");
 
-    public static void Set(string? code)
-    {
-        Code = Normalize(code) ?? "fr";
-        Culture = CultureInfo.GetCultureInfo(T("fr-FR", "en-GB", "es-ES"));
-    }
+    public static void Set(string? code) { }
 
-    /// <summary>"fr", "en", "es" or null when the answer is not recognized.</summary>
-    public static string? Normalize(string? code) => code?.Trim().ToLowerInvariant() switch
-    {
-        "fr" or "fra" or "fre" or "french" or "français" or "francais" or "francés" or "frances" => "fr",
-        "en" or "eng" or "english" or "anglais" or "inglés" or "ingles" => "en",
-        "es" or "spa" or "spanish" or "español" or "espanol" or "espagnol" => "es",
-        _ => null,
-    };
+    public static string? Normalize(string? code) => "en";
 
-    /// <summary>Name of a language in that language (menus).</summary>
-    public static string NativeName(string code) => code switch { "en" => "English", "es" => "Español", _ => "Français" };
+    public static string NativeName(string code) => "English";
 
-    /// <summary>Language of Windows when it is one of ours, English otherwise.</summary>
-    public static string SystemDefault => Normalize(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName) ?? "en";
+    public static string SystemDefault => "en";
 
-    public static string T(string fr, string en, string es) => Code switch { "en" => en, "es" => es, _ => fr };
+    public static string T(string fr, string en, string es) => en;
 
     public static string N(int n) => n.ToString("N0", Culture);
 
-    /// <summary>"3 coffres" / "3 chests" / "3 cofres" (regular plurals: + "s").</summary>
     public static string Count(int n, string fr, string en, string es) => Count(n, fr, fr + "s", en, en + "s", es, es + "s");
 
-    /// <summary>French: singular for 0 and 1. English and Spanish: singular for 1 only.</summary>
-    public static string Count(int n, string frOne, string frMany, string enOne, string enMany, string esOne, string esMany) => Code switch
-    {
-        "en" => $"{N(n)} {(n == 1 ? enOne : enMany)}",
-        "es" => $"{N(n)} {(n == 1 ? esOne : esMany)}",
-        _ => $"{N(n)} {(n > 1 ? frMany : frOne)}",
-    };
+    public static string Count(int n, string frOne, string frMany, string enOne, string enMany, string esOne, string esMany) =>
+        $"{N(n)} {(n == 1 ? enOne : enMany)}";
 
-    /// <summary>"12e" / "12th" / "12.º".</summary>
     public static string Ordinal(int n)
     {
-        if (Es)
-        {
-            return $"{n}.º";
-        }
-        if (!En)
-        {
-            return n == 1 ? "1er" : $"{n}e";
-        }
         var suffix = (n % 100) is 11 or 12 or 13 ? "th" : (n % 10) switch { 1 => "st", 2 => "nd", 3 => "rd", _ => "th" };
         return $"{n}{suffix}";
     }

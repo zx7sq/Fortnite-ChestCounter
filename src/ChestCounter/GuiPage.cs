@@ -448,7 +448,6 @@ public static class GuiPage
           if(S.autoClose)h+=`<div class="card notice warning"><b>${esc(S.status.text)}</b><br>${esc(T.autoCloseText)}<div class="actions" style="margin-top:10px"><button class="b main" onclick="api('keepOpen')">${esc(T.keepOpen)}</button></div></div>`;
           if(S.firstRun){const s=S.settings;h+=`<div class="card welcome"><h2 class="pirate">${esc(T.welcome)}</h2><p style="margin-top:0;color:#d1d1d6">${esc(T.welcomeText)}</p>
             <div class="t" style="font-weight:600;margin-top:14px;color:#ffffff">${esc(T.welcomeQuick)}</div>
-            ${row(esc(T.language),'',sel('language',s.language,s.languages))}
             ${row(esc(T.inGame),esc(T.inGameHelp),sw('wov',S.overlay.show,'showOverlay'))}
             ${s.windowed?row(esc(T.tray),esc(T.trayHelp),sw('wtr',s.minimizeToTray,'minimizeToTray')):''}
             <div class="actions" style="margin-top:12px"><button class="b main" onclick="api('dismissWelcome')">${esc(T.welcomeDone)}</button></div></div>`}
@@ -478,8 +477,7 @@ public static class GuiPage
         }
         function settings(T){
           const s=S.settings;
-          let h=`<div class="card">${row(esc(T.language),'',sel('language',s.language,s.languages))}
-            ${row(esc(T.times),esc(T.timesHelp),sel('timeZone',s.timeZone,[['local',fmt(T.timesLocal,s.localZone)],['utc',T.timesUtc]]))}
+          let h=`<div class="card">${row(esc(T.times),esc(T.timesHelp),sel('timeZone',s.timeZone,[['local',fmt(T.timesLocal,s.localZone)],['utc',T.timesUtc]]))}
             ${row(esc(T.clock),'',sel('clockFormat',s.clockFormat,[['auto',fmt(T.clockAuto,s.windowsClock==='24'?T.h24:T.h12)],['12',T.clock12],['24',T.clock24]]))}
             ${S.profiles.length>1?row(esc(T.profile),'',sel('profile',S.profileKey,S.profiles.map(p=>[p.key,p.name+' ('+p.matches+' · '+p.chests+')']))):''}
             ${s.windowed?row(esc(T.tray),esc(T.trayHelp),sw('tr',s.minimizeToTray,'minimizeToTray')):''}
