@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!-- Windows app: the standby process has no window; the tool opens its own console (NativeConsole). -->
     <OutputType>WinExe</OutputType>
-    <!-- Native Windows Forms desktop UI (no WebView2 / browser engine). -->
+    <!-- Windows Forms + WebView2: the window of the graphical interface (GuiWindow). -->
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <!-- Only ChestCounter.exe in the output: no documentation files of the packages next to it. -->
@@ -11,7 +11,7 @@
     <PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>
     <AssemblyName>ChestCounter</AssemblyName>
     <RootNamespace>ChestCounter</RootNamespace>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <InvariantGlobalization>false</InvariantGlobalization>
     <!-- Single-file publish: the parser discovers its types by reflection, so no trimming. -->
     <PublishTrimmed>false</PublishTrimmed>
@@ -24,6 +24,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\lib\FortniteReplayReader\FortniteReplayReader.csproj" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
   </ItemGroup>
   <ItemGroup>
     <!-- App chest icon for GUI and report headers -->

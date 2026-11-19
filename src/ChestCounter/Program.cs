@@ -422,23 +422,20 @@ object? lastGuiState = null;
 var welcome = firstRun;
 if (gui)
 {
+    guiServer = new GuiServer(GuiState, GuiAction, store.Folder, store.ReportPath, store.OverlayPath);
+    guiServer.Start();
     if (Environment.GetEnvironmentVariable("CHESTCOUNTER_GUI_URL_FILE") is { Length: > 0 } urlFile)
     {
-        guiServer = new GuiServer(GuiState, GuiAction, store.Folder, store.ReportPath, store.OverlayPath);
-        guiServer.Start();
         File.WriteAllText(urlFile, guiServer.Url); // development: the address is written instead of opening a window
     }
     else if (OperatingSystem.IsWindows() && GuiWindow.Available())
     {
-        // Pure native Windows desktop window (zero WebView2 / zero browser processes).
+        // The counter's own window: the close button asks before stopping it, minimizing goes to the taskbar or the tray.
         guiWindowed = true;
         GuiWindow.MinimizeToTray = config.MinimizeToTray;
-        GuiWindow.Start(
-            getState: () => System.Text.Json.JsonSerializer.SerializeToElement(GuiState()),
-            runAction: GuiAction,
-            reportPath: store.ReportPath,
-            title: $"{appName} {AppInfo.VersionText}",
-            startHidden: auto,
+        // CHESTCOUNTER_GUI_TAB (development): the tab the window opens on.
+        var startUrl = guiServer.Url + "&w=1" + (Environment.GetEnvironmentVariable("CHESTCOUNTER_GUI_TAB") is { Length: > 0 } startTab ? "#" + startTab : "");
+        GuiWindow.Start(startUrl, Path.Combine(store.Folder, "webview"), $"{appName} {AppInfo.VersionText}", startHidden: auto,
             quit: () => { quit = true; wake.Set(); },
             closeQuestion: () => L.T("Fermer le compteur de coffres ?\n\nTes prochaines parties ne seront comptées qu'à sa prochaine ouverture.",
                 "Close the chest counter?\n\nYour next matches will only be counted when it is opened again.",
@@ -452,9 +449,7 @@ if (gui)
     }
     else if (!auto)
     {
-        guiServer = new GuiServer(GuiState, GuiAction, store.Folder, store.ReportPath, store.OverlayPath);
-        guiServer.Start();
-        guiServer.Open();
+        guiServer.Open(); // no WebView2 on this PC: the page in a browser window
     }
 }
 
@@ -1237,18 +1232,6 @@ object BuildGuiState()
                 end = h.EndUtc.ToString("O"),
                 confirmed = h.Confirmed,
                 boosts = h.Boosts.Select(b => new { name = TreasureCatalog.KindName(b.Key), mult = b.Value }).ToList(),
-            })
-            .ToList(),
-        recentMatches = view.Matches
-            .OrderByDescending(m => m.MatchStartUtc ?? m.AnalyzedAtUtc)
-            .Take(30)
-            .Select(m => new
-            {
-                when = L.DateTimeShort(L.Shown(m.MatchStartUtc ?? m.AnalyzedAtUtc)),
-                mode = Pretty.Playlist(m.Playlist),
-                place = m.Placement is int pl ? (m.TotalPlayers is int tp ? $"#{pl}/{tp}" : $"#{pl}") : "—",
-                chests = L.N(m.ChestsOpened),
-                treasures = string.Join(", ", m.TreasureFinds.Select(f => f.DisplayName)),
             })
             .ToList(),
         reportStamp = File.Exists(store.ReportPath) ? File.GetLastWriteTimeUtc(store.ReportPath).Ticks.ToString() : "",
