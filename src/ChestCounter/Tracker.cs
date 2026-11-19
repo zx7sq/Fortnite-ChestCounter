@@ -187,7 +187,7 @@ public sealed class Tracker
                 Console.ResetColor();
             }
 
-            var outcome = Process(file);
+            var outcome = Process(file, deferSave: batch && (i + 1) % 5 != 0 && i + 1 < ready.Count);
             outcomes.Add(outcome);
             if (_liveFile == file.FullName)
             {
@@ -212,6 +212,7 @@ public sealed class Tracker
 
         if (batch)
         {
+            _store.SaveData(_data);
             bar!.Update(ready.Count);
             bar.Clear();
             ReportWriter.Progress = null;
@@ -280,7 +281,7 @@ public sealed class Tracker
         return stable && quietFor > QuietPeriod;
     }
 
-    private Outcome Process(FileInfo file)
+    private Outcome Process(FileInfo file, bool deferSave = false)
     {
         var key = FileKey(file);
 
@@ -289,7 +290,7 @@ public sealed class Tracker
         if (ReplayHeaderProbe.KeyMissing(file.FullName))
         {
             _data.ProcessedFiles[key] = "incomplete";
-            _store.SaveData(_data);
+            if (!deferSave) _store.SaveData(_data);
             return new Outcome(Skipped: L.T("replay incomplet (Fortnite s'est fermé pendant la partie) : cette partie ne peut pas être comptée",
                 "incomplete replay (Fortnite closed during the match): this match cannot be counted",
                 "repetición incompleta (Fortnite se cerró durante la partida): esta partida no se puede contar"));
@@ -305,7 +306,7 @@ public sealed class Tracker
             var message = (ex as AggregateException)?.InnerException?.Message ?? ex.Message;
             ErrorLog.Write($"Unreadable replay: {file.FullName} ({file.Length} bytes, {file.LastWriteTime:yyyy-MM-dd HH:mm:ss})", ex);
             _data.ProcessedFiles[key] = "error: " + message;
-            _store.SaveData(_data);
+            if (!deferSave) _store.SaveData(_data);
             return new Outcome(Error: $"{file.Name} : {message}");
         }
 
@@ -317,7 +318,7 @@ public sealed class Tracker
             // by an older version of the tool for this replay.
             _data.Matches.RemoveAll(m => m.SessionId == record.SessionId);
             _data.ProcessedFiles[key] = "autre mode: " + (record.Playlist ?? "?");
-            _store.SaveData(_data);
+            if (!deferSave) _store.SaveData(_data);
             return new Outcome(Skipped: L.T($"non comptée : {notCounted}", $"not counted: {notCounted}", $"no contada: {notCounted}"));
         }
 
@@ -325,7 +326,7 @@ public sealed class Tracker
         if (existing != null && existing.AnalyzerVersion >= record.AnalyzerVersion)
         {
             _data.ProcessedFiles[key] = record.SessionId;
-            _store.SaveData(_data);
+            if (!deferSave) _store.SaveData(_data);
             return new Outcome(Skipped: L.T("partie déjà comptée (même partie, fichier renommé)", "match already counted (same match, renamed file)", "partida ya contada (misma partida, archivo renombrado)"));
         }
 
@@ -338,7 +339,7 @@ public sealed class Tracker
 
         _data.Matches.Add(record);
         _data.ProcessedFiles[key] = record.SessionId;
-        _store.SaveData(_data);
+        if (!deferSave) _store.SaveData(_data);
         if (_liveFile == file.FullName)
         {
             ClearLive(); // the final analysis replaces the live estimate

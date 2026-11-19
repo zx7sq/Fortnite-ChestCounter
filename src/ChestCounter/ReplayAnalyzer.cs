@@ -832,10 +832,25 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
         var isRecorderTarget = recorderPs != null && targetPlayerStates.Contains(recorderPs.Value);
         var targetPawns = _pawnToPlayerState.Where(kv => targetPlayerStates.Contains(kv.Value)).Select(kv => kv.Key).ToHashSet();
 
+        // Pre-index tosses by Owner for O(1) lookup across ResolveOrphans and interactions.
+        var tossesByOwner = new Dictionary<uint, List<TossEvent>>();
+        foreach (var toss in _tosses)
+        {
+            if (toss.Owner is uint ownerId && ownerId != 0)
+            {
+                if (!tossesByOwner.TryGetValue(ownerId, out var list))
+                {
+                    list = new List<TossEvent>(4);
+                    tossesByOwner[ownerId] = list;
+                }
+                list.Add(toss);
+            }
+        }
+
         // --- Everything the target searched / interacted with ------------------------------------
         // A stale search of a stable container is real (old searches seen again were dropped, and the target was right
         // there: dormant ammo box, chest broken...). A stale search of a container without identity is not counted.
-        ResolveOrphans();
+        ResolveOrphans(tossesByOwner);
         var interactions = _searches
             .Where(s => s.SearcherPawn is uint p && targetPawns.Contains(p) && (!s.Stale || StableKey(s.ActorKey)))
             .OrderBy(s => s.Time)
@@ -853,14 +868,14 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
             }
 
             var lootEnd = search.Time + (search.Destroyed ? 3.0f : 1.0f);
-            var hasOwnerMatch = search.ActorId is uint cid && cid != 0
-                && _tosses.Any(t => t.Owner == cid && t.Time >= search.Time - 0.5f && t.Time <= lootEnd);
-            var items = _tosses
-                .Where(t => hasOwnerMatch
-                    ? t.Owner == search.ActorId && t.Time >= search.Time - 0.5f && t.Time <= lootEnd
-                    : t.Time >= search.Time - 0.25f && t.Time <= search.Time + 0.6f && (t.Owner == null || t.Owner == 0 || t.Owner == search.ActorId))
-                .Select(t => t.Item)
-                .ToList();
+            List<TossEvent>? ownerTosses = search.ActorId is uint cid && cid != 0 && tossesByOwner.TryGetValue(cid, out var ot) ? ot : null;
+            var hasOwnerMatch = ownerTosses != null && ownerTosses.Any(t => t.Time >= search.Time - 0.5f && t.Time <= lootEnd);
+            var items = hasOwnerMatch
+                ? ownerTosses!.Where(t => t.Time >= search.Time - 0.5f && t.Time <= lootEnd).Select(t => t.Item).ToList()
+                : _tosses
+                    .Where(t => t.Time >= search.Time - 0.25f && t.Time <= search.Time + 0.6f && (t.Owner == null || t.Owner == 0 || t.Owner == search.ActorId))
+                    .Select(t => t.Item)
+                    .ToList();
 
             chests.Add(new ChestRecord
             {
@@ -1200,7 +1215,7 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
     /// with the Gum-Gum Fruit). The loot is the chest's own for sure: the server makes the container the owner
     /// of the pickups it throws out, which also tells where a level placed chest stands.
     /// </summary>
-    private void ResolveOrphans()
+    private void ResolveOrphans(Dictionary<uint, List<TossEvent>> tossesByOwner)
     {
         foreach (var orphan in _orphans)
         {
@@ -1208,7 +1223,9 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
             var nearestDistance = 3500f;
             if (nearest == 0)
             {
-                var loot = _tosses.Where(x => x.Loc != null && x.Owner == orphan.Actor && Math.Abs(x.Time - orphan.Time) <= 3f).Select(x => x.Loc!.Value).ToList();
+                var loot = tossesByOwner.TryGetValue(orphan.Actor, out var owned)
+                    ? owned.Where(x => x.Loc != null && Math.Abs(x.Time - orphan.Time) <= 3f).Select(x => x.Loc!.Value).ToList()
+                    : new List<Pt>();
                 if (loot.Count == 0 && orphan.FallbackLoc is { } fallback)
                 {
                     loot.Add(fallback);

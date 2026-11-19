@@ -1088,6 +1088,34 @@ public static class NativeOverlay
         }
     }
 
+    private static double _cachedHudFontScale = -1;
+    private static Font? _cachedHudBigFont;
+    private static Font? _cachedHudSmallFont;
+    private static readonly StringFormat HudMeasureFmt = new(StringFormat.GenericTypographic)
+    {
+        FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.MeasureTrailingSpaces,
+    };
+    private static readonly StringFormat HudRightFmt = new(StringFormat.GenericTypographic)
+    {
+        Alignment = StringAlignment.Far,
+        LineAlignment = StringAlignment.Center,
+        FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.MeasureTrailingSpaces,
+    };
+    private static readonly SolidBrush HudShadowBrush = new(Color.FromArgb(145, 0, 0, 0));
+
+    private static (Font Big, Font Small) GetCachedHudFonts()
+    {
+        if (_cachedHudBigFont == null || _cachedHudSmallFont == null || Math.Abs(_cachedHudFontScale - _scale) > 0.001)
+        {
+            _cachedHudBigFont?.Dispose();
+            _cachedHudSmallFont?.Dispose();
+            _cachedHudBigFont = CreateHudFont(Math.Max(18f, Sc(38)), FontStyle.Bold);
+            _cachedHudSmallFont = CreateHudFont(Math.Max(11f, Sc(16)), FontStyle.Bold);
+            _cachedHudFontScale = _scale;
+        }
+        return (_cachedHudBigFont, _cachedHudSmallFont);
+    }
+
     private static Bitmap RenderHudBitmap(int w, int h)
     {
         EnsureHudAssets();
@@ -1119,14 +1147,7 @@ public static class NativeOverlay
             g.DrawString("\uE785", lockFont, lockBrush, new RectangleF(_lockRect.Left, _lockRect.Top, _lockRect.Right - _lockRect.Left, _lockRect.Bottom - _lockRect.Top), lockFmt);
         }
 
-        using var fontBig = CreateHudFont(Math.Max(18f, Sc(38)), FontStyle.Bold);
-        using var fontSmall = CreateHudFont(Math.Max(11f, Sc(16)), FontStyle.Bold);
-        using var rightFmt = new StringFormat(StringFormat.GenericTypographic)
-        {
-            Alignment = StringAlignment.Far,
-            LineAlignment = StringAlignment.Center,
-            FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.MeasureTrailingSpaces,
-        };
+        var (fontBig, fontSmall) = GetCachedHudFonts();
 
         var white = Color.FromArgb(255, 255, 255, 255);
         var muted = Color.FromArgb(230, 200, 204, 214);
@@ -1139,7 +1160,7 @@ public static class NativeOverlay
 
         var bigRect = new RectangleF(left, y, Math.Max(10f, right - left), _hudBigH);
         var bigW = MeasureHudText(g, fontBig, v.Total);
-        DrawHudText(g, v.Total, fontBig, live ? green : white, bigRect, rightFmt);
+        DrawHudText(g, v.Total, fontBig, live ? green : white, bigRect, HudRightFmt);
 
         var iw = (float)Sc(28);
         var ih = (float)Sc(28);
@@ -1159,9 +1180,8 @@ public static class NativeOverlay
             var d = (float)Sc(10);
             var dx = ix - Sc(8) - d;
             var dy = y + (_hudBigH - d) / 2f;
-            using var dotShadow = new SolidBrush(Color.FromArgb(140, 0, 0, 0));
             using var dotBrush = new SolidBrush(Color.FromArgb(255, 255, 69, 58));
-            g.FillEllipse(dotShadow, dx, dy + 1.5f, d, d);
+            g.FillEllipse(HudShadowBrush, dx, dy + 1.5f, d, d);
             g.FillEllipse(dotBrush, dx, dy, d, d);
         }
         y += _hudBigH + Sc(4);
@@ -1178,35 +1198,26 @@ public static class NativeOverlay
         }
 
         var tw = MeasureHudText(g, fontSmall, v.Treasures);
-        DrawHudText(g, v.Treasures, fontSmall, purple, new RectangleF(left, y, Math.Max(10f, right - left), rowH), rightFmt);
+        DrawHudText(g, v.Treasures, fontSmall, purple, new RectangleF(left, y, Math.Max(10f, right - left), rowH), HudRightFmt);
         DrawHudStar(g, right - tw - Sc(15), y + rowH / 2f, Sc(7));
 
         return bmp;
     }
 
-    private static float MeasureHudText(Graphics g, Font font, string text)
-    {
-        using var fmt = new StringFormat(StringFormat.GenericTypographic) { FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.MeasureTrailingSpaces };
-        return g.MeasureString(text, font, 2000, fmt).Width;
-    }
+    private static float MeasureHudText(Graphics g, Font font, string text) =>
+        g.MeasureString(text, font, 2000, HudMeasureFmt).Width;
 
     private static void DrawHudLabelValue(Graphics g, Font font, string label, string value, float left, float right, float top, float height, Color labelColor, Color valueColor)
     {
-        using var rightFmt = new StringFormat(StringFormat.GenericTypographic)
-        {
-            Alignment = StringAlignment.Far,
-            LineAlignment = StringAlignment.Center,
-            FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.MeasureTrailingSpaces,
-        };
         if (string.IsNullOrEmpty(value))
         {
-            DrawHudText(g, label, font, labelColor, new RectangleF(left, top, Math.Max(10f, right - left), height), rightFmt);
+            DrawHudText(g, label, font, labelColor, new RectangleF(left, top, Math.Max(10f, right - left), height), HudRightFmt);
             return;
         }
         var valueW = MeasureHudText(g, font, value);
-        DrawHudText(g, value, font, valueColor, new RectangleF(left, top, Math.Max(10f, right - left), height), rightFmt);
+        DrawHudText(g, value, font, valueColor, new RectangleF(left, top, Math.Max(10f, right - left), height), HudRightFmt);
         var labelRight = right - valueW - Sc(2);
-        DrawHudText(g, label + Sep, font, labelColor, new RectangleF(left, top, Math.Max(10f, labelRight - left), height), rightFmt);
+        DrawHudText(g, label + Sep, font, labelColor, new RectangleF(left, top, Math.Max(10f, labelRight - left), height), HudRightFmt);
     }
 
     private static void DrawHudText(Graphics g, string text, Font font, Color fillColor, RectangleF rect, StringFormat fmt)
@@ -1216,10 +1227,9 @@ public static class NativeOverlay
             return;
         }
         var dy = Math.Max(1.2f, Sc(1.6));
-        using var shadowBrush = new SolidBrush(Color.FromArgb(145, 0, 0, 0));
         using var fillBrush = new SolidBrush(fillColor);
         var shadowRect = new RectangleF(rect.X, rect.Y + dy, rect.Width, rect.Height);
-        g.DrawString(text, font, shadowBrush, shadowRect, fmt);
+        g.DrawString(text, font, HudShadowBrush, shadowRect, fmt);
         g.DrawString(text, font, fillBrush, rect, fmt);
     }
 

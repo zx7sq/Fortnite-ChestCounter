@@ -19,8 +19,17 @@ public static class FortniteWatch
     private static readonly string[] GameProcesses =
         { Environment.GetEnvironmentVariable("CHESTCOUNTER_GAME_PROCESS") is { Length: > 0 } test ? test : "FortniteClient-Win64-Shipping" };
 
+    private static long _lastCheckMs = -10_000;
+    private static bool _lastCheckResult;
+
     public static bool IsFortniteRunning()
     {
+        var now = Environment.TickCount64;
+        if (now - _lastCheckMs < 5_000)
+        {
+            return _lastCheckResult;
+        }
+        var running = false;
         foreach (var name in GameProcesses)
         {
             var found = Process.GetProcessesByName(name);
@@ -31,10 +40,13 @@ public static class FortniteWatch
             }
             if (any)
             {
-                return true;
+                running = true;
+                break;
             }
         }
-        return false;
+        _lastCheckResult = running;
+        _lastCheckMs = now;
+        return running;
     }
 
     /// <summary>
