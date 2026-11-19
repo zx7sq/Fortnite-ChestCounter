@@ -98,6 +98,14 @@ public static class GuiPage
         ["discordStatusHelp"] = L.T("Affiche ta session actuelle sur ton profil Discord (nécessite un ID d'application depuis discord.com/developers/applications).", "Shows your current session on your Discord profile (requires an Application ID from discord.com/developers/applications).", "Muestra tu sesión actual en tu perfil de Discord (requiere un ID de aplicación de discord.com/developers/applications)."),
         ["discordAppId"] = L.T("ID d'application Discord", "Discord Application ID", "ID de aplicación de Discord"),
         ["saveId"] = L.T("Enregistrer l'ID", "Save ID", "Guardar ID"),
+        ["treasureAlerts"] = L.T("Rappels des Heures du trésor", "Treasure Hour reminders", "Recordatorios de Horas del tesoro"),
+        ["treasureAlertsHelp"] = L.T("Alerte dans l'app et notification Windows 5 min avant chaque Heure du trésor, et rappel au lancement de Fortnite le jour même.", "Shows an in-app banner and Windows pop-up 5 minutes before each Treasure Hour, plus a reminder when you boot Fortnite on Treasure Hour days.", "Muestra un aviso en la app y notificación de Windows 5 min antes de cada Hora del tesoro, y un recordatorio al abrir Fortnite ese día."),
+        ["thTitle"] = L.T("Heures du trésor", "Treasure Hours", "Horas del tesoro"),
+        ["thLive"] = L.T("EN DIRECT", "LIVE NOW", "EN DIRECTO"),
+        ["thNext"] = L.T("Prochaine dans", "Next in", "Próxima en"),
+        ["thEnds"] = L.T("Se termine dans", "Ends in", "Termina en"),
+        ["thToday"] = L.T("Aujourd'hui", "Today", "Hoy"),
+        ["thLocal"] = L.T("Heures affichées dans ton fuseau horaire local", "Times shown in your local timezone", "Horas mostradas en tu zona horaria local"),
         ["updates"] = L.T("Mises à jour", "Updates", "Actualizaciones"),
         ["upPrompt"] = L.T("Proposées", "Offered", "Propuestas"),
         ["upAuto"] = L.T("Installées automatiquement", "Installed automatically", "Instaladas automáticamente"),
@@ -240,6 +248,22 @@ public static class GuiPage
         .empty-state{display:flex;align-items:flex-start;gap:var(--s4);padding:var(--s6);text-align:left}
         .empty-state .es-title{font-size:16px;font-weight:700;color:#ffffff;margin-bottom:var(--s1)}
         .empty-state .es-body{font-size:14px;color:var(--cmuted);line-height:1.5}
+        .th-alert{border-left:4px solid var(--brand);background:var(--bg-elevated)}
+        .th-card{display:flex;flex-direction:column;gap:var(--s4);border-color:rgba(245,158,11,.28)}
+        .th-head{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);flex-wrap:wrap}
+        .th-title{display:flex;align-items:center;gap:var(--s2);font-size:17px;font-weight:700;color:#ffffff;margin:0}
+        .th-cd{display:inline-flex;align-items:center;gap:var(--s2);padding:5px var(--s3);border-radius:999px;background:var(--brand-soft);border:1px solid rgba(245,158,11,.35);color:var(--brand);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+        .th-cd.live{background:rgba(48,209,88,.15);border-color:rgba(48,209,88,.4);color:#30d158}
+        .th-boosts{display:flex;flex-wrap:wrap;gap:var(--s2)}
+        .th-boost{font-size:12px;font-weight:600;color:#f5f5f7;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+        .th-boost b{color:var(--brand)}
+        .th-list{display:flex;flex-direction:column}
+        .th-row{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+        .th-row .th-when{color:#ffffff;font-weight:600}
+        .th-row .th-time{color:var(--cmuted);font-variant-numeric:tabular-nums}
+        .th-pill{display:inline-block;margin-left:var(--s2);padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:var(--brand-soft);color:var(--brand)}
+        .th-pill.live{background:rgba(48,209,88,.18);color:#30d158}
+        .th-foot{font-size:12px;color:var(--cmuted)}
         .spin{width:20px;height:20px;flex:none;margin-top:2px;border:2.5px solid var(--line-strong);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
         .row{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);padding:var(--s4) 0;border-bottom:1px solid var(--line)}
         .row:last-child{border-bottom:none}
@@ -394,7 +418,31 @@ public static class GuiPage
         const alertIco=`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
         const infoIco=`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`;
         const xIco=`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
-        function notices(T){return (S.notices||[]).map(n=>`<div class="card notice ${n.level==='warning'?'warning':''}" role="${n.level==='warning'?'alert':'status'}"><span class="ni" aria-hidden="true">${n.level==='warning'?alertIco:infoIco}</span><div class="nb">${n.title?`<div class="nt">${esc(n.title)}</div>`:''}<div class="nx">${esc(n.text)}</div>${n.link?`<div class="actions"><button class="b ${n.level==='warning'?'main':''}" data-link="${esc(n.link)}" onclick="window.open(this.dataset.link,'_blank','noopener,noreferrer')">${esc(T.moreInfo)}</button></div>`:''}</div>${n.level==='info'?`<button class="nclose" title="${esc(T.close)}" aria-label="${esc(T.close)}" data-id="${esc(n.id)}" onclick="api('dismissNotice',this.dataset.id)">${xIco}</button>`:''}</div>`).join('')}
+        const bellIco=`<svg class="ico" style="color:var(--brand)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>`;
+        const zapIco=`<svg class="ico" style="color:var(--brand)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
+        function notices(T){
+          let out='';
+          if(S.treasureAlert){const a=S.treasureAlert;out+=`<div class="card notice th-alert" role="alert"><span class="ni" aria-hidden="true">${bellIco}</span><div class="nb"><div class="nt">${esc(a.title)}</div><div class="nx">${esc(a.text)}</div></div><button class="nclose" title="${esc(T.close)}" aria-label="${esc(T.close)}" data-id="${esc(a.id)}" onclick="api('dismissTreasureAlert',this.dataset.id)">${xIco}</button></div>`;}
+          out+=(S.notices||[]).map(n=>`<div class="card notice ${n.level==='warning'?'warning':''}" role="${n.level==='warning'?'alert':'status'}"><span class="ni" aria-hidden="true">${n.level==='warning'?alertIco:infoIco}</span><div class="nb">${n.title?`<div class="nt">${esc(n.title)}</div>`:''}<div class="nx">${esc(n.text)}</div>${n.link?`<div class="actions"><button class="b ${n.level==='warning'?'main':''}" data-link="${esc(n.link)}" onclick="window.open(this.dataset.link,'_blank','noopener,noreferrer')">${esc(T.moreInfo)}</button></div>`:''}</div>${n.level==='info'?`<button class="nclose" title="${esc(T.close)}" aria-label="${esc(T.close)}" data-id="${esc(n.id)}" onclick="api('dismissNotice',this.dataset.id)">${xIco}</button>`:''}</div>`).join('');
+          return out;
+        }
+        function fmtCd(ms){if(ms<=0)return '0m';const s=Math.floor(ms/1000),d=Math.floor(s/86400),h=Math.floor((s%86400)/3600),m=Math.floor((s%3600)/60),sec=s%60;if(d>0)return `${d}d ${h}h ${m}m`;if(h>0)return `${h}h ${m}m`;return `${m}m ${sec}s`;}
+        function treasureHoursCard(T){
+          const list=S.treasureHours||[];if(!list.length)return '';
+          const now=Date.now(),first=list[0],s0=Date.parse(first.start),e0=Date.parse(first.end),live=now>=s0&&now<e0;
+          const dayFmt=new Intl.DateTimeFormat(undefined,{weekday:'short',month:'short',day:'numeric'});
+          const timeFmt=new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit'});
+          const todayKey=new Date(now).toDateString();
+          const boosts=(first.boosts||[]).map(b=>`<span class="th-boost">${esc(b.name)} <b>×${esc(b.mult)}</b></span>`).join('');
+          const rows=list.map(x=>{
+            const sd=new Date(x.start),ed=new Date(x.end),isLive=now>=sd.getTime()&&now<ed.getTime(),isToday=sd.toDateString()===todayKey;
+            const pill=isLive?`<span class="th-pill live">${esc(T.thLive)}</span>`:(isToday?`<span class="th-pill">${esc(T.thToday)}</span>`:'');
+            return `<div class="th-row"><span class="th-when">${esc(dayFmt.format(sd))}${pill}</span><span class="th-time">${esc(timeFmt.format(sd))} – ${esc(timeFmt.format(ed))}</span></div>`;
+          }).join('');
+          const cdText=live?`${esc(T.thEnds)} ${fmtCd(e0-now)}`:`${esc(T.thNext)} ${fmtCd(s0-now)}`;
+          return `<section class="card th-card"><div class="th-head"><h2 class="th-title">${zapIco}<span>${esc(T.thTitle)}</span></h2><span class="th-cd ${live?'live':''}" id="thCd" data-start="${esc(first.start)}" data-end="${esc(first.end)}">${cdText}</span></div>${boosts?`<div class="th-boosts">${boosts}</div>`:''}<div class="th-list">${rows}</div><div class="th-foot">${esc(T.thLocal)}</div></section>`;
+        }
+        setInterval(()=>{const el=$('#thCd');if(!el||!S)return;const T=S.txt,now=Date.now(),s=Date.parse(el.dataset.start),e=Date.parse(el.dataset.end),live=now>=s&&now<e;el.classList.toggle('live',live);el.textContent=live?`${T.thEnds} ${fmtCd(e-now)}`:`${T.thNext} ${fmtCd(s-now)}`;},1000);
         function home(T){
           let h='';
           if(S.autoClose)h+=`<div class="card notice warning"><b>${esc(S.status.text)}</b><br>${esc(T.autoCloseText)}<div class="actions" style="margin-top:10px"><button class="b main" onclick="api('keepOpen')">${esc(T.keepOpen)}</button></div></div>`;
@@ -416,6 +464,7 @@ public static class GuiPage
           if(S.overlay.running)h+=`<button class="b" onclick="api('toggleOverlayVisible')">${esc(S.overlay.visible?T.hideOverlay:T.showOverlay)}</button><button class="b" onclick="api('toggleOverlayLock')">${esc(S.overlay.locked?T.unlock:T.lock)}</button>`;
           if(!S.update&&S.updatesOn)h+=`<button class="b" onclick="api('checkUpdate')">${esc(T.checkUpdate)}</button>`;
           h+='</div>';
+          h+=treasureHoursCard(T);
           return h;
         }
         function overlay(T){
@@ -436,6 +485,7 @@ public static class GuiPage
             ${s.windowed?row(esc(T.tray),esc(T.trayHelp),sw('tr',s.minimizeToTray,'minimizeToTray')):''}
             ${s.canStartWithFortnite?row(esc(T.withFortnite),esc(T.withFortniteHelp),sw('wf',s.startWithFortnite,'startWithFortnite')):''}
             ${row(esc(T.zapMode),esc(T.zapModeHelp),sw('zm',s.zapMode,'zapMode'))}
+            ${row(esc(T.treasureAlerts),esc(T.treasureAlertsHelp),sw('tha',s.treasureHourAlerts,'treasureHourAlerts'))}
             ${row(esc(T.discordStatus),esc(T.discordStatusHelp),sw('drpc',s.discordPresence,'discordPresence'))}
             ${s.discordPresence?`<div class="row"><div style="flex:1"><div class="t">${esc(T.discordAppId)}</div><div class="actions" style="margin-top:6px"><input type="text" id="discordAppId" placeholder="1234567890123456789" value="${esc(s.discordAppId||'')}"><button class="b" onclick="api('discordAppId',$('#discordAppId').value)">${esc(T.saveId)}</button></div></div></div>`:''}
             ${row(esc(T.updates),'',sel('updateMode',s.updateMode,[['prompt',T.upPrompt],['auto',T.upAuto],['off',T.upOff]]))}

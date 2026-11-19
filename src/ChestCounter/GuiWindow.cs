@@ -360,6 +360,51 @@ public static class GuiWindow
         if (form.InvokeRequired) form.BeginInvoke(Show); else Show();
     }
 
+    /// <summary>Shows a native Windows notification pop-up (tray balloon / Action Center toast) and plays a subtle chime.</summary>
+    public static void ShowNotification(string title, string message)
+    {
+        var form = _form;
+        if (form == null || form.IsDisposed)
+        {
+            return;
+        }
+        try
+        {
+            form.BeginInvoke(() =>
+            {
+                if (_tray == null)
+                {
+                    return;
+                }
+                var wasVisible = _tray.Visible;
+                if (!wasVisible)
+                {
+                    _tray.Visible = true;
+                }
+                _tray.BalloonTipTitle = title;
+                _tray.BalloonTipText = message;
+                _tray.BalloonTipIcon = ToolTipIcon.Info;
+                _tray.ShowBalloonTip(8000);
+                try { System.Media.SystemSounds.Exclamation.Play(); } catch { }
+                if (!wasVisible)
+                {
+                    var hideTimer = new System.Windows.Forms.Timer { Interval = 10_000 };
+                    hideTimer.Tick += (_, _) =>
+                    {
+                        hideTimer.Stop();
+                        hideTimer.Dispose();
+                        if (_tray != null && _form is { Visible: true })
+                        {
+                            _tray.Visible = false;
+                        }
+                    };
+                    hideTimer.Start();
+                }
+            });
+        }
+        catch { }
+    }
+
     /// <summary>The counter stops: the window closes without asking.</summary>
     public static void Close()
     {

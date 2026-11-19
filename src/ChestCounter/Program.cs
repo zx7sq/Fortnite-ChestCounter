@@ -232,6 +232,12 @@ var quit = false;
 var restart = false;
 var replaysHintShown = false;     // "no replay recorded" said once
 DateTime? fortniteSeenAt = null;  // when Fortnite was first seen running this session
+var notifiedTreasureHours = new HashSet<string>();
+DateOnly? remindedTreasureDay = null;
+var wasFortniteRunningForAlerts = false;
+var lastTreasureAlertCheck = DateTime.MinValue;
+(string Id, string Kind, string Title, string Text)? activeTreasureAlert = null;
+string? dismissedTreasureAlertId = null;
 var startedAt = DateTime.UtcNow;
 var uninstalled = false;      // "uninstall": a script deletes the exe once the counter has quit
 var wake = new AutoResetEvent(false);
@@ -499,6 +505,7 @@ while (!quit)
     {
         CheckAutoClose();
     }
+    CheckTreasureHourAlerts();
 
     // A new treasure week (Sunday): the chances of the weekly treasures start again from that week's chests, even for
     // a counter left open with no match played.
@@ -860,6 +867,116 @@ void CheckReplaysRecorded()
     Console.ResetColor();
 }
 
+void CheckTreasureHourAlerts()
+{
+    var now = DateTime.UtcNow;
+    if ((now - lastTreasureAlertCheck).TotalSeconds < 15)
+    {
+        return;
+    }
+    lastTreasureAlertCheck = now;
+
+    var hours = TreasureCatalog.TreasureHours;
+    if (hours.Count == 0)
+    {
+        return;
+    }
+
+    static string LocalRange(TreasureHour h)
+    {
+        var s = h.StartUtc.ToLocalTime();
+        var e = h.EndUtc.ToLocalTime();
+        return $"{s:t} – {e:t}";
+    }
+
+    static string BoostSummary(TreasureHour h) =>
+        string.Join(", ", h.Boosts.Select(b => $"{TreasureCatalog.KindName(b.Key)} ×{b.Value:0.#}"));
+
+    // 1. 5-minute warning and LIVE alert for upcoming / active Treasure Hours.
+    var liveOrSoon = false;
+    foreach (var h in hours)
+    {
+        if (now >= h.StartUtc && now < h.EndUtc)
+        {
+            liveOrSoon = true;
+            var id = $"live:{h.StartUtc:O}";
+            var title = L.T("Heure du trésor EN DIRECT !", "Treasure Hour is LIVE!", "¡Hora del tesoro EN DIRECTO!");
+            var text = L.T(
+                $"En cours jusqu'à {h.EndUtc.ToLocalTime():t} · {BoostSummary(h)}",
+                $"Live now until {h.EndUtc.ToLocalTime():t} · {BoostSummary(h)}",
+                $"En directo hasta las {h.EndUtc.ToLocalTime():t} · {BoostSummary(h)}");
+            activeTreasureAlert = (id, "live", title, text);
+            if (config.TreasureHourAlerts && notifiedTreasureHours.Add(id))
+            {
+                Console.WriteLine($"★ {title} {text}");
+                if (OperatingSystem.IsWindows()) GuiWindow.ShowNotification(title, text);
+            }
+            break;
+        }
+        if (now < h.StartUtc && h.StartUtc - now <= TimeSpan.FromMinutes(5))
+        {
+            liveOrSoon = true;
+            var mins = Math.Max(1, (int)Math.Ceiling((h.StartUtc - now).TotalMinutes));
+            var id = $"soon:{h.StartUtc:O}";
+            var title = L.T($"Heure du trésor dans {mins} min !", $"Treasure Hour in {mins} min!", $"¡Hora del tesoro en {mins} min!");
+            var text = L.T(
+                $"{LocalRange(h)} · {BoostSummary(h)}",
+                $"{LocalRange(h)} · {BoostSummary(h)}",
+                $"{LocalRange(h)} · {BoostSummary(h)}");
+            activeTreasureAlert = (id, "soon", title, text);
+            if (config.TreasureHourAlerts && notifiedTreasureHours.Add(id))
+            {
+                Console.WriteLine($"★ {title} {text}");
+                if (OperatingSystem.IsWindows()) GuiWindow.ShowNotification(title, text);
+            }
+            break;
+        }
+    }
+
+    // 2. When Fortnite boots up on a Treasure Hour day, remind the player of today's windows.
+    if (OperatingSystem.IsWindows())
+    {
+        var fnRunning = FortniteWatch.IsFortniteRunning();
+        var justBooted = fnRunning && !wasFortniteRunningForAlerts;
+        wasFortniteRunningForAlerts = fnRunning;
+
+        var todayLocal = DateOnly.FromDateTime(DateTime.Now);
+        if ((justBooted || fnRunning) && remindedTreasureDay != todayLocal)
+        {
+            var todays = hours
+                .Where(h => DateOnly.FromDateTime(h.StartUtc.ToLocalTime()) == todayLocal && h.EndUtc > now)
+                .OrderBy(h => h.StartUtc)
+                .ToList();
+            if (todays.Count > 0)
+            {
+                remindedTreasureDay = todayLocal;
+                var times = string.Join(" & ", todays.Select(LocalRange));
+                var id = $"today:{todayLocal:yyyy-MM-dd}";
+                var title = L.T("Heures du trésor aujourd'hui !", "Treasure Hours Today!", "¡Horas del tesoro hoy!");
+                var text = L.T(
+                    $"Aujourd'hui : {times} · cotes boostées sur les coffres !",
+                    $"Today's windows: {times} · boosted chest odds!",
+                    $"Hoy: {times} · ¡probabilidades aumentadas en cofres!");
+                if (!liveOrSoon)
+                {
+                    activeTreasureAlert = (id, "today", title, text);
+                }
+                if (config.TreasureHourAlerts && notifiedTreasureHours.Add(id))
+                {
+                    Console.WriteLine($"★ {title} {text}");
+                    GuiWindow.ShowNotification(title, text);
+                }
+            }
+        }
+    }
+
+    // Clear stale "soon"/"live" banner once the window has passed.
+    if (!liveOrSoon && activeTreasureAlert is { Kind: "soon" or "live" })
+    {
+        activeTreasureAlert = null;
+    }
+}
+
 void CheckAutoClose()
 {
     var now = DateTime.UtcNow;
@@ -1030,6 +1147,7 @@ object BuildGuiState()
             zapMode = config.ZapMode,
             discordPresence = config.DiscordPresence,
             discordAppId = config.DiscordAppId,
+            treasureHourAlerts = config.TreasureHourAlerts,
             canStartWithFortnite = OperatingSystem.IsWindows() && AppInfo.ExePath != null,
             updateMode = config.UpdateMode,
             timeZone = config.TimeZone,
@@ -1043,6 +1161,21 @@ object BuildGuiState()
         canUninstall = OperatingSystem.IsWindows() && AppInfo.ExePath != null,
         notices = TreasureCatalog.ActiveNotices(DateTime.UtcNow).Where(n => !config.DismissedNotices.Contains(n.Id))
             .Select(n => new { id = n.Id, level = n.Level, title = n.TitleIn(L.Code), text = n.TextIn(L.Code), link = n.Link }).ToList(),
+        treasureAlert = activeTreasureAlert is { } ta && ta.Id != dismissedTreasureAlertId
+            ? new { id = ta.Id, kind = ta.Kind, title = ta.Title, text = ta.Text }
+            : null,
+        treasureHours = TreasureCatalog.TreasureHours
+            .Where(h => h.EndUtc > DateTime.UtcNow)
+            .OrderBy(h => h.StartUtc)
+            .Take(6)
+            .Select(h => new
+            {
+                start = h.StartUtc.ToString("O"),
+                end = h.EndUtc.ToString("O"),
+                confirmed = h.Confirmed,
+                boosts = h.Boosts.Select(b => new { name = TreasureCatalog.KindName(b.Key), mult = b.Value }).ToList(),
+            })
+            .ToList(),
         reportStamp = File.Exists(store.ReportPath) ? File.GetLastWriteTimeUtc(store.ReportPath).Ticks.ToString() : "",
     };
 }
@@ -1134,6 +1267,13 @@ object? RunGuiAction(string name, System.Text.Json.JsonElement value)
         case "discordAppId":
             config.DiscordAppId = Str().Trim();
             UpdateOverlay(store, config, data, tracker.LiveMatch, tracker.IsLive);
+            break;
+        case "treasureHourAlerts":
+            config.TreasureHourAlerts = Bool();
+            break;
+        case "dismissTreasureAlert":
+            dismissedTreasureAlertId = Str();
+            settingsChanged = false;
             break;
         case "updateMode": config.UpdateMode = Str() is "auto" or "off" ? Str() : "prompt"; break;
         case "timeZone": config.TimeZone = Str(); config.ApplyTimeSettings(); break;
