@@ -107,6 +107,10 @@ public static class Updater
         {
             using var http = NewClient(TimeSpan.FromSeconds(10));
             using var response = await http.GetAsync(ApiUrl);
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return (null, true); // GitHub answered, there is simply no published release yet
+            }
             if (!response.IsSuccessStatusCode)
             {
                 return (null, false);
