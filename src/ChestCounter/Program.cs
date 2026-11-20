@@ -422,7 +422,7 @@ object? lastGuiState = null;
 var welcome = firstRun;
 if (gui)
 {
-    guiServer = new GuiServer(GuiState, GuiAction, store.Folder, store.ReportPath, store.OverlayPath);
+    guiServer = new GuiServer(GuiState, GuiAction, store.Folder, store.ReportPath, store.OverlayPath, () => config.FortniteApiKey);
     guiServer.Start();
     if (Environment.GetEnvironmentVariable("CHESTCOUNTER_GUI_URL_FILE") is { Length: > 0 } urlFile)
     {
@@ -1242,6 +1242,13 @@ object BuildGuiState()
             })
             .ToList(),
         reportStamp = File.Exists(store.ReportPath) ? File.GetLastWriteTimeUtc(store.ReportPath).Ticks.ToString() : "",
+        fnStats = new
+        {
+            hasKey = !string.IsNullOrWhiteSpace(config.FortniteApiKey) || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FORTNITE_API_KEY")),
+            player = !string.IsNullOrWhiteSpace(config.StatsPlayer) ? config.StatsPlayer : (profile?.Name ?? ""),
+            platform = config.StatsPlatform is "psn" or "xbl" ? config.StatsPlatform : "epic",
+            outfit = string.IsNullOrWhiteSpace(config.StatsOutfit) ? "Midas" : config.StatsOutfit,
+        },
     };
 }
 
@@ -1338,6 +1345,24 @@ object? RunGuiAction(string name, System.Text.Json.JsonElement value)
             break;
         case "dismissTreasureAlert":
             dismissedTreasureAlertId = Str();
+            settingsChanged = false;
+            break;
+        case "fnApiKey":
+            config.FortniteApiKey = Str().Trim();
+            store.SaveConfig(config);
+            settingsChanged = false;
+            break;
+        case "fnStatsPrefs":
+            if (value.ValueKind == System.Text.Json.JsonValueKind.Object)
+            {
+                if (value.TryGetProperty("player", out var sp) && sp.ValueKind == System.Text.Json.JsonValueKind.String)
+                    config.StatsPlayer = sp.GetString()?.Trim() ?? "";
+                if (value.TryGetProperty("platform", out var spl) && spl.ValueKind == System.Text.Json.JsonValueKind.String && spl.GetString() is "epic" or "psn" or "xbl")
+                    config.StatsPlatform = spl.GetString()!;
+                if (value.TryGetProperty("outfit", out var so) && so.ValueKind == System.Text.Json.JsonValueKind.String && !string.IsNullOrWhiteSpace(so.GetString()))
+                    config.StatsOutfit = so.GetString()!.Trim();
+                store.SaveConfig(config);
+            }
             settingsChanged = false;
             break;
         case "updateMode": config.UpdateMode = Str() is "auto" or "off" ? Str() : "prompt"; break;

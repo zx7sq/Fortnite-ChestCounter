@@ -25,16 +25,18 @@ public sealed class GuiServer
     private readonly string _dataFolder;
     private readonly string _reportPath;
     private readonly string _overlayPath;
+    private readonly Func<string>? _getApiKey;
 
     /// <param name="state">The whole state shown by the page (serialized to JSON).</param>
     /// <param name="action">Runs an action (name, value) and returns its result (or null).</param>
-    public GuiServer(Func<object> state, Func<string, JsonElement, object?> action, string dataFolder, string reportPath, string overlayPath)
+    public GuiServer(Func<object> state, Func<string, JsonElement, object?> action, string dataFolder, string reportPath, string overlayPath, Func<string>? getApiKey = null)
     {
         _overlayPath = overlayPath;
         _state = state;
         _action = action;
         _dataFolder = dataFolder;
         _reportPath = reportPath;
+        _getApiKey = getApiKey;
     }
 
     public int Port { get; private set; }
@@ -156,6 +158,27 @@ public sealed class GuiServer
                     var result = _action(name, value);
                     Write(stream, 200, "application/json; charset=utf-8", JsonSerializer.SerializeToUtf8Bytes(new { ok = true, result }));
                 }
+                else if (method == "GET" && path == "/api/fn-stats" && tokenOk)
+                {
+                    var qs = ParseQuery(query);
+                    var key = _getApiKey?.Invoke() ?? "";
+                    if (string.IsNullOrWhiteSpace(key))
+                    {
+                        key = Environment.GetEnvironmentVariable("FORTNITE_API_KEY") ?? "";
+                    }
+                    var (status, json) = FortniteStatsClient.FetchStats(
+                        qs.GetValueOrDefault("name", ""),
+                        qs.GetValueOrDefault("accountType", "epic"),
+                        qs.GetValueOrDefault("timeWindow", "season"),
+                        key);
+                    Write(stream, status, "application/json; charset=utf-8", Encoding.UTF8.GetBytes(json));
+                }
+                else if (method == "GET" && path == "/api/fn-skin" && tokenOk)
+                {
+                    var qs = ParseQuery(query);
+                    var (status, json) = FortniteStatsClient.FetchSkin(qs.GetValueOrDefault("name", "Midas"));
+                    Write(stream, status, "application/json; charset=utf-8", Encoding.UTF8.GetBytes(json));
+                }
                 else if (method == "GET" && path == "/report" && tokenOk && File.Exists(_reportPath))
                 {
                     // Shown inside the window: no reload of its own, the window reloads it when the figures change.
@@ -248,9 +271,33 @@ public sealed class GuiServer
         return (first[0], first[1], headers, body);
     }
 
+    private static Dictionary<string, string> ParseQuery(string query)
+    {
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrEmpty(query)) return map;
+        foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var eq = pair.IndexOf('=');
+            if (eq > 0)
+            {
+                map[Uri.UnescapeDataString(pair[..eq])] = Uri.UnescapeDataString(pair[(eq + 1)..].Replace('+', ' '));
+            }
+        }
+        return map;
+    }
+
     private static void Write(NetworkStream stream, int status, string type, byte[] content)
     {
-        var reason = status switch { 200 => "OK", 403 => "Forbidden", _ => "Not Found" };
+        var reason = status switch
+        {
+            200 => "OK",
+            400 => "Bad Request",
+            401 => "Unauthorized",
+            403 => "Forbidden",
+            404 => "Not Found",
+            502 => "Bad Gateway",
+            _ => "Error",
+        };
         var head = $"HTTP/1.1 {status} {reason}\r\nContent-Type: {type}\r\nContent-Length: {content.Length}\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nReferrer-Policy: no-referrer\r\nConnection: close\r\n\r\n";
         stream.Write(Encoding.ASCII.GetBytes(head));
         stream.Write(content);

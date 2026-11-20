@@ -12,6 +12,7 @@ public static class GuiPage
     public static Dictionary<string, string> Texts() => _cachedTexts ??= new()
     {
         ["home"] = L.T("Accueil", "Home", "Inicio"),
+        ["stats"] = "Stats",
         ["report"] = L.T("Rapport", "Report", "Informe"),
         ["overlay"] = L.T("Overlay", "Overlay", "Overlay"),
         ["settings"] = L.T("Réglages", "Settings", "Ajustes"),
@@ -158,6 +159,9 @@ public static class GuiPage
     private const string Template = """
         <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
         <title>Chest Counter</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
         <style>
         :root{
           --bg:#0b0b0e;
@@ -205,7 +209,7 @@ public static class GuiPage
         #app{display:flex;flex-direction:column;gap:var(--s5)}
         #hdr{display:flex;flex-direction:column;gap:var(--s4)}
         #view{display:flex;flex-direction:column;gap:var(--s5)}
-        #view.tab-anim,#activityPane.tab-anim,#reportPane.tab-anim{animation:fadeUp .3s var(--ease) both}
+        #view.tab-anim,#activityPane.tab-anim,#reportPane.tab-anim,#statsPane.tab-anim{animation:fadeUp .3s var(--ease) both}
         #view:empty{display:none}
         #rep{width:100%;min-height:400px;border:0;display:block;background:transparent;overflow:hidden}
         .who{display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap;color:var(--muted);font-size:13px;font-weight:500;margin-top:var(--s1)}
@@ -341,14 +345,194 @@ public static class GuiPage
         .log::-webkit-scrollbar{width:8px}
         .log::-webkit-scrollbar-track{background:transparent}
         .log::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:999px}
+        /* Gold Stats Card */
+        #statsPane{display:flex;flex-direction:column;gap:14px}
+        .gs-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+        .gs-search{display:flex;align-items:center;flex:1;min-width:240px;max-width:440px;background:rgba(255,255,255,.04);border:1px solid rgba(255,215,100,.16);border-radius:999px;padding:3px 4px 3px 10px;transition:border-color .2s,background .2s}
+        .gs-search:focus-within{border-color:#ffd24c;background:rgba(255,255,255,.06)}
+        .gs-search select{background:transparent;color:#ffd24c;border:none;font:700 12px var(--font);letter-spacing:.06em;min-height:30px;padding:4px;cursor:pointer;box-shadow:none}
+        .gs-search select:focus{box-shadow:none;border:none}
+        .gs-div{width:1px;height:16px;background:rgba(255,215,100,.16);margin:0 6px}
+        .gs-search input{flex:1;width:auto;min-width:100px;min-height:30px;background:transparent;border:none;color:#fafafa;padding:4px 8px;font:500 14px var(--font);box-shadow:none}
+        .gs-search input:focus{box-shadow:none;border:none}
+        .gs-btn-gold{background:linear-gradient(180deg,#ffd24c 0%,#eab308 100%);color:#141004;border:none;border-radius:999px;padding:7px 16px;font:700 12px var(--font);letter-spacing:.08em;cursor:pointer;transition:filter .15s,transform .15s}
+        .gs-btn-gold:hover{filter:brightness(1.08);transform:translateY(-1px)}
+        .gs-btn-gold:disabled{opacity:.55;cursor:wait}
+        .gs-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+        .gs-ghost{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.03);color:#a19985;border:1px solid rgba(255,215,100,.15);border-radius:999px;padding:7px 13px;font:600 12px var(--font);letter-spacing:.06em;cursor:pointer;transition:all .15s}
+        .gs-ghost:hover{color:#fafafa;border-color:rgba(255,215,100,.38);background:rgba(255,255,255,.06)}
+        .gs-ghost.live-on{color:#86efac;border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.08)}
+        .gs-dot{width:7px;height:7px;border-radius:50%;background:#f59e0b}
+        .gs-dot.ok{background:#4ade80;box-shadow:0 0 8px rgba(74,222,128,.65)}
+        .gs-ctrls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+        .gs-seg{display:inline-flex;background:rgba(255,255,255,.03);border:1px solid rgba(255,215,100,.14);border-radius:999px;padding:3px;gap:2px}
+        .gs-pill{background:transparent;color:#a19985;border:none;border-radius:999px;padding:5px 11px;font:600 11.5px var(--font);letter-spacing:.05em;cursor:pointer;transition:all .15s}
+        .gs-pill:hover{color:#fafafa}
+        .gs-pill.on{background:#eab308;color:#141004}
+        .gs-banner{padding:10px 14px;border-radius:12px;font-size:13.5px;font-weight:500;background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.35);color:#fff4c2}
+        .gs-banner.err{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:#fca5a5}
+        .gs-card{position:relative;display:grid;grid-template-columns:1.55fr .85fr;gap:24px;padding:28px 30px;border-radius:20px;background:linear-gradient(145deg,rgba(26,22,14,.94) 0%,rgba(14,12,9,.98) 100%);border:1px solid rgba(255,215,100,.16);box-shadow:0 20px 52px rgba(0,0,0,.55);overflow:hidden}
+        @keyframes gsFlash{0%{box-shadow:0 0 0 1.5px #ffd24c,0 0 36px rgba(234,179,8,.42)}100%{box-shadow:0 20px 52px rgba(0,0,0,.55)}}
+        .gs-card.flash{animation:gsFlash 1.4s ease-out}
+        .gs-left{display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-width:0}
+        .gs-meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+        .gs-meta-gold{font-size:12px;font-weight:700;letter-spacing:.1em;color:#ffd24c}
+        .gs-meta-dot{color:#a19985;opacity:.45}
+        .gs-meta-sub{font-size:12px;font-weight:600;letter-spacing:.08em;color:#a19985}
+        .gs-src{margin-left:auto;font-size:10.5px;font-weight:700;letter-spacing:.08em;padding:3px 9px;border-radius:999px;text-transform:uppercase}
+        .gs-src.demo{background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.35);color:#ffd24c}
+        .gs-src.live{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.35);color:#86efac}
+        .gs-id{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:12px}
+        .gs-name{font-family:'Burbank Big Condensed','Anton','Bahnschrift Condensed',var(--font);font-size:clamp(2.2rem,4.4vw,3.4rem);line-height:.95;letter-spacing:1px;color:#fafafa;margin:0;word-break:break-word;font-weight:400}
+        .gs-lvl{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,215,100,.16);border-radius:999px;padding:5px 12px}
+        .gs-lvl-l{font-size:11px;font-weight:700;letter-spacing:.08em;color:#ffd24c}
+        .gs-lvl-v{font-family:'Burbank Big Condensed','Anton','Bahnschrift Condensed',var(--font);font-size:18px;color:#fafafa}
+        .gs-bp{width:58px;height:4px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden}
+        .gs-bp-f{height:100%;background:linear-gradient(90deg,#eab308,#fff4c2);transition:width .4s ease}
+        .gs-rows{display:flex;flex-direction:column;gap:9px}
+        .gs-row{display:flex;align-items:center;border-radius:14px;padding:13px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);transition:border-color .2s,background .2s}
+        .gs-row:hover{background:rgba(255,215,100,.04);border-color:rgba(255,215,100,.16)}
+        .gs-rico{width:28px;height:28px;flex:none;margin-right:14px;display:flex;align-items:center;justify-content:center;color:#ffd24c;opacity:.92}
+        .gs-rico svg{width:22px;height:22px}
+        .gs-cells{flex:1;display:grid;align-items:center}
+        .gs-cells.c3{grid-template-columns:repeat(3,1fr)}
+        .gs-cells.c2{grid-template-columns:repeat(2,1fr)}
+        .gs-cell{text-align:center;padding:0 8px;position:relative}
+        .gs-cell+.gs-cell::before{content:'';position:absolute;left:0;top:15%;bottom:15%;width:1px;background:rgba(255,255,255,.07)}
+        .gs-val{font-family:'Burbank Big Condensed','Anton','Bahnschrift Condensed',var(--font);font-size:clamp(1.55rem,2.4vw,2.05rem);line-height:1.06;color:#fafafa;display:inline-block;font-variant-numeric:tabular-nums}
+        .gs-lbl{font-size:10.5px;font-weight:600;letter-spacing:.1em;margin-top:3px;color:#a19985}
+        @keyframes gsRoll{0%{opacity:.35;transform:translateY(10px) scale(.96)}60%{opacity:1;transform:translateY(-2px) scale(1.02)}100%{opacity:1;transform:translateY(0) scale(1)}}
+        .gs-roll{animation:gsRoll .55s cubic-bezier(.22,1,.36,1);color:#ffd24c}
+        .gs-extra{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}
+        .gs-ex{display:flex;flex-direction:column;gap:2px}
+        .gs-ex-l{font-size:10px;font-weight:600;letter-spacing:.08em;color:#a19985}
+        .gs-ex-v{font-family:'Burbank Big Condensed','Anton','Bahnschrift Condensed',var(--font);font-size:18px;color:#ffd24c;display:inline-block;font-variant-numeric:tabular-nums}
+        .gs-right{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:310px}
+        .gs-spot{position:absolute;width:230px;height:230px;top:50%;left:50%;transform:translate(-50%,-54%);border-radius:50%;background:radial-gradient(circle,rgba(234,179,8,.22) 0%,transparent 70%);filter:blur(18px);pointer-events:none}
+        .gs-skin{position:relative;z-index:2;max-height:330px;max-width:100%;object-fit:contain;filter:drop-shadow(0 16px 26px rgba(0,0,0,.75));transition:transform .25s ease}
+        .gs-skin:hover{transform:scale(1.03)}
+        .gs-cap{position:relative;z-index:2;margin-top:6px;font-size:11px;font-weight:600;letter-spacing:.14em;color:#a19985;text-transform:uppercase}
+        .gs-skinbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06)}
+        .gs-presets{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+        .gs-sbl{font-size:11px;font-weight:700;letter-spacing:.1em;color:#a19985;margin-right:4px}
+        .gs-chip{background:transparent;color:#a19985;border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:4px 11px;font:500 12.5px var(--font);cursor:pointer;transition:all .15s}
+        .gs-chip:hover,.gs-chip.on{background:rgba(234,179,8,.14);border-color:rgba(234,179,8,.45);color:#fff4c2}
+        .gs-sform{display:flex;gap:6px;align-items:center}
+        .gs-sform input{width:145px;min-height:30px;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);font-size:12.5px}
+        @media (max-width:860px){.gs-card{grid-template-columns:1fr;padding:22px 18px}.gs-right{min-height:220px}.gs-skin{max-height:240px}}
+        @media (max-width:560px){.gs-cells.c3{grid-template-columns:1fr;gap:10px}.gs-cell+.gs-cell::before{display:none}.gs-extra{grid-template-columns:repeat(2,1fr)}}
         </style></head><body><div class="tbar"><div class="wctl">
           <button type="button" id="wmin"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5.5h10" stroke="currentColor" stroke-width="1.1"/></svg></button>
           <button type="button" id="wmax"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><rect id="wmaxicon" x=".55" y=".55" width="8.9" height="8.9" fill="none" stroke="currentColor" stroke-width="1.1"/><path id="wresicon" d="M2.5 2.5V.55h6.95v6.95H7.5M.55 2.5h6.95v6.95H.55z" fill="none" stroke="currentColor" stroke-width="1.1" style="display:none"/></svg></button>
           <button type="button" id="wclose" class="x"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M.5.5l9 9M9.5.5l-9 9" stroke="currentColor" stroke-width="1.2"/></svg></button>
-        </div></div><div id="scroll"><main><div id="app"><div class="card empty-state"><div class="spin" aria-hidden="true"></div><div><div class="es-title">Chest Counter</div><div class="es-body">Loading replays and match stats…</div></div></div></div><section id="activityPane" class="hidden"><h2 class="pirate"></h2><div class="card log"></div></section><section id="reportPane" class="hidden"><iframe id="rep" title="Report" scrolling="no"></iframe></section><div id="foot"></div></main></div>
+        </div></div><div id="scroll"><main><div id="app"><div class="card empty-state"><div class="spin" aria-hidden="true"></div><div><div class="es-title">Chest Counter</div><div class="es-body">Loading replays and match stats…</div></div></div></div><section id="activityPane" class="hidden"><h2 class="pirate"></h2><div class="card log"></div></section><section id="reportPane" class="hidden"><iframe id="rep" title="Report" scrolling="no"></iframe></section>
+        <section id="statsPane" class="hidden">
+          <div class="gs-top">
+            <form id="gsSearchForm" class="gs-search" autocomplete="off">
+              <select id="gsPlatform" aria-label="Platform"><option value="epic">EPIC</option><option value="psn">PSN</option><option value="xbl">XBOX</option></select>
+              <span class="gs-div" aria-hidden="true"></span>
+              <input id="gsUsername" type="text" placeholder="Search Fortnite username..." required>
+              <button type="submit" id="gsLookupBtn" class="gs-btn-gold">LOOKUP</button>
+            </form>
+            <div class="gs-acts">
+              <button type="button" id="gsLiveBtn" class="gs-ghost live-on" title="Auto-refresh stats every 30s and after matches">LIVE WATCH: ON</button>
+              <button type="button" id="gsKeyBtn" class="gs-ghost" title="Configure Fortnite-API.com Key"><span class="gs-dot" id="gsKeyDot"></span>API KEY</button>
+            </div>
+          </div>
+          <div class="gs-ctrls">
+            <div class="gs-seg" role="group" aria-label="Time Window">
+              <button type="button" class="gs-pill on" data-gswin="season">SEASON</button>
+              <button type="button" class="gs-pill" data-gswin="lifetime">LIFETIME</button>
+            </div>
+            <div class="gs-seg" role="group" aria-label="Game Mode">
+              <button type="button" class="gs-pill on" data-gsmode="overall">OVERALL</button>
+              <button type="button" class="gs-pill" data-gsmode="solo">SOLO</button>
+              <button type="button" class="gs-pill" data-gsmode="duo">DUO</button>
+              <button type="button" class="gs-pill" data-gsmode="squad">SQUAD</button>
+              <button type="button" class="gs-pill" data-gsmode="ltm">LTM</button>
+            </div>
+            <div class="gs-seg" role="group" aria-label="Input Type">
+              <button type="button" class="gs-pill on" data-gsin="all">ALL</button>
+              <button type="button" class="gs-pill" data-gsin="keyboardMouse">KBM</button>
+              <button type="button" class="gs-pill" data-gsin="gamepad">PAD</button>
+            </div>
+          </div>
+          <div id="gsBanner" class="gs-banner hidden" role="alert"></div>
+          <section id="gsCard" class="gs-card">
+            <div class="gs-left">
+              <div>
+                <div class="gs-meta">
+                  <span id="gsSeasonBadge" class="gs-meta-gold">SEASON STATS</span>
+                  <span class="gs-meta-dot">•</span>
+                  <span id="gsModeBadge" class="gs-meta-sub">OVERALL • ALL INPUTS</span>
+                  <span id="gsSrcBadge" class="gs-src demo">DEMO PREVIEW</span>
+                </div>
+                <div class="gs-id">
+                  <h2 id="gsPlayerName" class="gs-name">PLAYER</h2>
+                  <div class="gs-lvl">
+                    <span class="gs-lvl-l">LVL</span>
+                    <span id="gsLevel" class="gs-lvl-v">—</span>
+                    <div class="gs-bp" title="Battle Pass Progress"><div id="gsBp" class="gs-bp-f" style="width:0%"></div></div>
+                  </div>
+                </div>
+              </div>
+              <div class="gs-rows">
+                <div class="gs-row">
+                  <div class="gs-rico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/></svg></div>
+                  <div class="gs-cells c3">
+                    <div class="gs-cell"><div id="gsWins" class="gs-val">0</div><div class="gs-lbl">WINS</div></div>
+                    <div class="gs-cell"><div id="gsWinRate" class="gs-val">0.0%</div><div class="gs-lbl">WIN RATE</div></div>
+                    <div class="gs-cell"><div id="gsMatches" class="gs-val">0</div><div class="gs-lbl">MATCHES</div></div>
+                  </div>
+                </div>
+                <div class="gs-row">
+                  <div class="gs-rico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a1 1 0 0 1 1 1v2.07A7.002 7.002 0 0 1 18.93 11H21a1 1 0 1 1 0 2h-2.07A7.002 7.002 0 0 1 13 18.93V21a1 1 0 1 1-2 0v-2.07A7.002 7.002 0 0 1 5.07 13H3a1 1 0 1 1 0-2h2.07A7.002 7.002 0 0 1 11 5.07V3a1 1 0 0 1 1-1zm0 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg></div>
+                  <div class="gs-cells c3">
+                    <div class="gs-cell"><div id="gsKD" class="gs-val">0.00</div><div class="gs-lbl">K/D</div></div>
+                    <div class="gs-cell"><div id="gsKPM" class="gs-val">0.00</div><div class="gs-lbl">KILLS / MATCH</div></div>
+                    <div class="gs-cell"><div id="gsKills" class="gs-val">0</div><div class="gs-lbl">KILLS</div></div>
+                  </div>
+                </div>
+                <div class="gs-row">
+                  <div class="gs-rico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61 1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42A8.962 8.962 0 0 0 12 4c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg></div>
+                  <div class="gs-cells c2">
+                    <div class="gs-cell"><div id="gsPlayTime" class="gs-val">0H 0M</div><div class="gs-lbl">PLAY TIME</div></div>
+                    <div class="gs-cell"><div id="gsAvgTime" class="gs-val">0M 0S</div><div class="gs-lbl">AVG. MATCH</div></div>
+                  </div>
+                </div>
+              </div>
+              <div class="gs-extra">
+                <div class="gs-ex"><span class="gs-ex-l">TOP 3 / 5 / 10</span><span id="gsTop" class="gs-ex-v">0 / 0 / 0</span></div>
+                <div class="gs-ex"><span class="gs-ex-l">OUTLIVED</span><span id="gsOutlived" class="gs-ex-v">0</span></div>
+                <div class="gs-ex"><span class="gs-ex-l">SCORE</span><span id="gsScore" class="gs-ex-v">0</span></div>
+                <div class="gs-ex"><span class="gs-ex-l">KILLS / MIN</span><span id="gsKMin" class="gs-ex-v">0.00</span></div>
+              </div>
+            </div>
+            <div class="gs-right">
+              <div class="gs-spot" aria-hidden="true"></div>
+              <img id="gsSkinImg" class="gs-skin" src="" alt="Featured Outfit">
+              <div id="gsSkinCap" class="gs-cap">MIDAS</div>
+            </div>
+          </section>
+          <div class="gs-skinbar">
+            <div class="gs-presets">
+              <span class="gs-sbl">OUTFIT</span>
+              <button type="button" class="gs-chip on" data-gsskin="Midas">Midas</button>
+              <button type="button" class="gs-chip" data-gsskin="Marigold">Marigold</button>
+              <button type="button" class="gs-chip" data-gsskin="Peely">Peely</button>
+              <button type="button" class="gs-chip" data-gsskin="Aura">Aura</button>
+              <button type="button" class="gs-chip" data-gsskin="Renegade Raider">Renegade Raider</button>
+            </div>
+            <form id="gsSkinForm" class="gs-sform">
+              <input id="gsSkinInput" type="text" placeholder="Custom outfit...">
+              <button type="submit" class="gs-ghost" style="padding:5px 12px">SET</button>
+            </form>
+          </div>
+        </section>
+        <div id="foot"></div></main></div>
         <dialog id="dlg" aria-labelledby="dlgT"><div class="dhead"><h2 class="pirate" id="dlgT"></h2><button type="button" class="dclose" id="dlgX" aria-label="Close"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div><div id="dlgB"></div></dialog>
         <script>
-        const TOKEN='__TOKEN__';let S=null,tab=(()=>{const h=location.hash.slice(1);if(['home','report','overlay','settings','help'].includes(h))return h;try{return localStorage.getItem('cc-gui-tab')||'home'}catch(e){return 'home'}})(),estimate=null,stopped=false,copied=false;
+        const TOKEN='__TOKEN__';let S=null,tab=(()=>{const h=location.hash.slice(1);if(['home','stats','report','overlay','settings','help'].includes(h))return h;try{return localStorage.getItem('cc-gui-tab')||'home'}catch(e){return 'home'}})(),estimate=null,stopped=false,copied=false;
         const $=s=>document.querySelector(s);
         // In the counter's own window (?w=1): the title bar of the page, its buttons sent to the window.
         const host=window.chrome&&window.chrome.webview;let maximized=false;
@@ -366,11 +550,11 @@ public static class GuiPage
         function sw(id,on,act){return `<label class="switch"><input type="checkbox" id="${id}" ${on?'checked':''} onchange="api('${act}',this.checked)"><span></span></label>`}
         function row(title,help,control){return `<div class="row"><div><div class="t">${title}</div>${help?`<div class="h">${help}</div>`:''}</div><div>${control}</div></div>`}
         function sel(act,value,opts){return `<select onchange="api('${act}',this.value)">${opts.map(o=>`<option value="${esc(o[0])}" ${String(o[0])===String(value)?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`}
-        function setTab(t){const changed=tab!==t;tab=t;try{localStorage.setItem('cc-gui-tab',t)}catch(e){}render(true);if(changed){['#view','#activityPane','#reportPane'].forEach(sel=>{const el=$(sel);if(el){el.classList.remove('tab-anim');void el.offsetWidth;el.classList.add('tab-anim')}})}}
+        function setTab(t){const changed=tab!==t;tab=t;try{localStorage.setItem('cc-gui-tab',t)}catch(e){}render(true);if(changed){['#view','#activityPane','#reportPane','#statsPane'].forEach(sel=>{const el=$(sel);if(el){el.classList.remove('tab-anim');void el.offsetWidth;el.classList.add('tab-anim')}})}}
         function render(force){
           const T=S.txt;document.documentElement.lang=S.lang;
           const head=`<header><div class="brand"><img src="__CHESTICON__" width="46" height="46" alt="" style="object-fit:contain"><div><h1 class="pirate">${esc(S.appName)}</h1><div class="who">${S.profiles.length>1?`<select aria-label="${esc(T.profile)}" title="${esc(T.profile)}" onchange="api('profile',this.value)">${S.profiles.map(p=>`<option value="${esc(p.key)}" ${p.key===S.profileKey?'selected':''}>${esc(p.name)} (${esc(p.matches)})</option>`).join('')}</select>`:`<span>${esc(S.player||'')}</span>`}<span>v${esc(S.version)}</span></div></div></div><span class="pill ${S.status.kind}"><i></i>${esc(S.status.text)}</span></header>
-          <nav>${['home','report','overlay','settings','help'].map(t=>`<button class="${t===tab?'on':''}" onclick="setTab('${t}')">${esc(T[t])}</button>`).join('')}</nav>`;
+          <nav>${['home','stats','report','overlay','settings','help'].map(t=>`<button class="${t===tab?'on':''}" onclick="setTab('${t}')">${esc(T[t])}</button>`).join('')}</nav>`;
           if(!force&&busyHeader())return;
           if(!force&&busy()){$('#hdr').innerHTML=head;appHtml=null;return}
           // A click in progress (button pressed, not released yet): rebuilding now would replace its button and the click
@@ -384,7 +568,7 @@ public static class GuiPage
           // In the counter's own window the close button asks and stops it: no "quit" button needed.
           const foot=S.settings.windowed?`<footer><span>${esc(T.footerWindow)}</span></footer>`:`<footer><span>${esc(T.footer)}</span><button class="b danger" onclick="quit()">${esc(T.quit)}</button></footer>`;
           if(force||foot!==footHtml){$('#foot').innerHTML=foot;footHtml=foot}
-          showActivity(T);showReport();winTitles();
+          showActivity(T);showReport();showStats();winTitles();
         }
         // pressedAt: when the mouse button went down (0 once released). Forgotten after 3 s in case the release was
         // missed (outside the window), so the page never stops refreshing.
@@ -534,9 +718,128 @@ public static class GuiPage
           ${S.canUninstall?`<section><h2 class="pirate">${esc(T.uninstall)}</h2><div class="card"><span class="path">${esc(S.paths.data)}</span>
           <div class="actions"><button class="b danger" onclick="uninstall(false)">${esc(T.uninstall)} · ${esc(T.keepData)}</button><button class="b danger" onclick="uninstall(true)">${esc(T.uninstall)} · ${esc(T.deleteData)}</button></div></div></section>`:''}`;
         }
-        function closedView(){stopped=true;$('#app').innerHTML='<div class="card">'+esc(S.txt.closed)+'</div>';$('#foot').innerHTML='';appHtml=footHtml=null;$('#activityPane').classList.add('hidden');$('#reportPane').classList.add('hidden')}
+        function closedView(){stopped=true;$('#app').innerHTML='<div class="card">'+esc(S.txt.closed)+'</div>';$('#foot').innerHTML='';appHtml=footHtml=null;$('#activityPane').classList.add('hidden');$('#reportPane').classList.add('hidden');$('#statsPane').classList.add('hidden')}
         async function uninstall(all){if(!confirm(S.txt.uninstallConfirm))return;const err=await api('uninstall',all);if(err){alert(err);return}closedView()}
         async function quit(){if(!confirm(S.txt.quitConfirm))return;try{await api('quit')}catch(e){}closedView()}
+        // --- Gold Stats Card ---
+        const GS_DEMO={account:{name:'haisezxz'},battlePass:{level:212,progress:68},stats:{all:{overall:{wins:77,winRate:20.3,matches:379,kd:5.29,killsPerMatch:4.21,kills:1597,minutesPlayed:3432,top3:112,top5:145,top10:210,playersOutlived:24810,score:148920,killsPerMin:0.46}}}};
+        const gs={init:false,win:'season',mode:'overall',inp:'all',data:GS_DEMO,isDemo:true,live:true,timer:null,snap:null,lastMatchCount:null};
+        const gsAnims=new WeakMap(),gsPrev=new WeakMap();
+        function gsFmtInt(n){return Number(n||0).toLocaleString('en-US')}
+        function gsFmtTime(m){const t=Math.max(0,Math.round(m||0));return `${Math.floor(t/60)}H ${t%60}M`}
+        function gsAnim(el,target,fn,dur=650){
+          const prev=gsPrev.get(el);if(prev===target){el.textContent=fn(target);return}
+          const start=typeof prev==='number'&&!Number.isNaN(prev)?prev:0;gsPrev.set(el,target);
+          if(gsAnims.has(el))cancelAnimationFrame(gsAnims.get(el));
+          el.classList.remove('gs-roll');void el.offsetWidth;el.classList.add('gs-roll');
+          const t0=performance.now();
+          const step=now=>{const p=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-p,3);el.textContent=fn(p<1?start+(target-start)*e:target);if(p<1)gsAnims.set(el,requestAnimationFrame(step));else gsAnims.delete(el)};
+          gsAnims.set(el,requestAnimationFrame(step));
+        }
+        function gsBanner(msg,err){const b=$('#gsBanner');if(!msg){b.classList.add('hidden');return}b.textContent=msg;b.classList.toggle('err',!!err);b.classList.remove('hidden')}
+        function gsRender(){
+          const d=gs.data,b=(d&&d.stats&&(d.stats[gs.inp]||d.stats.all))||{},m=b[gs.mode];
+          $('#gsPlayerName').textContent=(d&&d.account&&d.account.name)||$('#gsUsername').value.trim()||'PLAYER';
+          const lv=d&&d.battlePass&&d.battlePass.level;
+          if(typeof lv==='number')gsAnim($('#gsLevel'),lv,v=>Math.round(v).toString());else $('#gsLevel').textContent='—';
+          $('#gsBp').style.width=`${Math.min(100,Math.max(0,(d&&d.battlePass&&d.battlePass.progress)||0))}%`;
+          $('#gsSeasonBadge').textContent=gs.win==='season'?'SEASON STATS':'LIFETIME STATS';
+          const il=gs.inp==='all'?'ALL INPUTS':gs.inp==='keyboardMouse'?'KBM':'CONTROLLER';
+          $('#gsModeBadge').textContent=`${gs.mode.toUpperCase()} • ${il}`;
+          $('#gsSrcBadge').textContent=gs.isDemo?'DEMO PREVIEW':'LIVE API';
+          $('#gsSrcBadge').className=`gs-src ${gs.isDemo?'demo':'live'}`;
+          if(!m){
+            gsAnim($('#gsWins'),0,v=>gsFmtInt(Math.round(v)));gsAnim($('#gsWinRate'),0,v=>`${v.toFixed(1)}%`);gsAnim($('#gsMatches'),0,v=>gsFmtInt(Math.round(v)));
+            gsAnim($('#gsKD'),0,v=>v.toFixed(2));gsAnim($('#gsKPM'),0,v=>v.toFixed(2));gsAnim($('#gsKills'),0,v=>gsFmtInt(Math.round(v)));
+            gsAnim($('#gsPlayTime'),0,v=>gsFmtTime(v));$('#gsAvgTime').textContent='0M 0S';$('#gsTop').textContent='0 / 0 / 0';
+            gsAnim($('#gsOutlived'),0,v=>gsFmtInt(Math.round(v)));gsAnim($('#gsScore'),0,v=>gsFmtInt(Math.round(v)));gsAnim($('#gsKMin'),0,v=>v.toFixed(2));
+            return;
+          }
+          gsAnim($('#gsWins'),Number(m.wins||0),v=>gsFmtInt(Math.round(v)));
+          gsAnim($('#gsWinRate'),Number(m.winRate||0),v=>`${v.toFixed(1)}%`);
+          gsAnim($('#gsMatches'),Number(m.matches||0),v=>gsFmtInt(Math.round(v)));
+          gsAnim($('#gsKD'),Number(m.kd||0),v=>v.toFixed(2));
+          gsAnim($('#gsKPM'),Number(m.killsPerMatch||0),v=>v.toFixed(2));
+          gsAnim($('#gsKills'),Number(m.kills||0),v=>gsFmtInt(Math.round(v)));
+          const mins=Number(m.minutesPlayed||0),mc=Number(m.matches||0),avgS=mc>0?Math.round((mins*60)/mc):0;
+          gsAnim($('#gsPlayTime'),mins,v=>gsFmtTime(v));
+          gsAnim($('#gsAvgTime'),avgS,s=>{const r=Math.max(0,Math.round(s));return `${Math.floor(r/60)}M ${r%60}S`});
+          const tA=m.top3??m.top5??0,tB=m.top6??m.top10??0,tC=m.top12??m.top25??0;
+          $('#gsTop').textContent=`${gsFmtInt(tA)} / ${gsFmtInt(tB)} / ${gsFmtInt(tC)}`;
+          gsAnim($('#gsOutlived'),Number(m.playersOutlived||0),v=>gsFmtInt(Math.round(v)));
+          gsAnim($('#gsScore'),Number(m.score||0),v=>gsFmtInt(Math.round(v)));
+          gsAnim($('#gsKMin'),Number(m.killsPerMin||0),v=>v.toFixed(2));
+        }
+        async function gsLookup(name,{silent=false}={}){
+          name=(name||'').trim();if(!name)return;
+          const btn=$('#gsLookupBtn');
+          if(!silent){gsBanner('');btn.disabled=true;btn.textContent='LOADING...'}
+          const plat=$('#gsPlatform').value;
+          try{
+            const q=new URLSearchParams({name,accountType:plat,timeWindow:gs.win});
+            const r=await fetch('/api/fn-stats?'+q.toString(),{headers:{'X-Token':TOKEN}});
+            const j=await r.json();
+            if(!r.ok){
+              if(!silent){gsBanner(j.error||'Could not fetch player stats.',true);if(j.code==='NO_API_KEY'||j.code==='INVALID_API_KEY')openFnKeyModal()}
+              return;
+            }
+            if(j&&j.data){
+              const snap=JSON.stringify({bp:j.data.battlePass,all:j.data.stats&&j.data.stats.all&&j.data.stats.all.overall});
+              const changed=gs.snap!==null&&gs.snap!==snap;gs.snap=snap;
+              gs.data=j.data;gs.isDemo=false;gsRender();
+              if(changed){const c=$('#gsCard');c.classList.remove('flash');void c.offsetWidth;c.classList.add('flash')}
+              if(!silent)api('fnStatsPrefs',{player:name,platform:plat});
+            }
+          }catch(e){if(!silent)gsBanner('Network error while fetching stats.',true)}
+          finally{if(!silent){btn.disabled=false;btn.textContent='LOOKUP'}}
+        }
+        async function gsLoadSkin(name,save){
+          try{
+            const r=await fetch('/api/fn-skin?name='+encodeURIComponent(name),{headers:{'X-Token':TOKEN}});
+            if(!r.ok)return;const s=await r.json();
+            if(s.image){$('#gsSkinImg').src=s.image;$('#gsSkinCap').textContent=(s.name||name).toUpperCase();if(save)api('fnStatsPrefs',{outfit:s.name||name})}
+          }catch(e){}
+        }
+        function openFnKeyModal(){
+          const d=$('#dlg');$('#dlgT').textContent='Fortnite API Key';
+          $('#dlgB').innerHTML=`<p class="note" style="color:var(--cmuted);margin-top:0">Live player stats use <b>fortnite-api.com</b>. Get a free API key at <a href="https://dash.fortnite-api.com/" target="_blank" rel="noopener noreferrer" style="color:var(--brand)">dash.fortnite-api.com</a> and paste it below. Stored locally in your config only.</p>
+            <div class="actions" style="margin-top:12px"><input type="text" id="fnKeyIn" placeholder="Paste your Fortnite-API.com key..." autocomplete="off"></div>
+            <div class="actions" style="margin-top:14px"><button type="button" class="b main" id="fnKeySave">Save Key</button><button type="button" class="b danger" id="fnKeyClear">Clear</button></div>`;
+          $('#fnKeySave').onclick=async()=>{const k=$('#fnKeyIn').value.trim();await api('fnApiKey',k);d.close();gsBanner('');const u=$('#gsUsername').value.trim();if(u&&k)gsLookup(u)};
+          $('#fnKeyClear').onclick=async()=>{await api('fnApiKey','');d.close()};
+          if(!d.open)d.showModal();const i=$('#fnKeyIn');if(i)i.focus();
+        }
+        function gsStartPoll(){
+          if(gs.timer)clearInterval(gs.timer);
+          gs.timer=setInterval(()=>{if(!document.hidden&&tab==='stats'&&gs.live&&!gs.isDemo){const u=$('#gsUsername').value.trim();if(u)gsLookup(u,{silent:true})}},30000);
+        }
+        function showStats(){
+          const pane=$('#statsPane');pane.classList.toggle('hidden',tab!=='stats');
+          if(!S||!S.fnStats)return;
+          const dot=$('#gsKeyDot');if(dot)dot.classList.toggle('ok',!!S.fnStats.hasKey);
+          if(gs.lastMatchCount!==null&&gs.lastMatchCount!==S.matches&&gs.live&&!gs.isDemo){
+            const u=$('#gsUsername').value.trim();if(u)gsLookup(u,{silent:true});
+          }
+          gs.lastMatchCount=S.matches;
+          if(tab!=='stats')return;
+          if(!gs.init){
+            gs.init=true;
+            $('#gsUsername').value=S.fnStats.player||'';
+            $('#gsPlatform').value=S.fnStats.platform||'epic';
+            const out=S.fnStats.outfit||'Midas';
+            document.querySelectorAll('.gs-chip').forEach(c=>c.classList.toggle('on',c.dataset.gsskin.toLowerCase()===out.toLowerCase()));
+            gsRender();gsLoadSkin(out,false);gsStartPoll();
+            $('#gsSearchForm').addEventListener('submit',e=>{e.preventDefault();gsLookup($('#gsUsername').value)});
+            $('#gsKeyBtn').addEventListener('click',openFnKeyModal);
+            $('#gsLiveBtn').addEventListener('click',()=>{gs.live=!gs.live;$('#gsLiveBtn').textContent=gs.live?'LIVE WATCH: ON':'LIVE WATCH: OFF';$('#gsLiveBtn').classList.toggle('live-on',gs.live)});
+            document.querySelectorAll('[data-gswin]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-gswin]').forEach(x=>x.classList.remove('on'));b.classList.add('on');gs.win=b.dataset.gswin;if(!gs.isDemo)gsLookup($('#gsUsername').value);else gsRender()}));
+            document.querySelectorAll('[data-gsmode]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-gsmode]').forEach(x=>x.classList.remove('on'));b.classList.add('on');gs.mode=b.dataset.gsmode;gsRender()}));
+            document.querySelectorAll('[data-gsin]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-gsin]').forEach(x=>x.classList.remove('on'));b.classList.add('on');gs.inp=b.dataset.gsin;gsRender()}));
+            document.querySelectorAll('.gs-chip').forEach(c=>c.addEventListener('click',()=>{document.querySelectorAll('.gs-chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');gsLoadSkin(c.dataset.gsskin,true)}));
+            $('#gsSkinForm').addEventListener('submit',e=>{e.preventDefault();const v=$('#gsSkinInput').value.trim();if(v){document.querySelectorAll('.gs-chip').forEach(x=>x.classList.remove('on'));gsLoadSkin(v,true)}});
+            if(S.fnStats.hasKey&&S.fnStats.player)gsLookup(S.fnStats.player);
+          }
+        }
         refresh(true);
         setInterval(()=>{if(!document.hidden)refresh(false)},2000);
         document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(false)});

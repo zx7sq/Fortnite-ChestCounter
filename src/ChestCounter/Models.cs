@@ -232,6 +232,18 @@ public sealed class Config
 
     /// <summary>Show the treasures found by teammates in the report (estimate). Off by default.</summary>
     public bool ShowTeamTreasuresInReport { get; set; }
+
+    /// <summary>Fortnite-API.com key for the live Stats tab (stored locally in config.json).</summary>
+    public string FortniteApiKey { get; set; } = "";
+
+    /// <summary>Last looked-up player in the Stats tab (defaults to the detected replay profile when empty).</summary>
+    public string StatsPlayer { get; set; } = "";
+
+    /// <summary>Account type for the Stats tab: "epic", "psn", or "xbl".</summary>
+    public string StatsPlatform { get; set; } = "epic";
+
+    /// <summary>Featured outfit shown on the Stats card.</summary>
+    public string StatsOutfit { get; set; } = "Midas";
 }
 
 public sealed class TrackerData
