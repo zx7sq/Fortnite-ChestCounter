@@ -2,6 +2,9 @@ Download **`ChestCounter.exe`** below and run it — nothing to install and no e
 
 > **Turn on replays in Fortnite first:** *Settings → Game → Replays → Record Replays: **On***. The app only reads your saved replay files in read-only mode — 100% Easy Anti-Cheat safe.
 
+**What's new in 3.0.1**
+- **Localized Treasure Hours:** Treasure Hours on the Home card, alerts, and Report now automatically match your PC's local timezone (with timezone name & UTC offset shown) and your Windows language/regional date & 12h/24h clock format.
+
 **What's new in 3.0.0**
 - **Live Fortnite Stats Tab:**
   - Built-in player stats card showing Wins, Win Rate, Matches, K/D, Kills/Match, Kills, Play Time, Avg. Match Time, Battle Pass Level & progress, Top placements, Outlived, Score, and Kills/Min.
