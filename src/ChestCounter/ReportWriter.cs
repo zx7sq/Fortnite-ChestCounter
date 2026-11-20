@@ -172,7 +172,7 @@ public static class ReportWriter
         .who{font-size:14px;color:var(--muted);margin-top:var(--s1)}.who b{color:var(--ink2);font-weight:600}
         .muted{color:var(--muted)}
         h2{margin:0 0 var(--s3);font-size:20px;line-height:1.25;font-weight:700;letter-spacing:-.02em;color:var(--title)}
-        .tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--s4)}
+        .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:var(--s4)}
         .tile{background:var(--card);color:var(--cink);border:1px solid var(--line);border-radius:16px;padding:var(--s4) var(--s5);display:flex;flex-direction:column;gap:var(--s1);transition:transform .22s var(--ease),border-color .22s var(--ease)}
         .tile:hover{transform:translateY(-2px);border-color:var(--line-strong)}
         .tile .v{font-size:32px;font-weight:700;line-height:1.1;color:#ffffff}
@@ -455,6 +455,10 @@ public static class ReportWriter
         var player = matches.Select(m => m.PlayerName).FirstOrDefault(n => !string.IsNullOrEmpty(n)) ?? "";
         // Own treasures only: the team's are found with chests that are not counted here.
         var every = treasures > 0 ? (int)Math.Round((double)totalChests / treasures) : 0;
+        var today = L.Shown(DateTime.UtcNow).Date;
+        var spanDays = matches.Count > 0 ? Math.Max(1, (today - matches.Min(m => When(m).Date)).Days + 1) : 0;
+        var avgPerDay = spanDays > 0 ? (double)totalChests / spanDays : 0.0;
+        var avgPerWeek = spanDays >= 7 ? avgPerDay * 7.0 : (double?)null;
 
         var sb = new StringBuilder();
         var title = L.T("Compteur de coffres", "Chest Counter", "Contador de cofres");
@@ -477,6 +481,9 @@ public static class ReportWriter
               <div class="tile hero"><button type="button" class="editbtn" id="editchests" title="{H(L.T("Modifier mon nombre de coffres", "Edit my number of chests", "Modificar mi número de cofres"))}" aria-label="{H(L.T("Modifier mon nombre de coffres", "Edit my number of chests", "Modificar mi número de cofres"))}">{PencilIcon}</button><div class="k">{L.T("Coffres au total", "Chests in total", "Cofres en total")}</div><div class="v num">{grandTotal.ToString("N0", Fr)}</div><div class="l">{L.T($"ouverts ou détruits par toi · {session.ToString("N0", Fr)} depuis le lancement", $"opened or destroyed by you · {session.ToString("N0", Fr)} since the tool started", $"abiertos o destruidos por ti · {session.ToString("N0", Fr)} desde que se abrió")}{(data.ManualAdjust != 0 ? "<br>" + L.T($"dont {data.ManualAdjust.ToString("+#,0;-#,0", Fr)} ajoutés à la main", $"{data.ManualAdjust.ToString("+#,0;-#,0", Fr)} of them added by hand", $"de ellos, {data.ManualAdjust.ToString("+#,0;-#,0", Fr)} añadidos a mano") : "")}</div></div>
               {Tile(matches.Count.ToString("N0", Fr), L.T("parties analysées", "matches analyzed", "partidas analizadas"))}
               {Tile(avg.ToString("0.0", Fr), L.T("coffres par partie", "chests per match", "cofres por partida"))}
+              {Tile(avgPerDay.ToString("0.0", Fr), L.T("coffres par jour", "chests per day", "cofres por día"),
+                  spanDays > 0 ? $"over {spanDays} {(spanDays == 1 ? "day" : "days")}" : null)}
+              {(avgPerWeek is double wAvg ? Tile(wAvg.ToString("0.0", Fr), L.T("coffres par semaine", "chests per week", "cofres por semana"), $"over {spanDays / 7.0:0.1} weeks") : "")}
               {Tile(best.ToString("N0", Fr), L.T("record en une partie", "best match", "récord en una partida"))}
               {Tile(treasures.ToString("N0", Fr), L.T("trésors trouvés", "treasures found", "tesoros encontrados"),
                   every > 0 ? L.T($"1 tous les {every.ToString("N0", Fr)} coffres", $"1 every {every.ToString("N0", Fr)} chests", $"1 cada {every.ToString("N0", Fr)} cofres") : null)}
@@ -484,7 +491,6 @@ public static class ReportWriter
             """);
 
         // Last 30 days, one bar per day (the best day stands out).
-        var today = L.Shown(DateTime.UtcNow).Date;
         var days = Enumerable.Range(0, 30).Select(i => today.AddDays(i - 29)).ToList();
         var perDay = days.Select(d => matches.Where(m => When(m).Date == d).Sum(m => m.ChestsOpened)).ToList();
         var max = Math.Max(1, perDay.Max());

@@ -30,6 +30,8 @@ public static class GuiPage
         ["treasures"] = L.T("Trésors", "Treasures", "Tesoros"),
         ["matches"] = L.T("parties", "matches", "partidas"),
         ["perMatch"] = L.T("{0} par partie", "{0} per match", "{0} por partida"),
+        ["perDay"] = L.T("coffres / jour", "chests / day", "cofres / día"),
+        ["perWeek"] = L.T("coffres / semaine", "chests / week", "cofres / semana"),
         ["openReport"] = L.T("Ouvrir le rapport", "Open the report", "Abrir el informe"),
         ["showOverlay"] = L.T("Afficher l'overlay", "Show the overlay", "Mostrar el overlay"),
         ["hideOverlay"] = L.T("Masquer l'overlay", "Hide the overlay", "Ocultar el overlay"),
@@ -459,6 +461,8 @@ public static class GuiPage
           h+=`<section class="tiles"><div class="tile hero"><button type="button" class="editbtn" onclick="openManual()" title="${esc(T.editChests)}" aria-label="${esc(T.editChests)}">__PENCIL__</button><div class="l">${esc(T.total)}</div><div class="v num">${esc(S.total)}</div><div class="l">${esc(T.totalSub)}${S.manual?'<br>'+esc(fmt(T.byHand,S.manualText.replace('+',''))):''}</div></div>
             <div class="tile"><div class="v num">${esc(S.session)}</div><div class="l">${esc(T.session)} · ${esc(S.sessionMatches)} ${esc(T.matches)}</div></div>
             <div class="tile"><div class="v num">${esc(S.last?S.last.chests:'—')}</div><div class="l">${esc(T.last)}${S.last?'<br>'+esc(S.last.when)+' · '+esc(S.last.mode):''}</div></div>
+            <div class="tile"><div class="v num">${esc(S.avgPerDay||'0')}</div><div class="l">${esc(T.perDay)}${S.spanDays>0?'<br>over '+esc(S.spanDays)+(S.spanDays===1?' day':' days'):''}</div></div>
+            ${S.avgPerWeek?`<div class="tile"><div class="v num">${esc(S.avgPerWeek)}</div><div class="l">${esc(T.perWeek)}<br>over ${(S.spanDays/7).toFixed(1)} weeks</div></div>`:''}
             <div class="tile"><div class="v num">${starIco}<span>${esc(S.treasures)}</span></div><div class="l">${esc(T.treasures)} · ${esc(S.matches)} ${esc(T.matches)} · ${esc(fmt(T.perMatch,S.average))}</div></div></section>`;
           if(S.matches==='0'&&!S.firstRun)h+=`<div class="card empty-state"><div class="es-body"><div class="es-title">${esc(T.total)}</div>${esc(T.emptyMatches)}</div></div>`;
           h+=`<div class="actions"><button class="b main" onclick="setTab('report')">${esc(T.openReport)}</button>`;

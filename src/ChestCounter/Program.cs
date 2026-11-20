@@ -1125,6 +1125,10 @@ object BuildGuiState()
 
     var last = matches.OrderByDescending(m => m.MatchStartUtc ?? m.AnalyzedAtUtc).FirstOrDefault();
     var session = matches.Where(ReportWriter.IsThisSession).ToList();
+    var todayLocal = L.Shown(DateTime.UtcNow).Date;
+    var spanDays = matches.Count > 0 ? Math.Max(1, (todayLocal - matches.Min(m => L.Shown(m.MatchStartUtc ?? m.AnalyzedAtUtc).Date)).Days + 1) : 0;
+    var avgPerDayVal = spanDays > 0 ? (double)view.CountedChests / spanDays : 0.0;
+    var avgPerWeekVal = spanDays >= 7 ? avgPerDayVal * 7.0 : (double?)null;
     var u = Volatile.Read(ref update);
     static string ColorClass(ConsoleColor c) => c switch
     {
@@ -1174,6 +1178,9 @@ object BuildGuiState()
         treasures = L.N(matches.Sum(m => m.TreasureFinds.Count)),
         matches = L.N(matches.Count),
         average = matches.Count > 0 ? ((double)view.CountedChests / matches.Count).ToString("F1", L.Culture) : "0",
+        avgPerDay = avgPerDayVal.ToString("F1", L.Culture),
+        avgPerWeek = avgPerWeekVal?.ToString("F1", L.Culture),
+        spanDays,
         progress = progress == null ? null : new { done = progress.Done, total = progress.Total },
         update = u == null ? null : new { version = u.Version.ToString(3), notes = u.WhatsNew, url = u.PageUrl },
         // First launch after an update: what this version brings (the notes are built into the exe).
