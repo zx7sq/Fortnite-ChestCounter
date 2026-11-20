@@ -1244,7 +1244,9 @@ object BuildGuiState()
         reportStamp = File.Exists(store.ReportPath) ? File.GetLastWriteTimeUtc(store.ReportPath).Ticks.ToString() : "",
         fnStats = new
         {
-            hasKey = !string.IsNullOrWhiteSpace(config.FortniteApiKey) || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FORTNITE_API_KEY")),
+            hasKey = !string.IsNullOrWhiteSpace(config.FortniteApiKey)
+                || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("FORTNITE_API_KEY"))
+                || !string.IsNullOrWhiteSpace(AppSecrets.FortniteApiKey),
             player = !string.IsNullOrWhiteSpace(config.StatsPlayer) ? config.StatsPlayer : (profile?.Name ?? ""),
             platform = config.StatsPlatform is "psn" or "xbl" ? config.StatsPlatform : "epic",
             outfit = string.IsNullOrWhiteSpace(config.StatsOutfit) ? "Midas" : config.StatsOutfit,
@@ -1501,7 +1503,7 @@ static void UpdateOverlay(Store store, Config config, TrackerData d, MatchRecord
         ? L.T($"En partie · Session : {view.Session} coffres", $"In a match · Session: {view.Session} chests", $"En partida · Sesión: {view.Session} cofres")
         : L.T($"Session : {view.Session} coffres ({sessionMatches} parties)", $"Session: {view.Session} chests ({sessionMatches} matches)", $"Sesión: {view.Session} cofres ({sessionMatches} partidas)");
     var state = L.T($"Total : {view.Total} coffres · {view.Treasures} trésors", $"Total: {view.Total} chests · {view.Treasures} treasures", $"Total: {view.Total} cofres · {view.Treasures} tesoros");
-    var discordId = string.IsNullOrWhiteSpace(config.DiscordAppId) ? "1572700278841679962" : config.DiscordAppId;
+    var discordId = string.IsNullOrWhiteSpace(config.DiscordAppId) ? AppSecrets.DiscordAppId : config.DiscordAppId;
     DiscordRpc.Update(config.DiscordPresence, discordId, details, state);
 }
 

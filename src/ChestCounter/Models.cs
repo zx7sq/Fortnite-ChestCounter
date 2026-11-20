@@ -176,7 +176,7 @@ public sealed class Config
     public bool DiscordPresence { get; set; } = true;
 
     /// <summary>Discord Application ID (from discord.com/developers/applications) for Rich Presence.</summary>
-    public string DiscordAppId { get; set; } = "1572700278841679962";
+    public string DiscordAppId { get; set; } = "";
 
     /// <summary>Show in-app and Windows pop-up reminders 5 minutes before Treasure Hours and when booting Fortnite on Treasure Hour days.</summary>
     public bool TreasureHourAlerts { get; set; } = true;

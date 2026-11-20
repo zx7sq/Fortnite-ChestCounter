@@ -166,6 +166,10 @@ public sealed class GuiServer
                     {
                         key = Environment.GetEnvironmentVariable("FORTNITE_API_KEY") ?? "";
                     }
+                    if (string.IsNullOrWhiteSpace(key))
+                    {
+                        key = AppSecrets.FortniteApiKey;
+                    }
                     var (status, json) = FortniteStatsClient.FetchStats(
                         qs.GetValueOrDefault("name", ""),
                         qs.GetValueOrDefault("accountType", "epic"),
