@@ -619,17 +619,21 @@ public static class GuiPage
         function treasureHoursCard(T){
           const list=S.treasureHours||[];if(!list.length)return '';
           const now=Date.now(),first=list[0],s0=Date.parse(first.start),e0=Date.parse(first.end),live=now>=s0&&now<e0;
-          const dayFmt=new Intl.DateTimeFormat(undefined,{weekday:'short',month:'short',day:'numeric'});
-          const timeFmt=new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit'});
+          const loc=S.pcLocale||undefined;
+          const dayFmt=new Intl.DateTimeFormat(loc,{weekday:'short',month:'short',day:'numeric'});
+          const timeFmt=new Intl.DateTimeFormat(loc,{hour:'numeric',minute:'2-digit'});
           const todayKey=new Date(now).toDateString();
           const boosts=(first.boosts||[]).map(b=>`<span class="th-boost">${esc(b.name)} <b>×${esc(b.mult)}</b></span>`).join('');
           const rows=list.map(x=>{
-            const sd=new Date(x.start),ed=new Date(x.end),isLive=now>=sd.getTime()&&now<ed.getTime(),isToday=sd.toDateString()===todayKey;
+            const sd=new Date(x.start),ed=new Date(x.end),isLive=now>=sd.getTime()&&now<ed.getTime(),isToday=typeof x.isToday==='boolean'?x.isToday:sd.toDateString()===todayKey;
             const pill=isLive?`<span class="th-pill live">${esc(T.thLive)}</span>`:(isToday?`<span class="th-pill">${esc(T.thToday)}</span>`:'');
-            return `<div class="th-row"><span class="th-when">${esc(dayFmt.format(sd))}${pill}</span><span class="th-time">${esc(timeFmt.format(sd))} – ${esc(timeFmt.format(ed))}</span></div>`;
+            const dayText=x.day||dayFmt.format(sd);
+            const timeText=x.range||`${timeFmt.format(sd)} – ${timeFmt.format(ed)}`;
+            return `<div class="th-row"><span class="th-when">${esc(dayText)}${pill}</span><span class="th-time">${esc(timeText)}</span></div>`;
           }).join('');
           const cdText=live?`${esc(T.thEnds)} ${fmtCd(e0-now)}`:`${esc(T.thNext)} ${fmtCd(s0-now)}`;
-          return `<section class="card th-card"><div class="th-head"><h2 class="th-title">${zapIco}<span>${esc(T.thTitle)}</span></h2><span class="th-cd ${live?'live':''}" id="thCd" data-start="${esc(first.start)}" data-end="${esc(first.end)}">${cdText}</span></div>${boosts?`<div class="th-boosts">${boosts}</div>`:''}<div class="th-list">${rows}</div><div class="th-foot">${esc(T.thLocal)}</div></section>`;
+          const foot=S.localZoneName?`${esc(T.thLocal)} · ${esc(S.localZoneName)}`:esc(T.thLocal);
+          return `<section class="card th-card"><div class="th-head"><h2 class="th-title">${zapIco}<span>${esc(T.thTitle)}</span></h2><span class="th-cd ${live?'live':''}" id="thCd" data-start="${esc(first.start)}" data-end="${esc(first.end)}">${cdText}</span></div>${boosts?`<div class="th-boosts">${boosts}</div>`:''}<div class="th-list">${rows}</div><div class="th-foot">${foot}</div></section>`;
         }
         setInterval(()=>{if(document.hidden)return;const el=$('#thCd');if(!el||!S)return;const T=S.txt,now=Date.now(),s=Date.parse(el.dataset.start),e=Date.parse(el.dataset.end),live=now>=s&&now<e;el.classList.toggle('live',live);el.textContent=live?`${T.thEnds} ${fmtCd(e-now)}`:`${T.thNext} ${fmtCd(s-now)}`;},1000);
         function home(T){

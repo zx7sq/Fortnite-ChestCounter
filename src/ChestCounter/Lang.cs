@@ -16,7 +16,7 @@ public static class L
     public static bool En => true;
     public static bool Es => false;
 
-    public static CultureInfo Culture { get; } = CultureInfo.GetCultureInfo("en-GB");
+    public static CultureInfo Culture => CultureInfo.CurrentCulture;
 
     public static void Set(string? code) { }
 

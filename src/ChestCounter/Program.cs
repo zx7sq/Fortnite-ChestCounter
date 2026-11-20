@@ -942,9 +942,9 @@ void CheckTreasureHourAlerts()
 
     static string LocalRange(TreasureHour h)
     {
-        var s = h.StartUtc.ToLocalTime();
-        var e = h.EndUtc.ToLocalTime();
-        return $"{s:t} – {e:t}";
+        var s = L.Shown(h.StartUtc);
+        var e = L.Shown(h.EndUtc);
+        return $"{L.Clock(s)} – {L.Clock(e)}";
     }
 
     static string BoostSummary(TreasureHour h) =>
@@ -959,10 +959,11 @@ void CheckTreasureHourAlerts()
             liveOrSoon = true;
             var id = $"live:{h.StartUtc:O}";
             var title = L.T("Heure du trésor EN DIRECT !", "Treasure Hour is LIVE!", "¡Hora del tesoro EN DIRECTO!");
+            var endClock = L.Clock(L.Shown(h.EndUtc));
             var text = L.T(
-                $"En cours jusqu'à {h.EndUtc.ToLocalTime():t} · {BoostSummary(h)}",
-                $"Live now until {h.EndUtc.ToLocalTime():t} · {BoostSummary(h)}",
-                $"En directo hasta las {h.EndUtc.ToLocalTime():t} · {BoostSummary(h)}");
+                $"En cours jusqu'à {endClock} · {BoostSummary(h)}",
+                $"Live now until {endClock} · {BoostSummary(h)}",
+                $"En directo hasta las {endClock} · {BoostSummary(h)}");
             activeTreasureAlert = (id, "live", title, text);
             if (config.TreasureHourAlerts && notifiedTreasureHours.Add(id))
             {
@@ -1233,14 +1234,25 @@ object BuildGuiState()
             .Where(h => h.EndUtc > DateTime.UtcNow)
             .OrderBy(h => h.StartUtc)
             .Take(6)
-            .Select(h => new
+            .Select(h =>
             {
-                start = h.StartUtc.ToString("O"),
-                end = h.EndUtc.ToString("O"),
-                confirmed = h.Confirmed,
-                boosts = h.Boosts.Select(b => new { name = TreasureCatalog.KindName(b.Key), mult = b.Value }).ToList(),
+                var sd = L.Shown(h.StartUtc);
+                var ed = L.Shown(h.EndUtc);
+                var dayFmt = sd.ToString("ddd, d MMM", L.Culture);
+                return new
+                {
+                    start = h.StartUtc.ToString("O"),
+                    end = h.EndUtc.ToString("O"),
+                    day = dayFmt,
+                    range = $"{L.Clock(sd)} – {L.Clock(ed)}",
+                    isToday = sd.Date == todayLocal,
+                    confirmed = h.Confirmed,
+                    boosts = h.Boosts.Select(b => new { name = TreasureCatalog.KindName(b.Key), mult = b.Value }).ToList(),
+                };
             })
             .ToList(),
+        pcLocale = System.Globalization.CultureInfo.CurrentCulture.Name,
+        localZoneName = L.UtcTimes ? "UTC" : $"{TimeZoneInfo.Local.StandardName} ({L.LocalOffset})",
         reportStamp = File.Exists(store.ReportPath) ? File.GetLastWriteTimeUtc(store.ReportPath).Ticks.ToString() : "",
         fnStats = new
         {
