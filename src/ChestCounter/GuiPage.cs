@@ -159,9 +159,6 @@ public static class GuiPage
     private const string Template = """
         <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
         <title>Chest Counter</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
         <style>
         :root{
           --bg:#0b0b0e;
@@ -345,82 +342,86 @@ public static class GuiPage
         .log::-webkit-scrollbar{width:8px}
         .log::-webkit-scrollbar-track{background:transparent}
         .log::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:999px}
-        /* Gold Stats Card */
-        #statsPane{display:flex;flex-direction:column;gap:14px}
-        .gs-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-        .gs-search{display:flex;align-items:center;flex:1;min-width:240px;max-width:440px;background:rgba(255,255,255,.04);border:1px solid rgba(255,215,100,.16);border-radius:999px;padding:3px 4px 3px 10px;transition:border-color .2s,background .2s}
-        .gs-search:focus-within{border-color:#ffd24c;background:rgba(255,255,255,.06)}
-        .gs-search select{background:transparent;color:#ffd24c;border:none;font:700 12px var(--font);letter-spacing:.06em;min-height:30px;padding:4px;cursor:pointer;box-shadow:none}
+        /* Stats Card */
+        #statsPane{display:flex;flex-direction:column;gap:var(--s4)}
+        .gs-top{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);flex-wrap:wrap}
+        .gs-search{display:flex;align-items:center;flex:1;min-width:260px;max-width:460px;min-height:40px;background:var(--card);border:1px solid var(--line-strong);border-radius:12px;padding:3px 4px 3px 8px;transition:border-color .18s var(--ease)}
+        .gs-search:focus-within{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+        .gs-search select{background:transparent;color:var(--brand);border:none;font:700 12px var(--font);letter-spacing:.04em;min-height:32px;padding:4px 6px;cursor:pointer;box-shadow:none}
         .gs-search select:focus{box-shadow:none;border:none}
-        .gs-div{width:1px;height:16px;background:rgba(255,215,100,.16);margin:0 6px}
-        .gs-search input{flex:1;width:auto;min-width:100px;min-height:30px;background:transparent;border:none;color:#fafafa;padding:4px 8px;font:500 14px var(--font);box-shadow:none}
+        .gs-div{width:1px;height:18px;background:var(--line);margin:0 4px}
+        .gs-search input{flex:1;width:auto;min-width:100px;min-height:32px;background:transparent;border:none;color:var(--ink);padding:4px 8px;font:500 14px var(--font);box-shadow:none}
         .gs-search input:focus{box-shadow:none;border:none}
-        .gs-btn-gold{background:linear-gradient(180deg,#ffd24c 0%,#eab308 100%);color:#141004;border:none;border-radius:999px;padding:7px 16px;font:700 12px var(--font);letter-spacing:.08em;cursor:pointer;transition:filter .15s,transform .15s}
-        .gs-btn-gold:hover{filter:brightness(1.08);transform:translateY(-1px)}
+        .gs-btn-gold{min-height:32px;padding:0 var(--s4);border-radius:8px;border:1px solid var(--brand);background:var(--brand);color:var(--brand-ink);font:700 13px var(--font);letter-spacing:-.01em;cursor:pointer;transition:filter .15s,transform .15s}
+        .gs-btn-gold:hover{filter:brightness(1.08)}
+        .gs-btn-gold:active{transform:scale(.97)}
         .gs-btn-gold:disabled{opacity:.55;cursor:wait}
-        .gs-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-        .gs-ghost{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.03);color:#a19985;border:1px solid rgba(255,215,100,.15);border-radius:999px;padding:7px 13px;font:600 12px var(--font);letter-spacing:.06em;cursor:pointer;transition:all .15s}
-        .gs-ghost:hover{color:#fafafa;border-color:rgba(255,215,100,.38);background:rgba(255,255,255,.06)}
-        .gs-ghost.live-on{color:#86efac;border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.08)}
-        .gs-dot{width:7px;height:7px;border-radius:50%;background:#f59e0b}
-        .gs-dot.ok{background:#4ade80;box-shadow:0 0 8px rgba(74,222,128,.65)}
-        .gs-ctrls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-        .gs-seg{display:inline-flex;background:rgba(255,255,255,.03);border:1px solid rgba(255,215,100,.14);border-radius:999px;padding:3px;gap:2px}
-        .gs-pill{background:transparent;color:#a19985;border:none;border-radius:999px;padding:5px 11px;font:600 11.5px var(--font);letter-spacing:.05em;cursor:pointer;transition:all .15s}
-        .gs-pill:hover{color:#fafafa}
-        .gs-pill.on{background:#eab308;color:#141004}
-        .gs-banner{padding:10px 14px;border-radius:12px;font-size:13.5px;font-weight:500;background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.35);color:#fff4c2}
-        .gs-banner.err{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:#fca5a5}
-        .gs-card{position:relative;display:grid;grid-template-columns:1.55fr .85fr;gap:24px;padding:28px 30px;border-radius:20px;background:linear-gradient(145deg,rgba(26,22,14,.94) 0%,rgba(14,12,9,.98) 100%);border:1px solid rgba(255,215,100,.16);box-shadow:0 20px 52px rgba(0,0,0,.55);overflow:hidden}
-        @keyframes gsFlash{0%{box-shadow:0 0 0 1.5px #ffd24c,0 0 36px rgba(234,179,8,.42)}100%{box-shadow:0 20px 52px rgba(0,0,0,.55)}}
-        .gs-card.flash{animation:gsFlash 1.4s ease-out}
-        .gs-left{display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-width:0}
-        .gs-meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px}
-        .gs-meta-gold{font-size:12px;font-weight:700;letter-spacing:.1em;color:#ffd24c}
-        .gs-meta-dot{color:#a19985;opacity:.45}
-        .gs-meta-sub{font-size:12px;font-weight:600;letter-spacing:.08em;color:#a19985}
-        .gs-src{margin-left:auto;font-size:10.5px;font-weight:700;letter-spacing:.08em;padding:3px 9px;border-radius:999px;text-transform:uppercase}
-        .gs-src.demo{background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.35);color:#ffd24c}
-        .gs-src.live{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.35);color:#86efac}
-        .gs-id{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:12px}
-        .gs-name{font-family:'Burbank Big Condensed','Anton','Bahnschrift Condensed',var(--font);font-size:clamp(2.2rem,4.4vw,3.4rem);line-height:.95;letter-spacing:1px;color:#fafafa;margin:0;word-break:break-word;font-weight:400}
-        .gs-lvl{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,215,100,.16);border-radius:999px;padding:5px 12px}
-        .gs-lvl-l{font-size:11px;font-weight:700;letter-spacing:.08em;color:#ffd24c}
-        .gs-lvl-v{font-family:'Burbank Big Condensed','Anton','Bahnschrift Condensed',var(--font);font-size:18px;color:#fafafa}
-        .gs-bp{width:58px;height:4px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden}
-        .gs-bp-f{height:100%;background:linear-gradient(90deg,#eab308,#fff4c2);transition:width .4s ease}
-        .gs-rows{display:flex;flex-direction:column;gap:9px}
-        .gs-row{display:flex;align-items:center;border-radius:14px;padding:13px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);transition:border-color .2s,background .2s}
-        .gs-row:hover{background:rgba(255,215,100,.04);border-color:rgba(255,215,100,.16)}
-        .gs-rico{width:28px;height:28px;flex:none;margin-right:14px;display:flex;align-items:center;justify-content:center;color:#ffd24c;opacity:.92}
-        .gs-rico svg{width:22px;height:22px}
+        .gs-acts{display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap}
+        .gs-ghost{display:inline-flex;align-items:center;gap:var(--s2);min-height:38px;padding:0 var(--s4);border-radius:10px;background:var(--card);color:var(--cmuted);border:1px solid var(--line);font:600 13px var(--font);letter-spacing:-.01em;cursor:pointer;transition:all .18s var(--ease)}
+        .gs-ghost:hover{color:var(--ink);border-color:var(--line-strong);background:rgba(255,255,255,.06)}
+        .gs-ghost.live-on{color:#30d158;border-color:rgba(48,209,88,.35);background:rgba(48,209,88,.1)}
+        .gs-dot{width:7px;height:7px;border-radius:50%;background:var(--brand)}
+        .gs-dot.ok{background:#30d158}
+        .gs-ctrls{display:flex;flex-wrap:wrap;gap:var(--s3);align-items:center}
+        .gs-seg{display:inline-flex;gap:var(--s1);padding:var(--s1);border-radius:12px;background:var(--card);border:1px solid var(--line)}
+        .gs-pill{min-height:30px;padding:4px var(--s3);border-radius:8px;border:none;background:transparent;color:var(--cmuted);font:600 12.5px var(--font);letter-spacing:-.01em;cursor:pointer;transition:all .18s var(--ease)}
+        .gs-pill:hover{color:var(--ink);background:rgba(255,255,255,.05)}
+        .gs-pill.on{background:var(--brand);color:var(--brand-ink)}
+        .gs-banner{padding:var(--s3) var(--s4);border-radius:12px;font-size:13.5px;font-weight:500;background:var(--brand-soft);border:1px solid rgba(245,158,11,.35);color:var(--ink)}
+        .gs-banner.err{background:rgba(255,69,58,.1);border-color:rgba(255,69,58,.35);color:#ff6961}
+        .gs-card{position:relative;display:grid;grid-template-columns:1.55fr .85fr;gap:var(--s6);padding:var(--s6);border-radius:16px;background:var(--card);border:1px solid rgba(245,158,11,.28);transition:border-color .2s var(--ease);overflow:hidden}
+        .gs-card:hover{border-color:rgba(245,158,11,.45)}
+        @keyframes gsFlash{0%{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}100%{border-color:rgba(245,158,11,.28);box-shadow:none}}
+        .gs-card.flash{animation:gsFlash 1.2s ease-out}
+        .gs-left{display:flex;flex-direction:column;justify-content:space-between;gap:var(--s5);min-width:0}
+        .gs-meta{display:flex;align-items:center;flex-wrap:wrap;gap:var(--s2);margin-bottom:var(--s2)}
+        .gs-meta-gold{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--brand)}
+        .gs-meta-dot{color:var(--cmuted);opacity:.5}
+        .gs-meta-sub{font-size:12px;font-weight:600;letter-spacing:.03em;color:var(--cmuted)}
+        .gs-src{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:.04em;padding:3px 10px;border-radius:999px;text-transform:uppercase}
+        .gs-src.demo{background:var(--brand-soft);border:1px solid rgba(245,158,11,.35);color:var(--brand)}
+        .gs-src.live{background:rgba(48,209,88,.14);border:1px solid rgba(48,209,88,.35);color:#30d158}
+        .gs-id{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--s3)}
+        .gs-name{font-family:var(--font);font-size:clamp(26px,3.2vw,34px);font-weight:700;line-height:1.1;letter-spacing:-.03em;color:#ffffff;margin:0;word-break:break-word}
+        .gs-lvl{display:inline-flex;align-items:center;gap:var(--s2);background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:999px;padding:5px var(--s3)}
+        .gs-lvl-l{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--brand)}
+        .gs-lvl-v{font-family:var(--font);font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;color:#ffffff}
+        .gs-bp{width:56px;height:5px;background:var(--track);border-radius:999px;overflow:hidden}
+        .gs-bp-f{height:100%;background:var(--brand);border-radius:999px;transition:width .35s var(--ease)}
+        .gs-rows{display:flex;flex-direction:column;gap:var(--s3)}
+        .gs-row{display:flex;align-items:center;border-radius:12px;padding:var(--s4) var(--s5);background:rgba(255,255,255,.03);border:1px solid var(--line);transition:border-color .18s var(--ease),background .18s var(--ease)}
+        .gs-row:hover{background:rgba(255,255,255,.05);border-color:var(--line-strong)}
+        .gs-rico{width:28px;height:28px;flex:none;margin-right:var(--s4);display:flex;align-items:center;justify-content:center;color:var(--brand)}
+        .gs-rico svg{width:20px;height:20px}
         .gs-cells{flex:1;display:grid;align-items:center}
         .gs-cells.c3{grid-template-columns:repeat(3,1fr)}
         .gs-cells.c2{grid-template-columns:repeat(2,1fr)}
-        .gs-cell{text-align:center;padding:0 8px;position:relative}
-        .gs-cell+.gs-cell::before{content:'';position:absolute;left:0;top:15%;bottom:15%;width:1px;background:rgba(255,255,255,.07)}
-        .gs-val{font-family:'Burbank Big Condensed','Anton','Bahnschrift Condensed',var(--font);font-size:clamp(1.55rem,2.4vw,2.05rem);line-height:1.06;color:#fafafa;display:inline-block;font-variant-numeric:tabular-nums}
-        .gs-lbl{font-size:10.5px;font-weight:600;letter-spacing:.1em;margin-top:3px;color:#a19985}
-        @keyframes gsRoll{0%{opacity:.35;transform:translateY(10px) scale(.96)}60%{opacity:1;transform:translateY(-2px) scale(1.02)}100%{opacity:1;transform:translateY(0) scale(1)}}
-        .gs-roll{animation:gsRoll .55s cubic-bezier(.22,1,.36,1);color:#ffd24c}
-        .gs-extra{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}
+        .gs-cell{text-align:center;padding:0 var(--s2);position:relative}
+        .gs-cell+.gs-cell::before{content:'';position:absolute;left:0;top:14%;bottom:14%;width:1px;background:var(--line)}
+        .gs-val{font-family:var(--font);font-size:clamp(22px,2.4vw,28px);font-weight:700;line-height:1.15;letter-spacing:-.03em;color:#ffffff;display:inline-block;font-variant-numeric:tabular-nums}
+        .gs-lbl{font-size:11.5px;font-weight:500;letter-spacing:.02em;margin-top:var(--s1);color:var(--cmuted)}
+        @keyframes gsRoll{0%{opacity:.35;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
+        .gs-roll{animation:gsRoll .4s var(--ease);color:var(--brand)}
+        .gs-extra{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s3);padding-top:var(--s4);border-top:1px solid var(--line)}
         .gs-ex{display:flex;flex-direction:column;gap:2px}
-        .gs-ex-l{font-size:10px;font-weight:600;letter-spacing:.08em;color:#a19985}
-        .gs-ex-v{font-family:'Burbank Big Condensed','Anton','Bahnschrift Condensed',var(--font);font-size:18px;color:#ffd24c;display:inline-block;font-variant-numeric:tabular-nums}
-        .gs-right{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:310px}
-        .gs-spot{position:absolute;width:230px;height:230px;top:50%;left:50%;transform:translate(-50%,-54%);border-radius:50%;background:radial-gradient(circle,rgba(234,179,8,.22) 0%,transparent 70%);filter:blur(18px);pointer-events:none}
-        .gs-skin{position:relative;z-index:2;max-height:330px;max-width:100%;object-fit:contain;filter:drop-shadow(0 16px 26px rgba(0,0,0,.75));transition:transform .25s ease}
+        .gs-ex-l{font-size:11px;font-weight:500;letter-spacing:.02em;color:var(--cmuted)}
+        .gs-ex-v{font-family:var(--font);font-size:16px;font-weight:700;letter-spacing:-.02em;color:var(--brand);display:inline-block;font-variant-numeric:tabular-nums}
+        .gs-right{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:290px;padding:var(--s3);border-radius:12px;background:rgba(255,255,255,.02);border:1px solid var(--line)}
+        .gs-spot{position:absolute;width:210px;height:210px;top:48%;left:50%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(245,158,11,.18) 0%,transparent 70%);filter:blur(16px);pointer-events:none}
+        .gs-skin{position:relative;z-index:2;max-height:290px;max-width:100%;object-fit:contain;transition:transform .25s var(--ease)}
         .gs-skin:hover{transform:scale(1.03)}
-        .gs-cap{position:relative;z-index:2;margin-top:6px;font-size:11px;font-weight:600;letter-spacing:.14em;color:#a19985;text-transform:uppercase}
-        .gs-skinbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06)}
-        .gs-presets{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
-        .gs-sbl{font-size:11px;font-weight:700;letter-spacing:.1em;color:#a19985;margin-right:4px}
-        .gs-chip{background:transparent;color:#a19985;border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:4px 11px;font:500 12.5px var(--font);cursor:pointer;transition:all .15s}
-        .gs-chip:hover,.gs-chip.on{background:rgba(234,179,8,.14);border-color:rgba(234,179,8,.45);color:#fff4c2}
-        .gs-sform{display:flex;gap:6px;align-items:center}
-        .gs-sform input{width:145px;min-height:30px;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);font-size:12.5px}
-        @media (max-width:860px){.gs-card{grid-template-columns:1fr;padding:22px 18px}.gs-right{min-height:220px}.gs-skin{max-height:240px}}
-        @media (max-width:560px){.gs-cells.c3{grid-template-columns:1fr;gap:10px}.gs-cell+.gs-cell::before{display:none}.gs-extra{grid-template-columns:repeat(2,1fr)}}
+        .gs-cap{position:relative;z-index:2;margin-top:var(--s2);font-size:11.5px;font-weight:600;letter-spacing:.08em;color:var(--cmuted);text-transform:uppercase}
+        .gs-skinbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--s3);padding:var(--s3) var(--s4);border-radius:16px;background:var(--card);border:1px solid var(--line)}
+        .gs-presets{display:flex;align-items:center;flex-wrap:wrap;gap:var(--s2)}
+        .gs-sbl{font-size:12px;font-weight:600;color:var(--cmuted);margin-right:var(--s1)}
+        .gs-chip{background:rgba(255,255,255,.04);color:var(--cmuted);border:1px solid var(--line);border-radius:8px;padding:5px var(--s3);font:600 12.5px var(--font);cursor:pointer;transition:all .18s var(--ease)}
+        .gs-chip:hover{color:var(--ink);border-color:var(--line-strong)}
+        .gs-chip.on{background:var(--brand-soft);border-color:rgba(245,158,11,.4);color:var(--brand)}
+        .gs-sform{display:flex;gap:var(--s2);align-items:center}
+        .gs-sform input{width:155px;min-height:32px;padding:4px var(--s3);border-radius:8px;background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:13px}
+        .gs-sform button{min-height:32px;padding:0 var(--s3);border-radius:8px}
+        @media (max-width:860px){.gs-card{grid-template-columns:1fr;padding:var(--s5)}.gs-right{min-height:220px}.gs-skin{max-height:230px}}
+        @media (max-width:560px){.gs-cells.c3{grid-template-columns:1fr;gap:var(--s3)}.gs-cell+.gs-cell::before{display:none}.gs-extra{grid-template-columns:repeat(2,1fr)}}
         </style></head><body><div class="tbar"><div class="wctl">
           <button type="button" id="wmin"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5.5h10" stroke="currentColor" stroke-width="1.1"/></svg></button>
           <button type="button" id="wmax"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><rect id="wmaxicon" x=".55" y=".55" width="8.9" height="8.9" fill="none" stroke="currentColor" stroke-width="1.1"/><path id="wresicon" d="M2.5 2.5V.55h6.95v6.95H7.5M.55 2.5h6.95v6.95H.55z" fill="none" stroke="currentColor" stroke-width="1.1" style="display:none"/></svg></button>
@@ -429,32 +430,32 @@ public static class GuiPage
         <section id="statsPane" class="hidden">
           <div class="gs-top">
             <form id="gsSearchForm" class="gs-search" autocomplete="off">
-              <select id="gsPlatform" aria-label="Platform"><option value="epic">EPIC</option><option value="psn">PSN</option><option value="xbl">XBOX</option></select>
+              <select id="gsPlatform" aria-label="Platform"><option value="epic">Epic</option><option value="psn">PSN</option><option value="xbl">Xbox</option></select>
               <span class="gs-div" aria-hidden="true"></span>
-              <input id="gsUsername" type="text" placeholder="Search Fortnite username..." required>
-              <button type="submit" id="gsLookupBtn" class="gs-btn-gold">LOOKUP</button>
+              <input id="gsUsername" type="text" placeholder="Search Fortnite username…" required>
+              <button type="submit" id="gsLookupBtn" class="gs-btn-gold">Lookup</button>
             </form>
             <div class="gs-acts">
-              <button type="button" id="gsLiveBtn" class="gs-ghost live-on" title="Auto-refresh stats every 30s and after matches">LIVE WATCH: ON</button>
-              <button type="button" id="gsKeyBtn" class="gs-ghost" title="Configure Fortnite-API.com Key"><span class="gs-dot" id="gsKeyDot"></span>API KEY</button>
+              <button type="button" id="gsLiveBtn" class="gs-ghost live-on" title="Auto-refresh stats every 30s and after matches">Live Watch: On</button>
+              <button type="button" id="gsKeyBtn" class="gs-ghost" title="Configure Fortnite-API.com Key"><span class="gs-dot" id="gsKeyDot"></span>API Key</button>
             </div>
           </div>
           <div class="gs-ctrls">
             <div class="gs-seg" role="group" aria-label="Time Window">
-              <button type="button" class="gs-pill on" data-gswin="season">SEASON</button>
-              <button type="button" class="gs-pill" data-gswin="lifetime">LIFETIME</button>
+              <button type="button" class="gs-pill on" data-gswin="season">Season</button>
+              <button type="button" class="gs-pill" data-gswin="lifetime">Lifetime</button>
             </div>
             <div class="gs-seg" role="group" aria-label="Game Mode">
-              <button type="button" class="gs-pill on" data-gsmode="overall">OVERALL</button>
-              <button type="button" class="gs-pill" data-gsmode="solo">SOLO</button>
-              <button type="button" class="gs-pill" data-gsmode="duo">DUO</button>
-              <button type="button" class="gs-pill" data-gsmode="squad">SQUAD</button>
+              <button type="button" class="gs-pill on" data-gsmode="overall">Overall</button>
+              <button type="button" class="gs-pill" data-gsmode="solo">Solo</button>
+              <button type="button" class="gs-pill" data-gsmode="duo">Duo</button>
+              <button type="button" class="gs-pill" data-gsmode="squad">Squad</button>
               <button type="button" class="gs-pill" data-gsmode="ltm">LTM</button>
             </div>
             <div class="gs-seg" role="group" aria-label="Input Type">
-              <button type="button" class="gs-pill on" data-gsin="all">ALL</button>
+              <button type="button" class="gs-pill on" data-gsin="all">All</button>
               <button type="button" class="gs-pill" data-gsin="keyboardMouse">KBM</button>
-              <button type="button" class="gs-pill" data-gsin="gamepad">PAD</button>
+              <button type="button" class="gs-pill" data-gsin="gamepad">Pad</button>
             </div>
           </div>
           <div id="gsBanner" class="gs-banner hidden" role="alert"></div>
@@ -516,7 +517,7 @@ public static class GuiPage
           </section>
           <div class="gs-skinbar">
             <div class="gs-presets">
-              <span class="gs-sbl">OUTFIT</span>
+              <span class="gs-sbl">Outfit</span>
               <button type="button" class="gs-chip on" data-gsskin="Midas">Midas</button>
               <button type="button" class="gs-chip" data-gsskin="Marigold">Marigold</button>
               <button type="button" class="gs-chip" data-gsskin="Peely">Peely</button>
@@ -524,8 +525,8 @@ public static class GuiPage
               <button type="button" class="gs-chip" data-gsskin="Renegade Raider">Renegade Raider</button>
             </div>
             <form id="gsSkinForm" class="gs-sform">
-              <input id="gsSkinInput" type="text" placeholder="Custom outfit...">
-              <button type="submit" class="gs-ghost" style="padding:5px 12px">SET</button>
+              <input id="gsSkinInput" type="text" placeholder="Custom outfit…">
+              <button type="submit" class="gs-ghost">Set</button>
             </form>
           </div>
         </section>
@@ -773,7 +774,7 @@ public static class GuiPage
         async function gsLookup(name,{silent=false}={}){
           name=(name||'').trim();if(!name)return;
           const btn=$('#gsLookupBtn');
-          if(!silent){gsBanner('');btn.disabled=true;btn.textContent='LOADING...'}
+          if(!silent){gsBanner('');btn.disabled=true;btn.textContent='Loading…'}
           const plat=$('#gsPlatform').value;
           try{
             const q=new URLSearchParams({name,accountType:plat,timeWindow:gs.win});
@@ -791,7 +792,7 @@ public static class GuiPage
               if(!silent)api('fnStatsPrefs',{player:name,platform:plat});
             }
           }catch(e){if(!silent)gsBanner('Network error while fetching stats.',true)}
-          finally{if(!silent){btn.disabled=false;btn.textContent='LOOKUP'}}
+          finally{if(!silent){btn.disabled=false;btn.textContent='Lookup'}}
         }
         async function gsLoadSkin(name,save){
           try{
@@ -831,7 +832,7 @@ public static class GuiPage
             gsRender();gsLoadSkin(out,false);gsStartPoll();
             $('#gsSearchForm').addEventListener('submit',e=>{e.preventDefault();gsLookup($('#gsUsername').value)});
             $('#gsKeyBtn').addEventListener('click',openFnKeyModal);
-            $('#gsLiveBtn').addEventListener('click',()=>{gs.live=!gs.live;$('#gsLiveBtn').textContent=gs.live?'LIVE WATCH: ON':'LIVE WATCH: OFF';$('#gsLiveBtn').classList.toggle('live-on',gs.live)});
+            $('#gsLiveBtn').addEventListener('click',()=>{gs.live=!gs.live;$('#gsLiveBtn').textContent=gs.live?'Live Watch: On':'Live Watch: Off';$('#gsLiveBtn').classList.toggle('live-on',gs.live)});
             document.querySelectorAll('[data-gswin]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-gswin]').forEach(x=>x.classList.remove('on'));b.classList.add('on');gs.win=b.dataset.gswin;if(!gs.isDemo)gsLookup($('#gsUsername').value);else gsRender()}));
             document.querySelectorAll('[data-gsmode]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-gsmode]').forEach(x=>x.classList.remove('on'));b.classList.add('on');gs.mode=b.dataset.gsmode;gsRender()}));
             document.querySelectorAll('[data-gsin]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-gsin]').forEach(x=>x.classList.remove('on'));b.classList.add('on');gs.inp=b.dataset.gsin;gsRender()}));
