@@ -2,6 +2,12 @@
 
 namespace ChestCounter;
 
+/// <summary>
+/// Stores ONLY the Discord Rich Presence Application ID and the Fortnite-API.com key
+/// using lightweight XOR + bit-rotation encoding strictly to prevent automated GitHub
+/// and binary scrapers from harvesting and abusing the free API quota.
+/// Nothing else in this app is obfuscated — all source code is open and readable.
+/// </summary>
 internal static class AppSecrets
 {
     private static readonly byte[] M1 = [0x6D, 0xA3, 0x19, 0xE4, 0x52, 0x8F, 0xC7, 0x3B];
