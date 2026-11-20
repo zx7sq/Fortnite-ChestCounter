@@ -727,7 +727,7 @@ public static class GuiPage
         async function uninstall(all){if(!confirm(S.txt.uninstallConfirm))return;const err=await api('uninstall',all);if(err){alert(err);return}closedView()}
         async function quit(){if(!confirm(S.txt.quitConfirm))return;try{await api('quit')}catch(e){}closedView()}
         // --- Gold Stats Card ---
-        const GS_DEMO={account:{name:'haisezxz'},battlePass:{level:212,progress:68},stats:{all:{overall:{wins:77,winRate:20.3,matches:379,kd:5.29,killsPerMatch:4.21,kills:1597,minutesPlayed:3432,top3:112,top5:145,top10:210,playersOutlived:24810,score:148920,killsPerMin:0.46}}}};
+        const GS_DEMO={account:{name:'Player'},battlePass:{level:212,progress:68},stats:{all:{overall:{wins:77,winRate:20.3,matches:379,kd:5.29,killsPerMatch:4.21,kills:1597,minutesPlayed:3432,top3:112,top5:145,top10:210,playersOutlived:24810,score:148920,killsPerMin:0.46}}}};
         const gs={init:false,win:'season',mode:'overall',inp:'all',data:GS_DEMO,isDemo:true,live:true,timer:null,snap:null,lastMatchCount:null};
         const gsAnims=new WeakMap(),gsPrev=new WeakMap();
         function gsFmtInt(n){return Number(n||0).toLocaleString('en-US')}
