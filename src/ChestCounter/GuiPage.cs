@@ -105,6 +105,8 @@ public static class GuiPage
         ["saveId"] = L.T("Enregistrer l'ID", "Save ID", "Guardar ID"),
         ["treasureAlerts"] = L.T("Rappels des Heures du trésor", "Treasure Hour reminders", "Recordatorios de Horas del tesoro"),
         ["treasureAlertsHelp"] = L.T("Alerte dans l'app et notification Windows 5 min avant chaque Heure du trésor, et rappel au lancement de Fortnite le jour même.", "Shows an in-app banner and Windows pop-up 5 minutes before each Treasure Hour, plus a reminder when you boot Fortnite on Treasure Hour days.", "Muestra un aviso en la app y notificación de Windows 5 min antes de cada Hora del tesoro, y un recordatorio al abrir Fortnite ese día."),
+        ["squadSync"] = "Squad Sync",
+        ["squadSyncHelp"] = "Automatically detect squadmates running ChestCounter in the same match and count their exact chests in a separate counter.",
         ["thTitle"] = L.T("Heures du trésor", "Treasure Hours", "Horas del tesoro"),
         ["thLive"] = L.T("EN DIRECT", "LIVE NOW", "EN DIRECTO"),
         ["thNext"] = L.T("Prochaine dans", "Next in", "Próxima en"),
@@ -652,6 +654,7 @@ public static class GuiPage
             <div class="tile"><div class="v num">${esc(S.last?S.last.chests:'—')}</div><div class="l">${esc(T.last)}${S.last?'<br>'+esc(S.last.when)+' · '+esc(S.last.mode):''}</div></div>
             <div class="tile"><div class="v num">${esc(S.avgPerDay||'0')}</div><div class="l">${esc(T.perDay)}${S.spanDays>0?'<br>over '+esc(S.spanDays)+(S.spanDays===1?' day':' days'):''}</div></div>
             ${S.avgPerWeek?`<div class="tile"><div class="v num">${esc(S.avgPerWeek)}</div><div class="l">${esc(T.perWeek)}<br>over ${(S.spanDays/7).toFixed(1)} weeks</div></div>`:''}
+            ${S.squadSync&&S.squadSync.active?`<div class="tile" style="border-color:rgba(48,209,88,.35)"><div class="v num">${esc(S.squadSync.teamChests)}${S.squadSync.live?` <span class="th-pill live" style="margin-left:4px">${esc(T.thLive)}</span>`:''}</div><div class="l">Squad Sync chests · ${esc(S.squadSync.matches)} ${esc(T.matches)}<br>Squad total: ${esc(S.squadSync.totalChests)}${(S.squadSync.live?S.squadSync.livePeers:S.squadSync.recentPeers).length?'<br>'+((S.squadSync.live?S.squadSync.livePeers:S.squadSync.recentPeers).map(p=>esc(p.name)+': '+esc(p.chests)).join(' · ')):''}</div></div>`:''}
             <div class="tile"><div class="v num">${starIco}<span>${esc(S.treasures)}</span></div><div class="l">${esc(T.treasures)} · ${esc(S.matches)} ${esc(T.matches)} · ${esc(fmt(T.perMatch,S.average))}</div></div></section>`;
           if(S.matches==='0'&&!S.firstRun)h+=`<div class="card empty-state"><div class="es-body"><div class="es-title">${esc(T.total)}</div>${esc(T.emptyMatches)}</div></div>`;
           h+=`<div class="actions"><button class="b main" onclick="setTab('report')">${esc(T.openReport)}</button>`;
@@ -679,6 +682,7 @@ public static class GuiPage
             ${s.canStartWithFortnite?row(esc(T.withFortnite),esc(T.withFortniteHelp),sw('wf',s.startWithFortnite,'startWithFortnite')):''}
             ${row(esc(T.zapMode),esc(T.zapModeHelp),sw('zm',s.zapMode,'zapMode'))}
             ${row(esc(T.treasureAlerts),esc(T.treasureAlertsHelp),sw('tha',s.treasureHourAlerts,'treasureHourAlerts'))}
+            ${row(esc(T.squadSync),esc(T.squadSyncHelp),sw('sqs',s.squadSync,'squadSync'))}
             ${row(esc(T.discordStatus),esc(T.discordStatusHelp),sw('drpc',s.discordPresence,'discordPresence'))}
             ${s.discordPresence?`<div class="row"><div style="flex:1"><div class="t">${esc(T.discordAppId)}</div><div class="actions" style="margin-top:6px"><input type="text" id="discordAppId" placeholder="1234567890123456789" value="${esc(s.discordAppId||'')}"><button class="b" onclick="api('discordAppId',$('#discordAppId').value)">${esc(T.saveId)}</button></div></div></div>`:''}
             ${row(esc(T.updates),'',sel('updateMode',s.updateMode,[['prompt',T.upPrompt],['auto',T.upAuto],['off',T.upOff]]))}

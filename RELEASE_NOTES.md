@@ -2,6 +2,12 @@ Download **`ChestCounter.exe`** below and run it — nothing to install and no e
 
 > **Turn on replays in Fortnite first:** *Settings → Game → Replays → Record Replays: **On***. The app only reads your saved replay files in read-only mode — 100% Easy Anti-Cheat safe.
 
+**What's new in 3.1.0**
+- **Squad Sync (Separate Squad Chest Counter):**
+  - Automatically detects teammates in your same Fortnite squad who are also running ChestCounter (zero setup, keyed by a one-way SHA-256 hash of your match session + squad).
+  - Counts your synced squadmates' exact opened chests in a dedicated **Squad Sync** tile on Home (with live teammate breakdown during active matches and combined squad total).
+  - Can be toggled on/off anytime in **Settings → Squad Sync**.
+
 **What's new in 3.0.1**
 - **Localized Treasure Hours:** Treasure Hours on the Home card, alerts, and Report now automatically match your PC's local timezone (with timezone name & UTC offset shown) and your Windows language/regional date & 12h/24h clock format.
 

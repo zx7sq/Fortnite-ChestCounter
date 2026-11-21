@@ -83,6 +83,15 @@ public sealed class TeamChestCount
     public int Destroyed { get; set; }
 }
 
+/// <summary>Exact chest count reported by a squadmate who is also running ChestCounter in the same match.</summary>
+public sealed class SyncedSquadMember
+{
+    public string Name { get; set; } = "";
+    public int Chests { get; set; }
+    public bool Live { get; set; }
+    public DateTime UpdatedUtc { get; set; }
+}
+
 /// <summary>A treasure seen in a match, from a golden chest opened by another player.</summary>
 public sealed class SeenPrize
 {
@@ -138,6 +147,12 @@ public sealed class MatchRecord
     public List<TeamChestCount> TeamChests { get; set; } = new();
     public int TeamChestsOpened { get; set; }
 
+    /// <summary>Fortnite server-assigned squad/team index for this match (identical across all squadmates).</summary>
+    public int? TeamIndex { get; set; }
+
+    /// <summary>Exact chests synced from squadmates who are also running ChestCounter in this match (keyed by EpicId or name).</summary>
+    public Dictionary<string, SyncedSquadMember> SyncedSquad { get; set; } = new();
+
     /// <summary>Time and distance spent in vehicles (driver or passenger).</summary>
     public int VehicleSeconds { get; set; }
     public int VehicleMeters { get; set; }
@@ -180,6 +195,9 @@ public sealed class Config
 
     /// <summary>Show in-app and Windows pop-up reminders 5 minutes before Treasure Hours and when booting Fortnite on Treasure Hour days.</summary>
     public bool TreasureHourAlerts { get; set; } = true;
+
+    /// <summary>Automatically detect squadmates running ChestCounter in the same match and count their exact chests in a separate counter.</summary>
+    public bool SquadSync { get; set; } = true;
 
     /// <summary>"auto" (install new versions on open), "prompt" (offer them) or "off" (never check GitHub).</summary>
     public string UpdateMode { get; set; } = "auto";

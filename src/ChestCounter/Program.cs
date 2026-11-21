@@ -420,6 +420,7 @@ GuiServer? guiServer = null;
 var guiWindowed = false; // the page is shown in the counter's own window (WebView2), not in a browser
 object? lastGuiState = null;
 var welcome = firstRun;
+var squadSync = new SquadSync();
 if (gui)
 {
     guiServer = new GuiServer(GuiState, GuiAction, store.Folder, store.ReportPath, store.OverlayPath, () => config.FortniteApiKey);
@@ -507,6 +508,7 @@ tracker.StopRequested = () => quit;
 
 nextScan = DateTime.UtcNow.AddSeconds(backlog > 0 ? 1 : 2);
 var reportWeek = TreasureCatalog.ShownWeek(DateTime.UtcNow)?.Number;
+var knownSessions = data.Matches.Select(m => m.SessionId).ToHashSet();
 while (!quit)
 {
     if (DateTime.UtcNow >= nextScan)
@@ -516,6 +518,13 @@ while (!quit)
             lock (stateLock)
             {
                 tracker.Scan();
+                foreach (var m in data.Matches)
+                {
+                    if (knownSessions.Add(m.SessionId) && (DateTime.UtcNow - (m.MatchStartUtc ?? m.AnalyzedAtUtc)).TotalHours < 2)
+                    {
+                        squadSync.OnMatchFinished(config.SquadSync, m);
+                    }
+                }
                 if (ReportWriter.Progress != null)
                 {
                     // The replays left at startup are read (a batch clears it itself, a single replay does not).
@@ -525,6 +534,11 @@ while (!quit)
                 AnnounceNewProfiles();
                 // Match in progress: re-read the replay being recorded (throttled inside).
                 tracker.UpdateLive();
+                squadSync.Tick(config.SquadSync, tracker.LiveMatch, tracker.IsLive);
+                if (squadSync.ApplyPending(data))
+                {
+                    store.SaveData(data);
+                }
                 UpdateOverlay(store, config, data, tracker.LiveMatch, tracker.IsLive);
             }
         }
@@ -546,6 +560,13 @@ while (!quit)
         CheckAutoClose();
     }
     CheckTreasureHourAlerts();
+    lock (stateLock)
+    {
+        if (squadSync.ApplyPending(data))
+        {
+            store.SaveData(data);
+        }
+    }
 
     // A new treasure week (Sunday): the chances of the weekly treasures start again from that week's chests, even for
     // a counter left open with no match played.
@@ -1130,6 +1151,18 @@ object BuildGuiState()
     var spanDays = matches.Count > 0 ? Math.Max(1, (todayLocal - matches.Min(m => L.Shown(m.MatchStartUtc ?? m.AnalyzedAtUtc).Date)).Days + 1) : 0;
     var avgPerDayVal = spanDays > 0 ? (double)view.CountedChests / spanDays : 0.0;
     var avgPerWeekVal = spanDays >= 7 ? avgPerDayVal * 7.0 : (double?)null;
+    var syncedList = matches.Where(m => m.SyncedSquad.Count > 0).ToList();
+    var syncedTeamChests = syncedList.Sum(m => m.SyncedSquad.Values.Sum(p => p.Chests));
+    var syncedSquadTotal = syncedList.Sum(m => m.ChestsOpened + m.SyncedSquad.Values.Sum(p => p.Chests));
+    var (liveSyncSession, liveSyncPeers) = squadSync.LiveSnapshot();
+    var liveNotSaved = tracker.IsLive && liveSyncSession != null && liveSyncPeers.Count > 0 && !syncedList.Any(m => m.SessionId == liveSyncSession);
+    if (liveNotSaved)
+    {
+        var livePeerSum = liveSyncPeers.Sum(p => p.Chests);
+        syncedTeamChests += livePeerSum;
+        syncedSquadTotal += (tracker.LiveMatch?.ChestsOpened ?? 0) + livePeerSum;
+    }
+    var latestSynced = syncedList.OrderByDescending(m => m.MatchStartUtc ?? m.AnalyzedAtUtc).FirstOrDefault();
     var u = Volatile.Read(ref update);
     static string ColorClass(ConsoleColor c) => c switch
     {
@@ -1176,6 +1209,17 @@ object BuildGuiState()
         sessionMatches = L.N(session.Count),
         last = last == null ? null : new { chests = L.N(last.ChestsOpened), when = L.DateTimeShort(L.Shown(last.MatchStartUtc ?? last.AnalyzedAtUtc)), mode = Pretty.Playlist(last.Playlist) },
         squad = (object?)null,
+        squadSync = new
+        {
+            enabled = config.SquadSync,
+            active = syncedTeamChests > 0 || liveSyncPeers.Count > 0,
+            teamChests = L.N(syncedTeamChests),
+            totalChests = L.N(syncedSquadTotal),
+            matches = L.N(syncedList.Count + (liveNotSaved ? 1 : 0)),
+            live = liveSyncPeers.Count > 0,
+            livePeers = liveSyncPeers.Select(p => new { name = p.Name, chests = p.Chests }).ToList(),
+            recentPeers = (latestSynced?.SyncedSquad.Values ?? Enumerable.Empty<SyncedSquadMember>()).Select(p => new { name = p.Name, chests = p.Chests }).ToList(),
+        },
         treasures = L.N(matches.Sum(m => m.TreasureFinds.Count)),
         matches = L.N(matches.Count),
         average = matches.Count > 0 ? ((double)view.CountedChests / matches.Count).ToString("F1", L.Culture) : "0",
@@ -1214,6 +1258,7 @@ object BuildGuiState()
             discordPresence = config.DiscordPresence,
             discordAppId = config.DiscordAppId,
             treasureHourAlerts = config.TreasureHourAlerts,
+            squadSync = config.SquadSync,
             canStartWithFortnite = OperatingSystem.IsWindows() && AppInfo.ExePath != null,
             updateMode = config.UpdateMode,
             timeZone = config.TimeZone,
@@ -1356,6 +1401,9 @@ object? RunGuiAction(string name, System.Text.Json.JsonElement value)
             break;
         case "treasureHourAlerts":
             config.TreasureHourAlerts = Bool();
+            break;
+        case "squadSync":
+            config.SquadSync = Bool();
             break;
         case "dismissTreasureAlert":
             dismissedTreasureAlertId = Str();

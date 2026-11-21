@@ -1184,6 +1184,7 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
             GameVersion = header?.Branch,
             PlayerName = target?.PlayerName,
             EpicId = target?.EpicId,
+            TeamIndex = target?.TeamIndex,
             TrackedByUsername = matchedByName,
             NotTrackedOwner = notTracked ? (recorderPlayer?.PlayerName ?? "inconnu") : null,
             Placement = placement,
