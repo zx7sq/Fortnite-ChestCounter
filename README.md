@@ -14,6 +14,10 @@
 
 [⬇️ **Download Latest `ChestCounter.exe`**](https://github.com/zx7sq/Fortnite-ChestCounter/releases/latest)
 
+<br><br>
+
+<img src="assets/trailer-preview.webp" alt="Fortnite Chest Counter Trailer" width="840">
+
 </div>
 
 ---
