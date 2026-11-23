@@ -57,6 +57,8 @@ public static class Profiles
                 ManualEntries = ManualHistory(d, c),
                 Obtained = d.Obtained,
                 ObtainedIds = d.Obtained.GetValueOrDefault("") ?? new(),
+                OwnedSprites = d.OwnedSprites,
+                OwnedSpriteKeys = d.OwnedSprites.GetValueOrDefault("") ?? new(),
             };
         }
         return new TrackerData
@@ -71,6 +73,8 @@ public static class Profiles
             ManualEntries = ManualHistory(d, c),
             Obtained = d.Obtained,
             ObtainedIds = (d.Obtained.GetValueOrDefault(current.Key) ?? new()).Concat(d.Obtained.GetValueOrDefault("") ?? new()).Distinct().ToList(),
+            OwnedSprites = d.OwnedSprites,
+            OwnedSpriteKeys = (d.OwnedSprites.GetValueOrDefault(current.Key) ?? new()).Concat(d.OwnedSprites.GetValueOrDefault("") ?? new()).Distinct().ToList(),
         };
     }
 
@@ -98,6 +102,23 @@ public static class Profiles
         {
             early.Remove(prizeId); // ticked before the first match: now the profile's
         }
+    }
+
+    /// <summary>Toggles a manually owned Sprite ("familyId:variant") for the profile shown.</summary>
+    public static void ToggleOwnedSprite(TrackerData d, Config c, string spriteKey)
+    {
+        if (string.IsNullOrWhiteSpace(spriteKey)) return;
+        var key = Current(d, c)?.Key ?? "";
+        if (!d.OwnedSprites.TryGetValue(key, out var list))
+        {
+            d.OwnedSprites[key] = list = new List<string>();
+        }
+        var hadEarly = key.Length > 0 && d.OwnedSprites.TryGetValue("", out var early) && early.Remove(spriteKey);
+        if (list.Remove(spriteKey) || hadEarly)
+        {
+            return;
+        }
+        list.Add(spriteKey);
     }
 
     /// <summary>Sets the manual adjustment of the profile shown (0 removes it).</summary>

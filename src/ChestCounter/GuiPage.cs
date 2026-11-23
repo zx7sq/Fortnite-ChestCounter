@@ -12,6 +12,7 @@ public static class GuiPage
     public static Dictionary<string, string> Texts() => _cachedTexts ??= new()
     {
         ["home"] = L.T("Accueil", "Home", "Inicio"),
+        ["sprites"] = "Sprites",
         ["stats"] = "Stats",
         ["report"] = L.T("Rapport", "Report", "Informe"),
         ["overlay"] = L.T("Overlay", "Overlay", "Overlay"),
@@ -424,6 +425,36 @@ public static class GuiPage
         .gs-sform button{height:30px;min-height:30px;padding:0 12px;border-radius:8px}
         @media (max-width:860px){.gs-card{grid-template-columns:1fr;padding:18px}.gs-right{min-height:240px}.gs-skin{max-height:220px}}
         @media (max-width:560px){.gs-cells.c3{grid-template-columns:1fr;gap:10px}.gs-cell+.gs-cell::before{display:none}.gs-extra{grid-template-columns:repeat(2,1fr)}}
+        /* Sprites Tab */
+        .sp-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+        .sp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+        .sp-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .18s var(--ease)}
+        .sp-card:hover{border-color:var(--line-strong)}
+        .sp-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+        .sp-name{font-size:15.5px;font-weight:700;color:#ffffff;letter-spacing:-.01em}
+        .sp-ab{font-size:12.5px;color:var(--cmuted);line-height:1.4;margin-top:-4px}
+        .sp-rar{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--cmuted)}
+        .sp-rar.mythic{color:#f59e0b;border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.12)}
+        .sp-rar.legendary{color:#fb923c;border-color:rgba(251,146,60,.4);background:rgba(251,146,60,.12)}
+        .sp-rar.epic{color:#c084fc;border-color:rgba(192,132,252,.4);background:rgba(192,132,252,.12)}
+        .sp-rar.rare{color:#38bdf8;border-color:rgba(56,189,248,.4);background:rgba(56,189,248,.12)}
+        .sp-vars{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+        .sp-var{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:7px 10px;border-radius:9px;background:rgba(255,255,255,.025);border:1px solid var(--line);color:var(--cmuted);font:600 12px var(--font);cursor:pointer;text-align:left;transition:all .16s var(--ease)}
+        .sp-var:hover{border-color:var(--line-strong);color:var(--ink);background:rgba(255,255,255,.05)}
+        .sp-var.owned{color:#ffffff;background:rgba(48,209,88,.1);border-color:rgba(48,209,88,.38)}
+        .sp-var.v-fortune.owned{color:#7dd3fc;background:rgba(56,189,248,.12);border-color:rgba(56,189,248,.42)}
+        .sp-var.v-cursed.owned{color:#fca5a5;background:rgba(255,69,58,.12);border-color:rgba(255,69,58,.42)}
+        .sp-var.v-gold.owned{color:#fcd34d;background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.48)}
+        .sp-tags{display:inline-flex;gap:4px;align-items:center}
+        .sp-tag{font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:5px;letter-spacing:.03em;text-transform:uppercase;background:rgba(255,255,255,.08);color:var(--ink)}
+        .sp-tag.won{background:rgba(48,209,88,.2);color:#30d158}
+        .sp-tag.ext{background:rgba(56,189,248,.2);color:#38bdf8}
+        .sp-tag.max{background:rgba(245,158,11,.22);color:#f59e0b}
+        .sp-rec{display:flex;flex-direction:column}
+        .sp-rrow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line);font-size:13.5px}
+        .sp-rrow:first-child{border-top:none;padding-top:2px}
+        .sp-rchips{display:flex;flex-wrap:wrap;gap:6px}
+        .sp-rchip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;font-weight:600;color:#ffffff}
         </style></head><body><div class="tbar"><div class="wctl">
           <button type="button" id="wmin"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5.5h10" stroke="currentColor" stroke-width="1.1"/></svg></button>
           <button type="button" id="wmax"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><rect id="wmaxicon" x=".55" y=".55" width="8.9" height="8.9" fill="none" stroke="currentColor" stroke-width="1.1"/><path id="wresicon" d="M2.5 2.5V.55h6.95v6.95H7.5M.55 2.5h6.95v6.95H.55z" fill="none" stroke="currentColor" stroke-width="1.1" style="display:none"/></svg></button>
@@ -535,7 +566,7 @@ public static class GuiPage
         <div id="foot"></div></main></div>
         <dialog id="dlg" aria-labelledby="dlgT"><div class="dhead"><h2 class="pirate" id="dlgT"></h2><button type="button" class="dclose" id="dlgX" aria-label="Close"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div><div id="dlgB"></div></dialog>
         <script>
-        const TOKEN='__TOKEN__';let S=null,tab=(()=>{const h=location.hash.slice(1);if(['home','stats','report','overlay','settings','help'].includes(h))return h;try{return localStorage.getItem('cc-gui-tab')||'home'}catch(e){return 'home'}})(),estimate=null,stopped=false,copied=false;
+        const TOKEN='__TOKEN__';let S=null,tab=(()=>{const h=location.hash.slice(1);if(['home','sprites','stats','report','overlay','settings','help'].includes(h))return h;try{return localStorage.getItem('cc-gui-tab')||'home'}catch(e){return 'home'}})(),estimate=null,stopped=false,copied=false,spFilter='all',spVar='all';
         const $=s=>document.querySelector(s);
         // In the counter's own window (?w=1): the title bar of the page, its buttons sent to the window.
         const host=window.chrome&&window.chrome.webview;let maximized=false;
@@ -557,14 +588,14 @@ public static class GuiPage
         function render(force){
           const T=S.txt;document.documentElement.lang=S.lang;
           const head=`<header><div class="brand"><img src="__CHESTICON__" width="46" height="46" alt="" style="object-fit:contain"><div><h1 class="pirate">${esc(S.appName)}</h1><div class="who">${S.profiles.length>1?`<select aria-label="${esc(T.profile)}" title="${esc(T.profile)}" onchange="api('profile',this.value)">${S.profiles.map(p=>`<option value="${esc(p.key)}" ${p.key===S.profileKey?'selected':''}>${esc(p.name)} (${esc(p.matches)})</option>`).join('')}</select>`:`<span>${esc(S.player||'')}</span>`}<span>v${esc(S.version)}</span></div></div></div><span class="pill ${S.status.kind}"><i></i>${esc(S.status.text)}</span></header>
-          <nav>${['home','stats','report','overlay','settings','help'].map(t=>`<button class="${t===tab?'on':''}" onclick="setTab('${t}')">${esc(T[t])}</button>`).join('')}</nav>`;
+          <nav>${['home','sprites','stats','report','overlay','settings','help'].map(t=>`<button class="${t===tab?'on':''}" onclick="setTab('${t}')">${esc(T[t])}</button>`).join('')}</nav>`;
           if(!force&&busyHeader())return;
           if(!force&&busy()){$('#hdr').innerHTML=head;appHtml=null;return}
           // A click in progress (button pressed, not released yet): rebuilding now would replace its button and the click
           // would be lost. The next refresh, 2 s later, catches up.
           if(!force&&pressedAt&&Date.now()-pressedAt<3000)return;
           let v='';
-          if(tab==='home')v=home(T);else if(tab==='overlay')v=overlay(T);else if(tab==='settings')v=settings(T);else if(tab==='help')v=help(T);
+          if(tab==='home')v=home(T);else if(tab==='sprites')v=spritesView(T);else if(tab==='overlay')v=overlay(T);else if(tab==='settings')v=settings(T);else if(tab==='help')v=help(T);
           // Rebuilt only when something changed: the buttons stay the same elements between two refreshes.
           const app=`<div id="hdr">${head}</div>${notices(T)}<div id="view">${v}</div>`;
           if(force||app!==appHtml){$('#app').innerHTML=app;appHtml=app}
@@ -662,6 +693,59 @@ public static class GuiPage
           if(!S.update&&S.updatesOn)h+=`<button class="b" onclick="api('checkUpdate')">${esc(T.checkUpdate)}</button>`;
           h+='</div>';
           h+=treasureHoursCard(T);
+          return h;
+        }
+        function setSpFilter(f){spFilter=f;render(true)}
+        function setSpVar(v){spVar=v;render(true)}
+        function spritesView(T){
+          const sp=S.sprites;if(!sp)return '';
+          let h=`<section class="tiles">
+            <div class="tile hero"><div class="l">Sprite Collection</div><div class="v num">${esc(sp.ownedCount)} <span style="font-size:20px;color:var(--cmuted);font-weight:600">/ ${esc(sp.totalVariants)}</span></div><div class="l">Auto-tracked from extractions & wins, or click any variant below to tick manually</div></div>
+            <div class="tile"><div class="v num">${esc(sp.extractedCount)}</div><div class="l">Extracted variants</div></div>
+            <div class="tile"><div class="v num">${esc(sp.wonCount)}</div><div class="l">Secured from wins</div></div>
+            <div class="tile"><div class="v num">${esc(sp.maxedCount)}</div><div class="l">Maxed to Lv 5</div></div>
+            <div class="tile"><div class="v num">${esc(sp.seenCount)}</div><div class="l">Carried in replays</div></div>
+          </section>`;
+          h+=`<div class="sp-bar">
+            <div class="gs-seg">${[['all','All'],['owned','Owned'],['missing','Missing'],['secured','Extracted / Won']].map(([k,l])=>`<button type="button" class="gs-pill ${spFilter===k?'on':''}" onclick="setSpFilter('${k}')">${l}</button>`).join('')}</div>
+            <div class="gs-seg">${[['all','All Variants'],['base','Base'],['fortune','Fortune'],['cursed','Cursed'],['gold','Gold']].map(([k,l])=>`<button type="button" class="gs-pill ${spVar===k?'on':''}" onclick="setSpVar('${k}')">${l}</button>`).join('')}</div>
+          </div>`;
+          const cards=[];
+          for(const fam of sp.families){
+            const vars=fam.variants.filter(v=>{
+              if(spVar!=='all'&&v.variant!==spVar)return false;
+              if(spFilter==='owned'&&!v.owned)return false;
+              if(spFilter==='missing'&&v.owned)return false;
+              if(spFilter==='secured'&&!(v.extracted>0||v.won>0))return false;
+              return true;
+            });
+            if(!vars.length)continue;
+            const chips=vars.map(v=>{
+              const tags=[];
+              if(v.won>0)tags.push(`<span class="sp-tag won">Won${v.won>1?' ×'+v.won:''}</span>`);
+              if(v.extracted>0)tags.push(`<span class="sp-tag ext">Ext${v.extracted>1?' ×'+v.extracted:''}</span>`);
+              if(v.maxed)tags.push(`<span class="sp-tag max">Lv5</span>`);
+              if(!tags.length&&v.seen>0)tags.push(`<span class="sp-tag">×${v.seen}</span>`);
+              const check=v.owned?'✓ ':'';
+              return `<button type="button" class="sp-var v-${esc(v.variant)} ${v.owned?'owned':''}" title="Click to toggle owned" onclick="api('toggleSprite','${esc(v.key)}')"><span>${check}${esc(v.label)}</span><span class="sp-tags">${tags.join('')}</span></button>`;
+            }).join('');
+            cards.push(`<div class="sp-card"><div class="sp-head"><span class="sp-name">${esc(fam.name)}</span><span class="sp-rar ${esc(fam.rarity.toLowerCase())}">${esc(fam.rarity)}</span></div><div class="sp-ab">${esc(fam.ability)}</div><div class="sp-vars">${chips}</div></div>`);
+          }
+          h+=cards.length?`<div class="sp-grid">${cards.join('')}</div>`:`<div class="card"><span class="note">No Sprites match this filter yet.</span></div>`;
+          if(sp.recent&&sp.recent.length){
+            const rows=sp.recent.map(r=>{
+              const pl=r.placement?` · #${r.placement}`:'';
+              const chips=r.items.map(i=>{
+                const b=[];
+                if(i.won)b.push('<span class="sp-tag won">Won</span>');
+                if(i.extracted)b.push('<span class="sp-tag ext">Extracted</span>');
+                if(i.maxed)b.push('<span class="sp-tag max">Lv5</span>');
+                return `<span class="sp-rchip">${esc(i.variantLabel)} ${esc(i.name)} ${b.join('')}</span>`;
+              }).join('');
+              return `<div class="sp-rrow"><span style="color:var(--cmuted)">${esc(r.when)} · ${esc(r.mode)}${esc(pl)}</span><div class="sp-rchips">${chips}</div></div>`;
+            }).join('');
+            h+=`<section><h2 class="pirate">Recent Replay Sprites</h2><div class="card sp-rec">${rows}</div></section>`;
+          }
           return h;
         }
         function overlay(T){

@@ -1308,6 +1308,115 @@ object BuildGuiState()
             platform = config.StatsPlatform is "psn" or "xbl" ? config.StatsPlatform : "epic",
             outfit = string.IsNullOrWhiteSpace(config.StatsOutfit) ? "Midas" : config.StatsOutfit,
         },
+        sprites = BuildSpritesState(view, matches, tracker.IsLive ? tracker.LiveMatch : null),
+    };
+}
+
+object BuildSpritesState(TrackerData view, List<MatchRecord> matches, MatchRecord? liveMatch)
+{
+    var manualSet = new HashSet<string>(view.OwnedSpriteKeys, StringComparer.OrdinalIgnoreCase);
+    var stats = new Dictionary<string, (int Seen, int Extracted, int Won, bool Maxed)>(StringComparer.OrdinalIgnoreCase);
+
+    void Tally(IEnumerable<SpriteRecord> list)
+    {
+        foreach (var s in list)
+        {
+            var key = $"{s.FamilyId}:{s.Variant}";
+            stats.TryGetValue(key, out var cur);
+            stats[key] = (
+                cur.Seen + 1,
+                cur.Extracted + (s.Extracted ? 1 : 0),
+                cur.Won + (s.Won ? 1 : 0),
+                cur.Maxed || s.MaxLevel
+            );
+        }
+    }
+
+    foreach (var m in matches) Tally(m.Sprites);
+    if (liveMatch != null && !matches.Any(m => m.SessionId == liveMatch.SessionId))
+    {
+        Tally(liveMatch.Sprites);
+    }
+
+    int totalVariants = 0, ownedCount = 0, extractedCount = 0, wonCount = 0, maxedCount = 0, seenCount = 0;
+    var families = new List<object>();
+
+    foreach (var fam in SpriteCatalog.Families)
+    {
+        var variants = new List<object>();
+        foreach (var v in fam.Variants)
+        {
+            totalVariants++;
+            var key = $"{fam.Id}:{v}";
+            stats.TryGetValue(key, out var st);
+            var manual = manualSet.Contains(key);
+            var autoOwned = st.Extracted > 0 || st.Won > 0;
+            var owned = autoOwned || manual;
+            if (owned) ownedCount++;
+            if (st.Extracted > 0) extractedCount++;
+            if (st.Won > 0) wonCount++;
+            if (st.Maxed) maxedCount++;
+            if (st.Seen > 0) seenCount++;
+
+            variants.Add(new
+            {
+                key,
+                variant = v,
+                label = SpriteCatalog.VariantLabel(v),
+                owned,
+                autoOwned,
+                manual,
+                seen = st.Seen,
+                extracted = st.Extracted,
+                won = st.Won,
+                maxed = st.Maxed,
+            });
+        }
+        families.Add(new
+        {
+            id = fam.Id,
+            name = fam.Name,
+            rarity = fam.Rarity,
+            ability = fam.Ability,
+            variants,
+        });
+    }
+
+    var recent = matches
+        .Where(m => m.Sprites.Count > 0)
+        .OrderByDescending(m => m.MatchStartUtc ?? m.AnalyzedAtUtc)
+        .Take(15)
+        .Select(m => new
+        {
+            when = L.DateTimeShort(L.Shown(m.MatchStartUtc ?? m.AnalyzedAtUtc)),
+            mode = Pretty.Playlist(m.Playlist),
+            placement = m.Placement,
+            items = m.Sprites.Select(s =>
+            {
+                var fam = SpriteCatalog.FindFamily(s.FamilyId);
+                return new
+                {
+                    name = fam?.Name ?? s.FamilyId,
+                    variant = s.Variant,
+                    variantLabel = SpriteCatalog.VariantLabel(s.Variant),
+                    extracted = s.Extracted,
+                    won = s.Won,
+                    maxed = s.MaxLevel,
+                };
+            }).ToList(),
+        })
+        .ToList();
+
+    return new
+    {
+        ownedCount,
+        totalVariants,
+        extractedCount,
+        wonCount,
+        maxedCount,
+        seenCount,
+        families,
+        recent,
     };
 }
 
@@ -1404,6 +1513,11 @@ object? RunGuiAction(string name, System.Text.Json.JsonElement value)
             break;
         case "squadSync":
             config.SquadSync = Bool();
+            break;
+        case "toggleSprite":
+            Profiles.ToggleOwnedSprite(data, config, Str());
+            store.SaveData(data);
+            settingsChanged = false;
             break;
         case "dismissTreasureAlert":
             dismissedTreasureAlertId = Str();

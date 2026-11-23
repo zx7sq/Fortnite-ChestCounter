@@ -83,6 +83,19 @@ public sealed class TeamChestCount
     public int Destroyed { get; set; }
 }
 
+/// <summary>One Sprite (and variant) carried, maxed, extracted, or won with by the player in a match.</summary>
+public sealed class SpriteRecord
+{
+    public string FamilyId { get; set; } = "";
+    public string Variant { get; set; } = "base";
+    public string RawId { get; set; } = "";
+    public bool MaxLevel { get; set; }
+    public bool Extracted { get; set; }
+    public bool Won { get; set; }
+    public float FirstSeenSeconds { get; set; }
+    public float LastSeenSeconds { get; set; }
+}
+
 /// <summary>Exact chest count reported by a squadmate who is also running ChestCounter in the same match.</summary>
 public sealed class SyncedSquadMember
 {
@@ -152,6 +165,9 @@ public sealed class MatchRecord
 
     /// <summary>Exact chests synced from squadmates who are also running ChestCounter in this match (keyed by EpicId or name).</summary>
     public Dictionary<string, SyncedSquadMember> SyncedSquad { get; set; } = new();
+
+    /// <summary>Sprites carried, leveled to max, extracted, or won with by the player during this match.</summary>
+    public List<SpriteRecord> Sprites { get; set; } = new();
 
     /// <summary>Time and distance spent in vehicles (driver or passenger).</summary>
     public int VehicleSeconds { get; set; }
@@ -289,8 +305,14 @@ public sealed class TrackerData
     /// <summary>Treasures ticked as obtained in the collection, per profile key (saved by the graphical window).</summary>
     public Dictionary<string, List<string>> Obtained { get; set; } = new();
 
+    /// <summary>Sprites manually ticked as owned in the Sprites tab ("familyId:variant"), per profile key.</summary>
+    public Dictionary<string, List<string>> OwnedSprites { get; set; } = new();
+
     /// <summary>Treasures ticked for the profile shown (filled by <see cref="Profiles.View"/>, not saved).</summary>
     [JsonIgnore] public List<string> ObtainedIds { get; set; } = new();
+
+    /// <summary>Sprites manually ticked for the profile shown (filled by <see cref="Profiles.View"/>, not saved).</summary>
+    [JsonIgnore] public List<string> OwnedSpriteKeys { get; set; } = new();
 
     /// <summary>Manual adjustment of the profile shown (filled by <see cref="Profiles.View"/>, not saved).</summary>
     [JsonIgnore] public int ManualAdjust { get; set; }

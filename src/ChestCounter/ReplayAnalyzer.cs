@@ -220,8 +220,21 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
     private sealed record GrantEvent(float Time, uint PlayerStateActor, int ElementId, string Handler);
     private readonly List<GrantEvent> _grants = new();
 
+    private sealed class SpriteSpan
+    {
+        public uint? Pawn;
+        public string? DefinitionPath;
+        public float FirstSeen;
+        public float LastSeen;
+        public bool MaxLevel;
+        public float? HiddenAt;
+        public float? ClosedAt;
+    }
+    private readonly Dictionary<uint, SpriteSpan> _spriteByChannel = new();
+    private readonly List<SpriteSpan> _spriteSpans = new();
+
     /// <summary>Bump when the analysis changes so that existing replays are re-analyzed.</summary>
-    public const int CurrentVersion = 20; // 20: resolve late/prior SearchingPawn on destroyed chests, actor-loc fallback, 3s loot window
+    public const int CurrentVersion = 21; // 21: track carried, maxed, extracted, and won Sprites (BP_ExtractionBackpack_Sprite)
 
     private static readonly bool ProbeDebug = Environment.GetEnvironmentVariable("CHESTCOUNTER_DEBUG") == "4";
 
@@ -496,12 +509,18 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
         _prizeChannelsSeen.Remove(channelIndex);
         _orphanChannels.Remove(channelIndex);
         _activeOrphanByChannel.Remove(channelIndex);
+        _spriteByChannel.Remove(channelIndex);
     }
 
     protected override void OnChannelClosing(uint channelIndex, UChannel channel, ChannelCloseReason reason)
     {
         base.OnChannelClosing(channelIndex, channel, reason);
         _activeOrphanByChannel.Remove(channelIndex);
+        if (_spriteByChannel.Remove(channelIndex, out var closingSprite))
+        {
+            closingSprite.ClosedAt = Now;
+            closingSprite.LastSeen = Now;
+        }
         if (channel?.ActorId is uint closingActor && _vehicleTrack.ContainsKey(closingActor))
         {
             foreach (var key in _seated.Keys.Where(k => k.Vehicle == closingActor).ToList())
@@ -668,6 +687,51 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
                 if (_searched.Add(cannonKey))
                 {
                     _searches.Add(new SearchEvent(Now, cannonKey, _channelLabel.GetValueOrDefault(channelIndex, "LootCannon"), gunner, ActorId: Channels[channelIndex]?.ActorId));
+                }
+                break;
+
+            case ExtractionBackpackSprite sprite:
+                if (!_spriteByChannel.TryGetValue(channelIndex, out var sp))
+                {
+                    sp = new SpriteSpan { FirstSeen = Now, LastSeen = Now };
+                    _spriteByChannel[channelIndex] = sp;
+                    _spriteSpans.Add(sp);
+                }
+                sp.LastSeen = Now;
+                if ((sprite.OwningPawn ?? sprite.Owner ?? sprite.Instigator) is uint spPawn && spPawn != 0)
+                {
+                    sp.Pawn = spPawn;
+                }
+                if (sprite.ExtractableItemDefinition is uint defGuid && defGuid != 0)
+                {
+                    var defPath = PathOf(defGuid);
+                    if (!string.IsNullOrEmpty(defPath))
+                    {
+                        // If the same backpack channel switches to a different sprite definition, start a fresh span.
+                        if (sp.DefinitionPath != null && !string.Equals(sp.DefinitionPath, defPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            sp.ClosedAt = Now;
+                            sp = new SpriteSpan { Pawn = sp.Pawn, DefinitionPath = defPath, FirstSeen = Now, LastSeen = Now };
+                            _spriteByChannel[channelIndex] = sp;
+                            _spriteSpans.Add(sp);
+                        }
+                        else
+                        {
+                            sp.DefinitionPath = defPath;
+                        }
+                    }
+                }
+                if (sprite.bIsMaxLevel == true)
+                {
+                    sp.MaxLevel = true;
+                }
+                if (sprite.SpriteHidden == true && sp.HiddenAt == null)
+                {
+                    sp.HiddenAt = Now;
+                }
+                else if (sprite.SpriteHidden == false)
+                {
+                    sp.HiddenAt = null;
                 }
                 break;
 
@@ -1173,6 +1237,46 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
         var isRecorder = recorderPs != null && targetPlayerStates.Contains(recorderPs.Value);
         var placement = target?.Placement ?? (isRecorder ? (int?)replay.TeamStats?.Position : null);
 
+        // Sprites carried, maxed, extracted, or secured by winning the match.
+        var matchEndSec = info != null ? info.LengthInMs / 1000f : (_spriteSpans.Count > 0 ? _spriteSpans.Max(s => s.LastSeen) : 0f);
+        var extractorTimes = _equips
+            .Where(e => targetPawns.Contains(e.Pawn) && e.Item.Contains("RelicExtractor", StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.Time)
+            .ToList();
+        var spriteMap = new Dictionary<(string Family, string Variant), SpriteRecord>();
+        foreach (var sp in _spriteSpans)
+        {
+            if (sp.Pawn is not uint spPawn || !targetPawns.Contains(spPawn)) continue;
+            var parsed = SpriteCatalog.ParseDefinition(sp.DefinitionPath);
+            if (parsed == null) continue;
+
+            var endT = sp.HiddenAt ?? sp.ClosedAt ?? sp.LastSeen;
+            var usedExtractor = extractorTimes.Any(t => endT >= t - 5f && endT <= t + 25f);
+            var extracted = usedExtractor || (sp.MaxLevel && sp.HiddenAt != null);
+            var activeAtEnd = sp.ClosedAt == null || sp.ClosedAt.Value >= matchEndSec - 15f;
+            var won = placement == 1 && activeAtEnd && !extracted;
+
+            var key = (parsed.Value.FamilyId, parsed.Value.Variant);
+            if (!spriteMap.TryGetValue(key, out var rec))
+            {
+                rec = new SpriteRecord
+                {
+                    FamilyId = parsed.Value.FamilyId,
+                    Variant = parsed.Value.Variant,
+                    RawId = CleanName(sp.DefinitionPath ?? ""),
+                    FirstSeenSeconds = sp.FirstSeen,
+                    LastSeenSeconds = sp.LastSeen,
+                };
+                spriteMap[key] = rec;
+            }
+            rec.MaxLevel |= sp.MaxLevel;
+            rec.Extracted |= extracted;
+            rec.Won |= won;
+            rec.FirstSeenSeconds = Math.Min(rec.FirstSeenSeconds, sp.FirstSeen);
+            rec.LastSeenSeconds = Math.Max(rec.LastSeenSeconds, sp.LastSeen);
+        }
+        var sprites = spriteMap.Values.OrderBy(s => s.FirstSeenSeconds).ToList();
+
         return new MatchRecord
         {
             SessionId = !string.IsNullOrEmpty(replay.GameData?.GameSessionId) ? replay.GameData.GameSessionId : $"{info?.Timestamp:O}-{Path.GetFileName(file)}",
@@ -1204,6 +1308,7 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
             SeenPrizes = seen,
             TeamChests = teamChests,
             TeamChestsOpened = teamChests.Sum(t => t.Chests),
+            Sprites = sprites,
             VehicleSeconds = vehicleSeconds,
             VehicleMeters = vehicleMeters,
             UnrecordedVehicleLoot = unrecordedLoot,

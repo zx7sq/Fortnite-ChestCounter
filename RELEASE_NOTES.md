@@ -2,6 +2,12 @@ Download **`ChestCounter.exe`** below and run it — nothing to install and no e
 
 > **Turn on replays in Fortnite first:** *Settings → Game → Replays → Record Replays: **On***. The app only reads your saved replay files in read-only mode — 100% Easy Anti-Cheat safe.
 
+**What's new in 3.2.0**
+- **Sprites Tab & Automatic Replay Scanner:**
+  - Automatically scans your replays for every Sprite and variant (**Base**, **Fortune**, **Cursed**, **Gold**) you carry, level to **Max (Lv 5)**, **extract** mid-match, or **secure by winning** (`#1`).
+  - Full interactive collection tracker for all 17 Sprite families × variants with filters (**All / Owned / Missing / Extracted & Won** + variant filters), manual click-to-toggle for previously collected Sprites, and a **Recent Replay Sprites** history list.
+- **Week 4 Treasures & Official Images:** Added Solid Gold Kasane Teto, Solid Gold High Tide and Wavecutter, Gold Lamborghini Urus SE Decal, Wellerman - Sea Shanty, and Oscar's Wraps.
+
 **What's new in 3.1.0**
 - **Squad Sync (Separate Squad Chest Counter):**
   - Automatically detects teammates in your same Fortnite squad who are also running ChestCounter (zero setup, keyed by a one-way SHA-256 hash of your match session + squad).
