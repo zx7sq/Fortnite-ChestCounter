@@ -599,6 +599,7 @@ public static class GuiPage
               <button type="button" class="gs-ghost live-on" id="rtPoisBtn">POIs: On</button>
               <button type="button" class="gs-ghost live-on" id="rtChestsBtn">Chests: On</button>
               <button type="button" class="gs-btn-gold" id="rtPlayBtn">▶ Replay</button>
+              <button type="button" class="gs-ghost" id="rtGifBtn" title="Export animated GIF of this route to your Downloads folder">Export GIF</button>
             </div>
           </div>
           <div id="rtStats" class="rt-stats"></div>
@@ -1006,8 +1007,8 @@ public static class GuiPage
           const cu=(minU+maxU)/2,cv=(minV+maxV)/2;
           return {u0:Math.max(0,Math.min(1-span,cu-span/2)),v0:Math.max(0,Math.min(1-span,cv-span/2)),span};
         }
-        function rtDraw(){
-          const m=rtCurMatch(),cv=$('#rtCanvas');if(!cv||!m)return;
+        function rtDrawOn(cv,m,prog,withHud){
+          if(!cv||!m)return;
           const ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
           ctx.clearRect(0,0,W,H);ctx.fillStyle='#0a2540';ctx.fillRect(0,0,W,H);
           const vp=rtViewport(m),toPx=(x,y)=>{const [u,v]=rtWorldToNorm(x,y);return [(u-vp.u0)/vp.span*W,(v-vp.v0)/vp.span*H]};
@@ -1016,53 +1017,136 @@ public static class GuiPage
             const iw=img.naturalWidth,ih=img.naturalHeight;
             ctx.drawImage(img,vp.u0*iw,vp.v0*ih,vp.span*iw,vp.span*ih,0,0,W,H);
           }
+          const scale=W/900;
           const r=m.route||[],nPts=Math.floor(r.length/3);
-          const drawCount=rt.playing?Math.max(1,Math.floor(nPts*rt.prog)):nPts;
+          const partial=prog<1;
+          const drawCount=partial?Math.max(1,Math.floor(nPts*prog)):nPts;
           const maxT=drawCount>0&&nPts>0?r[(drawCount-1)*3]:1e9;
           if(drawCount>=2){
             const pts=[];for(let i=0;i<drawCount;i++)pts.push(toPx(r[i*3+1],r[i*3+2]));
             ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
-            // Dark outline for contrast over bright sand/water
             ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);
-            ctx.strokeStyle='rgba(11,11,14,0.82)';ctx.lineWidth=8;ctx.stroke();
-            // Glowing gold route line
+            ctx.strokeStyle='rgba(11,11,14,0.84)';ctx.lineWidth=8*scale;ctx.stroke();
             const grad=ctx.createLinearGradient(pts[0][0],pts[0][1],pts[pts.length-1][0],pts[pts.length-1][1]);
             grad.addColorStop(0,'#30d158');grad.addColorStop(0.25,'#f59e0b');grad.addColorStop(1,'#fde68a');
-            ctx.strokeStyle=grad;ctx.lineWidth=4.2;ctx.shadowColor='rgba(245,158,11,0.55)';ctx.shadowBlur=10;ctx.stroke();
+            ctx.strokeStyle=grad;ctx.lineWidth=4.2*scale;ctx.shadowColor='rgba(245,158,11,0.55)';ctx.shadowBlur=10*scale;ctx.stroke();
             ctx.shadowBlur=0;
-            // Directional chevrons along the route
             let acc=0;
             for(let i=1;i<pts.length;i++){
               const dx=pts[i][0]-pts[i-1][0],dy=pts[i][1]-pts[i-1][1],seg=Math.hypot(dx,dy);
               acc+=seg;
-              if(acc>=78&&seg>4){
+              if(acc>=78*scale&&seg>4*scale){
                 acc=0;const ang=Math.atan2(dy,dx),mx=(pts[i][0]+pts[i-1][0])/2,my=(pts[i][1]+pts[i-1][1])/2;
                 ctx.save();ctx.translate(mx,my);ctx.rotate(ang);
-                ctx.beginPath();ctx.moveTo(6,0);ctx.lineTo(-4,-4.5);ctx.lineTo(-4,4.5);ctx.closePath();
+                ctx.beginPath();ctx.moveTo(6*scale,0);ctx.lineTo(-4*scale,-4.5*scale);ctx.lineTo(-4*scale,4.5*scale);ctx.closePath();
                 ctx.fillStyle='#ffffff';ctx.fill();ctx.restore();
               }
             }
-            // Start & End markers
             const [sx,sy]=pts[0],[ex,ey]=pts[pts.length-1];
-            ctx.beginPath();ctx.arc(sx,sy,8,0,Math.PI*2);ctx.fillStyle='#30d158';ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle='#0b0b0e';ctx.stroke();
-            ctx.beginPath();ctx.arc(ex,ey,8,0,Math.PI*2);ctx.fillStyle=rt.playing?'#ffffff':'#ff453a';ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle='#0b0b0e';ctx.stroke();
+            ctx.beginPath();ctx.arc(sx,sy,8*scale,0,Math.PI*2);ctx.fillStyle='#30d158';ctx.fill();ctx.lineWidth=2.5*scale;ctx.strokeStyle='#0b0b0e';ctx.stroke();
+            ctx.beginPath();ctx.arc(ex,ey,8*scale,0,Math.PI*2);ctx.fillStyle=partial?'#ffffff':'#ff453a';ctx.fill();ctx.lineWidth=2.5*scale;ctx.strokeStyle='#0b0b0e';ctx.stroke();
             ctx.restore();
           }
-          // Chest markers
-          rt.hitPts=[];
+          let shownChests=0;
+          if(!withHud)rt.hitPts=[];
           if(rt.chests){
             for(const c of (m.chestPts||[])){
-              if(rt.playing&&c.t>maxT)continue;
+              if(partial&&c.t>maxT)continue;
+              shownChests++;
               const [cx,cy]=toPx(c.x,c.y);
-              rt.hitPts.push({x:cx,y:cy,c});
+              if(!withHud)rt.hitPts.push({x:cx,y:cy,c});
               ctx.save();
-              ctx.beginPath();ctx.arc(cx,cy,9.5,0,Math.PI*2);
+              ctx.beginPath();ctx.arc(cx,cy,9.5*scale,0,Math.PI*2);
               ctx.fillStyle='#f59e0b';ctx.fill();
-              ctx.lineWidth=2;ctx.strokeStyle='#0b0b0e';ctx.stroke();
-              ctx.fillStyle='#0b0b0e';ctx.font='700 10px -apple-system,Segoe UI,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-              ctx.fillText(String(c.n),cx,cy+0.5);
+              ctx.lineWidth=2*scale;ctx.strokeStyle='#0b0b0e';ctx.stroke();
+              ctx.fillStyle='#0b0b0e';ctx.font=`700 ${Math.max(8,Math.round(10*scale))}px -apple-system,Segoe UI,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+              ctx.fillText(String(c.n),cx,cy+0.5*scale);
               ctx.restore();
             }
+          }else{shownChests=partial?Math.round(m.chests*prog):m.chests}
+          if(withHud){
+            const count=partial?shownChests:m.chests;
+            const pl=m.placement?` · #${m.placement}`:'';
+            const label=`${count} CHESTS`;
+            const sub=`${m.mode}${pl}`;
+            ctx.save();
+            ctx.fillStyle='rgba(11,11,14,0.82)';
+            ctx.beginPath();ctx.roundRect(12,12,174,48,10);ctx.fill();
+            ctx.strokeStyle='rgba(245,158,11,0.55)';ctx.lineWidth=1.5;ctx.stroke();
+            ctx.fillStyle='#f59e0b';ctx.font='700 18px -apple-system,Segoe UI,sans-serif';ctx.textBaseline='top';
+            ctx.fillText(label,22,19);
+            ctx.fillStyle='#d1d1d6';ctx.font='600 11px -apple-system,Segoe UI,sans-serif';
+            ctx.fillText(sub,22,41);
+            ctx.restore();
+          }
+        }
+        function rtDraw(){rtDrawOn($('#rtCanvas'),rtCurMatch(),rt.playing?rt.prog:1,false)}
+        // Minimal self-contained GIF89a encoder (6x6x6 RGB palette + LZW) for animated route export
+        function encodeGif(w,h,frames,delays){
+          const out=[];
+          const wb=b=>out.push(b&255),ws=s=>{for(let i=0;i<s.length;i++)out.push(s.charCodeAt(i))},wu16=v=>{wb(v&255);wb((v>>8)&255)};
+          ws('GIF89a');wu16(w);wu16(h);wb(0xF7);wb(0);wb(0);
+          // 256-color Global Color Table: 6x6x6 cube (0..215) + 40 grays/gold accents (216..255)
+          for(let r=0;r<6;r++)for(let g=0;g<6;g++)for(let b=0;b<6;b++){wb(r*51);wb(g*51);wb(b*51)}
+          for(let i=0;i<40;i++){const v=Math.round(i*255/39);wb(v);wb(v);wb(v)}
+          // NETSCAPE2.0 infinite loop
+          wb(0x21);wb(0xFF);wb(11);ws('NETSCAPE2.0');wb(3);wb(1);wu16(0);wb(0);
+          const idxBuf=new Uint8Array(w*h);
+          for(let fi=0;fi<frames.length;fi++){
+            const rgba=frames[fi];
+            for(let p=0,j=0;p<idxBuf.length;p++,j+=4){
+              const r=Math.round(rgba[j]/51),g=Math.round(rgba[j+1]/51),b=Math.round(rgba[j+2]/51);
+              idxBuf[p]=r*36+g*6+b;
+            }
+            wb(0x21);wb(0xF9);wb(4);wb(0);wu16(delays[fi]||8);wb(0);wb(0);
+            wb(0x2C);wu16(0);wu16(0);wu16(w);wu16(h);wb(0);
+            const minCode=8,clear=256,eoi=257;
+            wb(minCode);
+            const sub=[];let bits=0,bitLen=0;
+            const emit=(code,size)=>{bits|=(code<<bitLen);bitLen+=size;while(bitLen>=8){sub.push(bits&255);bits>>=8;bitLen-=8;if(sub.length===255){wb(255);for(let k=0;k<255;k++)wb(sub[k]);sub.length=0}}};
+            let codeSize=minCode+1,nextCode=eoi+1,dict=new Int32Array(4096*256);dict.fill(-1);
+            emit(clear,codeSize);
+            let prefix=idxBuf[0];
+            for(let p=1;p<idxBuf.length;p++){
+              const c=idxBuf[p],key=(prefix<<8)|c,hit=dict[key];
+              if(hit!==-1){prefix=hit}else{
+                emit(prefix,codeSize);
+                if(nextCode<4096){dict[key]=nextCode++;if(nextCode>(1<<codeSize)&&codeSize<12)codeSize++}
+                else{emit(clear,codeSize);dict.fill(-1);codeSize=minCode+1;nextCode=eoi+1}
+                prefix=c;
+              }
+            }
+            emit(prefix,codeSize);emit(eoi,codeSize);
+            if(bitLen>0)sub.push(bits&255);
+            if(sub.length){wb(sub.length);for(let k=0;k<sub.length;k++)wb(sub[k])}
+            wb(0);
+          }
+          wb(0x3B);
+          return new Uint8Array(out);
+        }
+        async function rtExportGif(){
+          const m=rtCurMatch(),btn=$('#rtGifBtn');if(!m||!btn||btn.disabled)return;
+          btn.disabled=true;btn.textContent='Encoding GIF…';
+          await new Promise(r=>setTimeout(r,30));
+          try{
+            const S=520,off=document.createElement('canvas');off.width=S;off.height=S;
+            const octx=off.getContext('2d',{willReadFrequently:true});
+            const nFrames=44,frames=[],delays=[];
+            for(let i=0;i<=nFrames;i++){
+              const p=i/nFrames;
+              rtDrawOn(off,m,p,true);
+              frames.push(octx.getImageData(0,0,S,S).data);
+              delays.push(i===nFrames?220:8);
+            }
+            const gifBytes=encodeGif(S,S,frames,delays);
+            const fname=`chest-route-${m.chests}-chests.gif`;
+            const res=await fetch('/api/save-gif?name='+encodeURIComponent(fname),{method:'POST',headers:{'X-Token':TOKEN,'Content-Type':'image/gif'},body:gifBytes});
+            const j=await res.json();
+            btn.textContent=j&&j.ok?'Saved to Downloads!':'Export failed';
+          }catch(e){
+            btn.textContent='Export failed';
+          }finally{
+            setTimeout(()=>{btn.disabled=false;btn.textContent='Export GIF'},2500);
           }
         }
         function rtStopPlay(){rt.playing=false;rt.prog=1;if(rt.animId){cancelAnimationFrame(rt.animId);rt.animId=null}$('#rtPlayBtn').textContent='▶ Replay';rtDraw()}
@@ -1088,14 +1172,15 @@ public static class GuiPage
           if(tab!=='route'||!S)return;
           if(!rt.init){
             rt.init=true;
-            rt.mapPoi=new Image();rt.mapPoi.onload=rtDraw;rt.mapPoi.src='https://fortnite-api.com/images/map_en.png';
-            rt.mapBlank=new Image();rt.mapBlank.onload=rtDraw;rt.mapBlank.src='https://fortnite-api.com/images/map.png';
+            rt.mapPoi=new Image();rt.mapPoi.onload=rtDraw;rt.mapPoi.src='/api/map?pois=1&t='+TOKEN;
+            rt.mapBlank=new Image();rt.mapBlank.onload=rtDraw;rt.mapBlank.src='/api/map?pois=0&t='+TOKEN;
             $('#rtSelect').addEventListener('change',e=>{rt.selectedId=e.target.value;rtStopPlay();const m=rtCurMatch();if(m){rtRenderStats(m);rtDraw()}});
             $('#rtZoomIsland').addEventListener('click',()=>{rt.zoom='island';$('#rtZoomIsland').classList.add('on');$('#rtZoomFit').classList.remove('on');rtDraw()});
             $('#rtZoomFit').addEventListener('click',()=>{rt.zoom='fit';$('#rtZoomFit').classList.add('on');$('#rtZoomIsland').classList.remove('on');rtDraw()});
             $('#rtPoisBtn').addEventListener('click',()=>{rt.pois=!rt.pois;$('#rtPoisBtn').textContent=rt.pois?'POIs: On':'POIs: Off';$('#rtPoisBtn').classList.toggle('live-on',rt.pois);rtDraw()});
             $('#rtChestsBtn').addEventListener('click',()=>{rt.chests=!rt.chests;$('#rtChestsBtn').textContent=rt.chests?'Chests: On':'Chests: Off';$('#rtChestsBtn').classList.toggle('live-on',rt.chests);rtDraw()});
             $('#rtPlayBtn').addEventListener('click',rtTogglePlay);
+            $('#rtGifBtn').addEventListener('click',rtExportGif);
             const cv=$('#rtCanvas'),tip=$('#rtTip');
             cv.addEventListener('mousemove',e=>{
               const rect=cv.getBoundingClientRect(),sx=cv.width/rect.width,sy=cv.height/rect.height;

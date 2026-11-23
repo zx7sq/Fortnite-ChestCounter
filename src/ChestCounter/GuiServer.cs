@@ -26,6 +26,9 @@ public sealed class GuiServer
     private readonly string _reportPath;
     private readonly string _overlayPath;
     private readonly Func<string>? _getApiKey;
+    private static readonly HttpClient MapHttp = new() { Timeout = TimeSpan.FromSeconds(15) };
+    private static byte[]? _mapPoiBytes;
+    private static byte[]? _mapBlankBytes;
 
     /// <param name="state">The whole state shown by the page (serialized to JSON).</param>
     /// <param name="action">Runs an action (name, value) and returns its result (or null).</param>
@@ -183,6 +186,43 @@ public sealed class GuiServer
                     var (status, json) = FortniteStatsClient.FetchSkin(qs.GetValueOrDefault("name", "Midas"));
                     Write(stream, status, "application/json; charset=utf-8", Encoding.UTF8.GetBytes(json));
                 }
+                else if (method == "GET" && path == "/api/map" && tokenOk)
+                {
+                    var qs = ParseQuery(query);
+                    var pois = qs.GetValueOrDefault("pois", "1") != "0";
+                    var cached = pois ? _mapPoiBytes : _mapBlankBytes;
+                    if (cached == null)
+                    {
+                        try
+                        {
+                            var url = pois ? "https://fortnite-api.com/images/map_en.png" : "https://fortnite-api.com/images/map.png";
+                            cached = MapHttp.GetByteArrayAsync(url).GetAwaiter().GetResult();
+                            if (pois) _mapPoiBytes = cached; else _mapBlankBytes = cached;
+                        }
+                        catch { cached = null; }
+                    }
+                    if (cached != null) Write(stream, 200, "image/png", cached);
+                    else Write(stream, 502, "text/plain", "Map unavailable"u8.ToArray());
+                }
+                else if (method == "POST" && path == "/api/save-gif" && tokenOk)
+                {
+                    var qs = ParseQuery(query);
+                    var rawName = Path.GetFileName(qs.GetValueOrDefault("name", "chest-route.gif"));
+                    if (string.IsNullOrWhiteSpace(rawName) || !rawName.EndsWith(".gif", StringComparison.OrdinalIgnoreCase))
+                        rawName = "chest-route.gif";
+                    var downloads = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+                    Directory.CreateDirectory(downloads);
+                    var stem = Path.GetFileNameWithoutExtension(rawName);
+                    var dest = Path.Combine(downloads, rawName);
+                    for (var n = 2; File.Exists(dest) && n < 1000; n++)
+                        dest = Path.Combine(downloads, $"{stem}-{n}.gif");
+                    File.WriteAllBytes(dest, body);
+                    if (OperatingSystem.IsWindows())
+                    {
+                        try { Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{dest}\"") { UseShellExecute = false })?.Dispose(); } catch { }
+                    }
+                    Write(stream, 200, "application/json; charset=utf-8", JsonSerializer.SerializeToUtf8Bytes(new { ok = true, path = dest }));
+                }
                 else if (method == "GET" && path == "/report" && tokenOk && File.Exists(_reportPath))
                 {
                     // Shown inside the window: no reload of its own, the window reloads it when the figures change.
@@ -278,7 +318,7 @@ public sealed class GuiServer
                 headers[line[..colon].Trim().ToLowerInvariant()] = line[(colon + 1)..].Trim();
             }
         }
-        var length = int.TryParse(headers.GetValueOrDefault("content-length"), out var l) ? Math.Clamp(l, 0, 1 << 20) : 0;
+        var length = int.TryParse(headers.GetValueOrDefault("content-length"), out var l) ? Math.Clamp(l, 0, 16 << 20) : 0;
         var body = new byte[length];
         var read = 0;
         while (read < length)

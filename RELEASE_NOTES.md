@@ -2,6 +2,9 @@ Download **`ChestCounter.exe`** below and run it — nothing to install and no e
 
 > **Turn on replays in Fortnite first:** *Settings → Game → Replays → Record Replays: **On***. The app only reads your saved replay files in read-only mode — 100% Easy Anti-Cheat safe.
 
+**What's new in 3.3.1**
+- **Export Route GIFs:** Click **Export GIF** on the **Route** tab to render a smooth looping animated GIF of your route (with live counting chest badge, glowing path, and numbered chest markers) saved straight to your `Downloads` folder and revealed in Explorer.
+
 **What's new in 3.3.0**
 - **Best Chest Route Map (`Route` Tab):**
   - Automatically finds your highest chests-per-match game (plus your Top 10 highest-chest matches) and draws your exact movement route across the live Fortnite island map.
