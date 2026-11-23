@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "revision": 4,
-  "updated": "2026-11-22",
+  "revision": 5,
+  "updated": "2026-11-23",
   "about": "Treasure hunt data shown by Chest Counter (report, odds, collection). Edit it on main and raise 'revision': every counter picks it up at its next start. Schema in src/ChestCounter/TreasureCatalog.cs.",
   "sources": {
     "odds": "https://x.com/FortniteStatus/status/2119202610322227327",
@@ -270,7 +270,7 @@
       "number": 5,
       "start": "2026-11-29T14:00:00Z",
       "end": "2026-12-05T14:00:00Z",
-      "title": "The Final Hunt",
+      "title": "Golden Week — The Final Hunt",
       "prizes": [
         {
           "id": "w5-outfit",
@@ -397,5 +397,22 @@
       "confirmed": false
     }
   ],
-  "notices": []
+  "notices": [
+    {
+      "id": "golden-week-2026",
+      "from": "2026-11-23T00:00:00Z",
+      "to": "2026-12-05T14:00:00Z",
+      "level": "info",
+      "title": {
+        "en": "Golden Week — Nov 28 to Dec 5",
+        "fr": "Golden Week — 28 nov. au 5 déc.",
+        "es": "Golden Week — 28 nov. al 5 dic."
+      },
+      "text": {
+        "en": "All past seasonal treasures (Solid Gold Outfits, Gold Vehicles & Decals, Pickaxes/Back Blings, Jam Tracks & Loading Screens) return to Battle Royale chests simultaneously! Kicks off Nov 28 with boosted Treasure Hours (7.5×+ Gold Outfits, 10× Gold Vehicles, 1.5×–2× Pirate Shop Tokens) and runs until Dec 5 Season End.",
+        "fr": "Tous les trésors des semaines précédentes reviennent en même temps dans les coffres ! Début le 28 nov. avec les Heures du trésor boostées, jusqu'à la fin de saison le 5 déc.",
+        "es": "¡Todos los tesoros de semanas anteriores regresan a los cofres al mismo tiempo! Comienza el 28 nov. con Horas del tesoro potenciadas hasta el final de temporada el 5 dic."
+      }
+    }
+  ]
 }

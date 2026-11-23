@@ -273,6 +273,14 @@ public static class GuiPage
         .th-pill{display:inline-block;margin-left:var(--s2);padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:var(--brand-soft);color:var(--brand)}
         .th-pill.live{background:rgba(48,209,88,.18);color:#30d158}
         .th-foot{font-size:12px;color:var(--cmuted)}
+        .gw-card{display:flex;flex-direction:column;gap:var(--s4);border-color:rgba(245,158,11,.42);background:linear-gradient(135deg,rgba(245,158,11,.10) 0%,var(--card) 58%)}
+        .gw-sub{margin:0;font-size:13.5px;line-height:1.5;color:#d1d1d6}
+        .gw-tags{display:flex;flex-wrap:wrap;gap:6px}
+        .gw-tag{font-size:12px;font-weight:600;color:#fde68a;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.28);border-radius:999px;padding:4px 10px}
+        .gw-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+        .gw-box{background:rgba(11,11,14,.55);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+        .gw-box .gl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--cmuted)}
+        .gw-box .gv{font-size:13.5px;font-weight:700;color:#ffffff;font-variant-numeric:tabular-nums}
         .spin{width:20px;height:20px;flex:none;margin-top:2px;border:2.5px solid var(--line-strong);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
         .row{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);padding:var(--s4) 0;border-bottom:1px solid var(--line)}
         .row:last-child{border-bottom:none}
@@ -713,6 +721,36 @@ public static class GuiPage
           return out;
         }
         function fmtCd(ms){if(ms<=0)return '0m';const s=Math.floor(ms/1000),d=Math.floor(s/86400),h=Math.floor((s%86400)/3600),m=Math.floor((s%3600)/60),sec=s%60;if(d>0)return `${d}d ${h}h ${m}m`;if(h>0)return `${h}h ${m}m`;return `${m}m ${sec}s`;}
+        function goldenWeekCard(T){
+          const gw=S.goldenWeek;if(!gw)return '';
+          const now=Date.now(),s0=Date.parse(gw.start),e0=Date.parse(gw.end);
+          if(now>=e0)return '';
+          const live=now>=s0&&now<e0;
+          const cdText=live?`LIVE · Ends in ${fmtCd(e0-now)}`:`Starts in ${fmtCd(s0-now)}`;
+          const winRows=(gw.windows||[]).map((w,i)=>{
+            const ws=Date.parse(w.start),we=Date.parse(w.end),isLive=now>=ws&&now<we;
+            const pill=isLive?`<span class="th-pill live">${esc(T.thLive)}</span>`:(w.isToday?`<span class="th-pill">${esc(T.thToday)}</span>`:'');
+            return `<div class="th-row"><span class="th-when">Kickoff Boost #${i+1} · ${esc(w.day)}${pill}</span><span class="th-time">${esc(w.range)}</span></div>`;
+          }).join('');
+          const foot=S.localZoneName?`All times shown in your local time · ${esc(S.localZoneName)}`:'All times shown in your local time';
+          return `<section class="card gw-card">
+            <div class="th-head"><h2 class="th-title">${starIco}<span>Fortnite Golden Week — Final Hunt</span></h2><span class="th-cd ${live?'live':''}" id="gwCd" data-start="${esc(gw.start)}" data-end="${esc(gw.end)}">${cdText}</span></div>
+            <p class="gw-sub">All past seasonal treasures return to Battle Royale chests at the same time for the final week of Treasure Hunters — your last chance to pull any missed Solid Gold Outfits, Gold Vehicles &amp; Decals, Pickaxes, Back Blings, Jam Tracks, and Loading Screens before Season End.</p>
+            <div class="gw-tags">
+              <span class="gw-tag">All Past Treasures Return</span>
+              <span class="gw-tag">Gold Outfits ×7.5+</span>
+              <span class="gw-tag">Gold Vehicles &amp; Decals ×10</span>
+              <span class="gw-tag">Pirate Shop Token ×1.5–2</span>
+            </div>
+            <div class="gw-grid">
+              <div class="gw-box"><span class="gl">Kickoff &amp; Treasure Hours</span><span class="gv">${esc(gw.startLocal)}</span></div>
+              <div class="gw-box"><span class="gl">Week 5 Final Hunt Rotation</span><span class="gv">${esc(gw.weekStartLocal)}</span></div>
+              <div class="gw-box"><span class="gl">Event &amp; Season Ends</span><span class="gv">${esc(gw.endLocal)}</span></div>
+            </div>
+            ${winRows?`<div class="th-list">${winRows}</div>`:''}
+            <div class="th-foot">${foot}</div>
+          </section>`;
+        }
         function treasureHoursCard(T){
           const list=S.treasureHours||[];if(!list.length)return '';
           const now=Date.now(),first=list[0],s0=Date.parse(first.start),e0=Date.parse(first.end),live=now>=s0&&now<e0;
@@ -732,7 +770,7 @@ public static class GuiPage
           const foot=S.localZoneName?`${esc(T.thLocal)} · ${esc(S.localZoneName)}`:esc(T.thLocal);
           return `<section class="card th-card"><div class="th-head"><h2 class="th-title">${zapIco}<span>${esc(T.thTitle)}</span></h2><span class="th-cd ${live?'live':''}" id="thCd" data-start="${esc(first.start)}" data-end="${esc(first.end)}">${cdText}</span></div>${boosts?`<div class="th-boosts">${boosts}</div>`:''}<div class="th-list">${rows}</div><div class="th-foot">${foot}</div></section>`;
         }
-        setInterval(()=>{if(document.hidden)return;const el=$('#thCd');if(!el||!S)return;const T=S.txt,now=Date.now(),s=Date.parse(el.dataset.start),e=Date.parse(el.dataset.end),live=now>=s&&now<e;el.classList.toggle('live',live);el.textContent=live?`${T.thEnds} ${fmtCd(e-now)}`:`${T.thNext} ${fmtCd(s-now)}`;},1000);
+        setInterval(()=>{if(document.hidden||!S)return;const T=S.txt,now=Date.now();const el=$('#thCd');if(el){const s=Date.parse(el.dataset.start),e=Date.parse(el.dataset.end),live=now>=s&&now<e;el.classList.toggle('live',live);el.textContent=live?`${T.thEnds} ${fmtCd(e-now)}`:`${T.thNext} ${fmtCd(s-now)}`;}const gw=$('#gwCd');if(gw){const s=Date.parse(gw.dataset.start),e=Date.parse(gw.dataset.end),live=now>=s&&now<e;gw.classList.toggle('live',live);gw.textContent=live?`LIVE · Ends in ${fmtCd(e-now)}`:`Starts in ${fmtCd(s-now)}`;}} ,1000);
         function home(T){
           let h='';
           if(S.autoClose)h+=`<div class="card notice warning"><b>${esc(S.status.text)}</b><br>${esc(T.autoCloseText)}<div class="actions" style="margin-top:10px"><button class="b main" onclick="api('keepOpen')">${esc(T.keepOpen)}</button></div></div>`;
@@ -756,6 +794,7 @@ public static class GuiPage
           if(S.overlay.running)h+=`<button class="b" onclick="api('toggleOverlayVisible')">${esc(S.overlay.visible?T.hideOverlay:T.showOverlay)}</button><button class="b" onclick="api('toggleOverlayLock')">${esc(S.overlay.locked?T.unlock:T.lock)}</button>`;
           if(!S.update&&S.updatesOn)h+=`<button class="b" onclick="api('checkUpdate')">${esc(T.checkUpdate)}</button>`;
           h+='</div>';
+          h+=goldenWeekCard(T);
           h+=treasureHoursCard(T);
           return h;
         }

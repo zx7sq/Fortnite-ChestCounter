@@ -1298,6 +1298,7 @@ object BuildGuiState()
             .ToList(),
         pcLocale = System.Globalization.CultureInfo.CurrentCulture.Name,
         localZoneName = L.UtcTimes ? "UTC" : $"{TimeZoneInfo.Local.StandardName} ({L.LocalOffset})",
+        goldenWeek = BuildGoldenWeekState(todayLocal),
         reportStamp = File.Exists(store.ReportPath) ? File.GetLastWriteTimeUtc(store.ReportPath).Ticks.ToString() : "",
         fnStats = new
         {
@@ -1337,6 +1338,49 @@ object BuildGuiState()
                     .ToList(),
             })
             .ToList(),
+    };
+}
+
+object? BuildGoldenWeekState(DateTime todayLocal)
+{
+    var startUtc = new DateTime(2026, 11, 28, 19, 0, 0, DateTimeKind.Utc);
+    var weekStartUtc = new DateTime(2026, 11, 29, 14, 0, 0, DateTimeKind.Utc);
+    var endUtc = new DateTime(2026, 12, 5, 14, 0, 0, DateTimeKind.Utc);
+    if (DateTime.UtcNow >= endUtc) return null;
+
+    static string FmtMoment(DateTime utc)
+    {
+        var d = L.Shown(utc);
+        return $"{d.ToString("ddd, d MMM", L.Culture)} · {L.Clock(d)}";
+    }
+
+    var windows = TreasureCatalog.TreasureHours
+        .Where(h => h.StartUtc >= startUtc && h.StartUtc < endUtc)
+        .OrderBy(h => h.StartUtc)
+        .Select(h =>
+        {
+            var sd = L.Shown(h.StartUtc);
+            var ed = L.Shown(h.EndUtc);
+            return new
+            {
+                start = h.StartUtc.ToString("O"),
+                end = h.EndUtc.ToString("O"),
+                day = sd.ToString("ddd, d MMM", L.Culture),
+                range = $"{L.Clock(sd)} – {L.Clock(ed)}",
+                isToday = sd.Date == todayLocal,
+            };
+        })
+        .ToList();
+
+    return new
+    {
+        start = startUtc.ToString("O"),
+        weekStart = weekStartUtc.ToString("O"),
+        end = endUtc.ToString("O"),
+        startLocal = FmtMoment(startUtc),
+        weekStartLocal = FmtMoment(weekStartUtc),
+        endLocal = FmtMoment(endUtc),
+        windows,
     };
 }
 
