@@ -12,6 +12,7 @@ public static class GuiPage
     public static Dictionary<string, string> Texts() => _cachedTexts ??= new()
     {
         ["home"] = L.T("Accueil", "Home", "Inicio"),
+        ["route"] = "Route",
         ["sprites"] = "Sprites",
         ["stats"] = "Stats",
         ["report"] = L.T("Rapport", "Report", "Informe"),
@@ -209,7 +210,7 @@ public static class GuiPage
         #app{display:flex;flex-direction:column;gap:var(--s5)}
         #hdr{display:flex;flex-direction:column;gap:var(--s4)}
         #view{display:flex;flex-direction:column;gap:var(--s5)}
-        #view.tab-anim,#activityPane.tab-anim,#reportPane.tab-anim,#statsPane.tab-anim{animation:fadeUp .3s var(--ease) both}
+        #view.tab-anim,#activityPane.tab-anim,#reportPane.tab-anim,#statsPane.tab-anim,#routePane.tab-anim{animation:fadeUp .3s var(--ease) both}
         #view:empty{display:none}
         #rep{width:100%;min-height:400px;border:0;display:block;background:transparent;overflow:hidden}
         .who{display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap;color:var(--muted);font-size:13px;font-weight:500;margin-top:var(--s1)}
@@ -463,6 +464,22 @@ public static class GuiPage
         .sp-rchips{display:flex;flex-wrap:wrap;gap:6px}
         .sp-rchip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px 3px 5px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;font-weight:600;color:#ffffff}
         .sp-rchip img{width:22px;height:22px;object-fit:contain}
+        /* Best Route Tab */
+        #routePane{display:flex;flex-direction:column;gap:12px}
+        .rt-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+        .rt-top select{flex:1;min-width:240px;max-width:440px;height:38px;min-height:38px;background:var(--card);border:1px solid var(--line-strong);border-radius:10px;color:#ffffff;font:600 13.5px var(--font);padding:0 12px}
+        .rt-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+        .rt-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+        .rt-stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+        .rt-stat .v{font-size:22px;font-weight:700;color:#ffffff;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+        .rt-stat .l{font-size:11.5px;color:var(--cmuted);margin-top:2px;font-weight:500}
+        .rt-wrap{position:relative;background:var(--card);border:1px solid rgba(245,158,11,.28);border-radius:16px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:10px}
+        .rt-stage{position:relative;width:100%;max-width:680px;aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:#0a2540;border:1px solid var(--line)}
+        #rtCanvas{width:100%;height:100%;display:block;cursor:crosshair}
+        .rt-tip{position:absolute;pointer-events:none;z-index:5;background:rgba(11,11,14,.92);border:1px solid rgba(245,158,11,.45);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;color:#ffffff;white-space:nowrap;transform:translate(-50%,-120%);box-shadow:0 8px 20px rgba(0,0,0,.5)}
+        .rt-leg{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:center;font-size:12px;color:var(--cmuted)}
+        .rt-leg span{display:inline-flex;align-items:center;gap:6px}
+        .rt-dot{width:9px;height:9px;border-radius:50%;display:inline-block}
         </style></head><body><div class="tbar"><div class="wctl">
           <button type="button" id="wmin"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5.5h10" stroke="currentColor" stroke-width="1.1"/></svg></button>
           <button type="button" id="wmax"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><rect id="wmaxicon" x=".55" y=".55" width="8.9" height="8.9" fill="none" stroke="currentColor" stroke-width="1.1"/><path id="wresicon" d="M2.5 2.5V.55h6.95v6.95H7.5M.55 2.5h6.95v6.95H.55z" fill="none" stroke="currentColor" stroke-width="1.1" style="display:none"/></svg></button>
@@ -571,10 +588,38 @@ public static class GuiPage
             </form>
           </div>
         </section>
+        <section id="routePane" class="hidden">
+          <div class="rt-top">
+            <select id="rtSelect" aria-label="Select match"></select>
+            <div class="rt-acts">
+              <div class="gs-seg">
+                <button type="button" class="gs-pill on" id="rtZoomIsland">Island</button>
+                <button type="button" class="gs-pill" id="rtZoomFit">Zoom Route</button>
+              </div>
+              <button type="button" class="gs-ghost live-on" id="rtPoisBtn">POIs: On</button>
+              <button type="button" class="gs-ghost live-on" id="rtChestsBtn">Chests: On</button>
+              <button type="button" class="gs-btn-gold" id="rtPlayBtn">▶ Replay</button>
+            </div>
+          </div>
+          <div id="rtStats" class="rt-stats"></div>
+          <div id="rtEmpty" class="card hidden"><span class="note">No route data recorded yet — existing replays are being re-scanned automatically, or play a match with Replays enabled.</span></div>
+          <div id="rtWrap" class="rt-wrap">
+            <div class="rt-stage">
+              <canvas id="rtCanvas" width="900" height="900"></canvas>
+              <div id="rtTip" class="rt-tip hidden"></div>
+            </div>
+            <div class="rt-leg">
+              <span><i class="rt-dot" style="background:#30d158"></i>Landing</span>
+              <span><i class="rt-dot" style="background:#f59e0b"></i>Chest opened</span>
+              <span><i class="rt-dot" style="background:#ff453a"></i>Match end</span>
+              <span><i style="display:inline-block;width:16px;height:3px;border-radius:2px;background:#f59e0b"></i>Route path</span>
+            </div>
+          </div>
+        </section>
         <div id="foot"></div></main></div>
         <dialog id="dlg" aria-labelledby="dlgT"><div class="dhead"><h2 class="pirate" id="dlgT"></h2><button type="button" class="dclose" id="dlgX" aria-label="Close"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div><div id="dlgB"></div></dialog>
         <script>
-        const TOKEN='__TOKEN__';let S=null,tab=(()=>{const h=location.hash.slice(1);if(['home','sprites','stats','report','overlay','settings','help'].includes(h))return h;try{return localStorage.getItem('cc-gui-tab')||'home'}catch(e){return 'home'}})(),estimate=null,stopped=false,copied=false,spFilter='all',spVar='all';
+        const TOKEN='__TOKEN__';let S=null,tab=(()=>{const h=location.hash.slice(1);if(['home','route','sprites','stats','report','overlay','settings','help'].includes(h))return h;try{return localStorage.getItem('cc-gui-tab')||'home'}catch(e){return 'home'}})(),estimate=null,stopped=false,copied=false,spFilter='all',spVar='all';
         const $=s=>document.querySelector(s);
         // In the counter's own window (?w=1): the title bar of the page, its buttons sent to the window.
         const host=window.chrome&&window.chrome.webview;let maximized=false;
@@ -592,11 +637,11 @@ public static class GuiPage
         function sw(id,on,act){return `<label class="switch"><input type="checkbox" id="${id}" ${on?'checked':''} onchange="api('${act}',this.checked)"><span></span></label>`}
         function row(title,help,control){return `<div class="row"><div><div class="t">${title}</div>${help?`<div class="h">${help}</div>`:''}</div><div>${control}</div></div>`}
         function sel(act,value,opts){return `<select onchange="api('${act}',this.value)">${opts.map(o=>`<option value="${esc(o[0])}" ${String(o[0])===String(value)?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`}
-        function setTab(t){const changed=tab!==t;tab=t;try{localStorage.setItem('cc-gui-tab',t)}catch(e){}render(true);if(changed){['#view','#activityPane','#reportPane','#statsPane'].forEach(sel=>{const el=$(sel);if(el){el.classList.remove('tab-anim');void el.offsetWidth;el.classList.add('tab-anim')}})}}
+        function setTab(t){const changed=tab!==t;tab=t;try{localStorage.setItem('cc-gui-tab',t)}catch(e){}render(true);if(changed){['#view','#activityPane','#reportPane','#statsPane','#routePane'].forEach(sel=>{const el=$(sel);if(el){el.classList.remove('tab-anim');void el.offsetWidth;el.classList.add('tab-anim')}})}}
         function render(force){
           const T=S.txt;document.documentElement.lang=S.lang;
           const head=`<header><div class="brand"><img src="__CHESTICON__" width="46" height="46" alt="" style="object-fit:contain"><div><h1 class="pirate">${esc(S.appName)}</h1><div class="who">${S.profiles.length>1?`<select aria-label="${esc(T.profile)}" title="${esc(T.profile)}" onchange="api('profile',this.value)">${S.profiles.map(p=>`<option value="${esc(p.key)}" ${p.key===S.profileKey?'selected':''}>${esc(p.name)} (${esc(p.matches)})</option>`).join('')}</select>`:`<span>${esc(S.player||'')}</span>`}<span>v${esc(S.version)}</span></div></div></div><span class="pill ${S.status.kind}"><i></i>${esc(S.status.text)}</span></header>
-          <nav>${['home','sprites','stats','report','overlay','settings','help'].map(t=>`<button class="${t===tab?'on':''}" onclick="setTab('${t}')">${esc(T[t])}</button>`).join('')}</nav>`;
+          <nav>${['home','route','sprites','stats','report','overlay','settings','help'].map(t=>`<button class="${t===tab?'on':''}" onclick="setTab('${t}')">${esc(T[t])}</button>`).join('')}</nav>`;
           if(!force&&busyHeader())return;
           if(!force&&busy()){$('#hdr').innerHTML=head;appHtml=null;return}
           // A click in progress (button pressed, not released yet): rebuilding now would replace its button and the click
@@ -610,7 +655,7 @@ public static class GuiPage
           // In the counter's own window the close button asks and stops it: no "quit" button needed.
           const foot=S.settings.windowed?`<footer><span>${esc(T.footerWindow)}</span></footer>`:`<footer><span>${esc(T.footer)}</span><button class="b danger" onclick="quit()">${esc(T.quit)}</button></footer>`;
           if(force||foot!==footHtml){$('#foot').innerHTML=foot;footHtml=foot}
-          showActivity(T);showReport();showStats();winTitles();
+          showActivity(T);showReport();showStats();showRoute();winTitles();
         }
         // pressedAt: when the mouse button went down (0 once released). Forgotten after 3 s in case the release was
         // missed (outside the window), so the page never stops refreshing.
@@ -822,7 +867,7 @@ public static class GuiPage
           ${S.canUninstall?`<section><h2 class="pirate">${esc(T.uninstall)}</h2><div class="card"><span class="path">${esc(S.paths.data)}</span>
           <div class="actions"><button class="b danger" onclick="uninstall(false)">${esc(T.uninstall)} · ${esc(T.keepData)}</button><button class="b danger" onclick="uninstall(true)">${esc(T.uninstall)} · ${esc(T.deleteData)}</button></div></div></section>`:''}`;
         }
-        function closedView(){stopped=true;$('#app').innerHTML='<div class="card">'+esc(S.txt.closed)+'</div>';$('#foot').innerHTML='';appHtml=footHtml=null;$('#activityPane').classList.add('hidden');$('#reportPane').classList.add('hidden');$('#statsPane').classList.add('hidden')}
+        function closedView(){stopped=true;$('#app').innerHTML='<div class="card">'+esc(S.txt.closed)+'</div>';$('#foot').innerHTML='';appHtml=footHtml=null;$('#activityPane').classList.add('hidden');$('#reportPane').classList.add('hidden');$('#statsPane').classList.add('hidden');$('#routePane').classList.add('hidden')}
         async function uninstall(all){if(!confirm(S.txt.uninstallConfirm))return;const err=await api('uninstall',all);if(err){alert(err);return}closedView()}
         async function quit(){if(!confirm(S.txt.quitConfirm))return;try{await api('quit')}catch(e){}closedView()}
         // --- Gold Stats Card ---
@@ -943,6 +988,139 @@ public static class GuiPage
             $('#gsSkinForm').addEventListener('submit',e=>{e.preventDefault();const v=$('#gsSkinInput').value.trim();if(v){document.querySelectorAll('.gs-chip').forEach(x=>x.classList.remove('on'));gsLoadSkin(v,true)}});
             if(S.fnStats.hasKey&&S.fnStats.player)gsLookup(S.fnStats.player);
           }
+        }
+        // --- Best Route Map ---
+        const rt={init:false,zoom:'island',pois:true,chests:true,selectedId:null,listSig:'',playing:false,animId:null,prog:1,mapPoi:null,mapBlank:null,hitPts:[]};
+        function rtWorldToNorm(x,y){return [(x+150000)/310000,(y+155000)/310000]}
+        function rtFmtSec(s){const m=Math.floor((s||0)/60),r=Math.floor((s||0)%60);return `${m}:${r<10?'0':''}${r}`}
+        function rtCurMatch(){const list=(S&&S.bestRoutes)||[];if(!list.length)return null;return list.find(m=>m.id===rt.selectedId)||list[0]}
+        function rtViewport(m){
+          if(rt.zoom==='island')return {u0:0.18,v0:0.20,span:0.68};
+          const pts=[];
+          const r=m.route||[];for(let i=0;i+2<r.length;i+=3)pts.push(rtWorldToNorm(r[i+1],r[i+2]));
+          for(const c of (m.chestPts||[]))pts.push(rtWorldToNorm(c.x,c.y));
+          if(!pts.length)return {u0:0.18,v0:0.20,span:0.68};
+          let minU=1,maxU=0,minV=1,maxV=0;
+          for(const [u,v] of pts){if(u<minU)minU=u;if(u>maxU)maxU=u;if(v<minV)minV=v;if(v>maxV)maxV=v}
+          const pad=0.05,span=Math.max(0.16,Math.max(maxU-minU,maxV-minV)+pad*2);
+          const cu=(minU+maxU)/2,cv=(minV+maxV)/2;
+          return {u0:Math.max(0,Math.min(1-span,cu-span/2)),v0:Math.max(0,Math.min(1-span,cv-span/2)),span};
+        }
+        function rtDraw(){
+          const m=rtCurMatch(),cv=$('#rtCanvas');if(!cv||!m)return;
+          const ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+          ctx.clearRect(0,0,W,H);ctx.fillStyle='#0a2540';ctx.fillRect(0,0,W,H);
+          const vp=rtViewport(m),toPx=(x,y)=>{const [u,v]=rtWorldToNorm(x,y);return [(u-vp.u0)/vp.span*W,(v-vp.v0)/vp.span*H]};
+          const img=rt.pois?rt.mapPoi:rt.mapBlank;
+          if(img&&img.complete&&img.naturalWidth>0){
+            const iw=img.naturalWidth,ih=img.naturalHeight;
+            ctx.drawImage(img,vp.u0*iw,vp.v0*ih,vp.span*iw,vp.span*ih,0,0,W,H);
+          }
+          const r=m.route||[],nPts=Math.floor(r.length/3);
+          const drawCount=rt.playing?Math.max(1,Math.floor(nPts*rt.prog)):nPts;
+          const maxT=drawCount>0&&nPts>0?r[(drawCount-1)*3]:1e9;
+          if(drawCount>=2){
+            const pts=[];for(let i=0;i<drawCount;i++)pts.push(toPx(r[i*3+1],r[i*3+2]));
+            ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+            // Dark outline for contrast over bright sand/water
+            ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);
+            ctx.strokeStyle='rgba(11,11,14,0.82)';ctx.lineWidth=8;ctx.stroke();
+            // Glowing gold route line
+            const grad=ctx.createLinearGradient(pts[0][0],pts[0][1],pts[pts.length-1][0],pts[pts.length-1][1]);
+            grad.addColorStop(0,'#30d158');grad.addColorStop(0.25,'#f59e0b');grad.addColorStop(1,'#fde68a');
+            ctx.strokeStyle=grad;ctx.lineWidth=4.2;ctx.shadowColor='rgba(245,158,11,0.55)';ctx.shadowBlur=10;ctx.stroke();
+            ctx.shadowBlur=0;
+            // Directional chevrons along the route
+            let acc=0;
+            for(let i=1;i<pts.length;i++){
+              const dx=pts[i][0]-pts[i-1][0],dy=pts[i][1]-pts[i-1][1],seg=Math.hypot(dx,dy);
+              acc+=seg;
+              if(acc>=78&&seg>4){
+                acc=0;const ang=Math.atan2(dy,dx),mx=(pts[i][0]+pts[i-1][0])/2,my=(pts[i][1]+pts[i-1][1])/2;
+                ctx.save();ctx.translate(mx,my);ctx.rotate(ang);
+                ctx.beginPath();ctx.moveTo(6,0);ctx.lineTo(-4,-4.5);ctx.lineTo(-4,4.5);ctx.closePath();
+                ctx.fillStyle='#ffffff';ctx.fill();ctx.restore();
+              }
+            }
+            // Start & End markers
+            const [sx,sy]=pts[0],[ex,ey]=pts[pts.length-1];
+            ctx.beginPath();ctx.arc(sx,sy,8,0,Math.PI*2);ctx.fillStyle='#30d158';ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle='#0b0b0e';ctx.stroke();
+            ctx.beginPath();ctx.arc(ex,ey,8,0,Math.PI*2);ctx.fillStyle=rt.playing?'#ffffff':'#ff453a';ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle='#0b0b0e';ctx.stroke();
+            ctx.restore();
+          }
+          // Chest markers
+          rt.hitPts=[];
+          if(rt.chests){
+            for(const c of (m.chestPts||[])){
+              if(rt.playing&&c.t>maxT)continue;
+              const [cx,cy]=toPx(c.x,c.y);
+              rt.hitPts.push({x:cx,y:cy,c});
+              ctx.save();
+              ctx.beginPath();ctx.arc(cx,cy,9.5,0,Math.PI*2);
+              ctx.fillStyle='#f59e0b';ctx.fill();
+              ctx.lineWidth=2;ctx.strokeStyle='#0b0b0e';ctx.stroke();
+              ctx.fillStyle='#0b0b0e';ctx.font='700 10px -apple-system,Segoe UI,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+              ctx.fillText(String(c.n),cx,cy+0.5);
+              ctx.restore();
+            }
+          }
+        }
+        function rtStopPlay(){rt.playing=false;rt.prog=1;if(rt.animId){cancelAnimationFrame(rt.animId);rt.animId=null}$('#rtPlayBtn').textContent='▶ Replay';rtDraw()}
+        function rtTogglePlay(){
+          if(rt.playing){rtStopPlay();return}
+          rt.playing=true;rt.prog=0;$('#rtPlayBtn').textContent='■ Stop';
+          const t0=performance.now(),dur=6500;
+          const step=now=>{if(!rt.playing)return;rt.prog=Math.min(1,(now-t0)/dur);rtDraw();if(rt.prog<1)rt.animId=requestAnimationFrame(step);else rtStopPlay()};
+          rt.animId=requestAnimationFrame(step);
+        }
+        function rtRenderStats(m){
+          const mins=m.duration>0?m.duration/60:0,cpm=mins>0?(m.chests/mins).toFixed(2):'—';
+          const pl=m.placement?`#${m.placement}`:'—';
+          $('#rtStats').innerHTML=`
+            <div class="rt-stat" style="border-color:rgba(245,158,11,.35)"><div class="v">${esc(m.chests)}</div><div class="l">Chests opened</div></div>
+            <div class="rt-stat"><div class="v">${esc(cpm)}</div><div class="l">Chests / min</div></div>
+            <div class="rt-stat"><div class="v">${esc(pl)}</div><div class="l">Placement</div></div>
+            <div class="rt-stat"><div class="v">${esc(rtFmtSec(m.duration))}</div><div class="l">Duration</div></div>
+            <div class="rt-stat"><div class="v" style="font-size:16px;padding-top:4px">${esc(m.mode)}</div><div class="l">${esc(m.when)}</div></div>`;
+        }
+        function showRoute(){
+          const pane=$('#routePane');pane.classList.toggle('hidden',tab!=='route');
+          if(tab!=='route'||!S)return;
+          if(!rt.init){
+            rt.init=true;
+            rt.mapPoi=new Image();rt.mapPoi.onload=rtDraw;rt.mapPoi.src='https://fortnite-api.com/images/map_en.png';
+            rt.mapBlank=new Image();rt.mapBlank.onload=rtDraw;rt.mapBlank.src='https://fortnite-api.com/images/map.png';
+            $('#rtSelect').addEventListener('change',e=>{rt.selectedId=e.target.value;rtStopPlay();const m=rtCurMatch();if(m){rtRenderStats(m);rtDraw()}});
+            $('#rtZoomIsland').addEventListener('click',()=>{rt.zoom='island';$('#rtZoomIsland').classList.add('on');$('#rtZoomFit').classList.remove('on');rtDraw()});
+            $('#rtZoomFit').addEventListener('click',()=>{rt.zoom='fit';$('#rtZoomFit').classList.add('on');$('#rtZoomIsland').classList.remove('on');rtDraw()});
+            $('#rtPoisBtn').addEventListener('click',()=>{rt.pois=!rt.pois;$('#rtPoisBtn').textContent=rt.pois?'POIs: On':'POIs: Off';$('#rtPoisBtn').classList.toggle('live-on',rt.pois);rtDraw()});
+            $('#rtChestsBtn').addEventListener('click',()=>{rt.chests=!rt.chests;$('#rtChestsBtn').textContent=rt.chests?'Chests: On':'Chests: Off';$('#rtChestsBtn').classList.toggle('live-on',rt.chests);rtDraw()});
+            $('#rtPlayBtn').addEventListener('click',rtTogglePlay);
+            const cv=$('#rtCanvas'),tip=$('#rtTip');
+            cv.addEventListener('mousemove',e=>{
+              const rect=cv.getBoundingClientRect(),sx=cv.width/rect.width,sy=cv.height/rect.height;
+              const mx=(e.clientX-rect.left)*sx,my=(e.clientY-rect.top)*sy;
+              let best=null,bd=18;
+              for(const h of rt.hitPts){const d=Math.hypot(h.x-mx,h.y-my);if(d<bd){bd=d;best=h}}
+              if(best){
+                tip.textContent=`#${best.c.n} · ${best.c.kind}${best.c.destroyed?' (destroyed)':''} · ${rtFmtSec(best.c.t)}`;
+                tip.style.left=(best.x/sx)+'px';tip.style.top=(best.y/sy)+'px';tip.classList.remove('hidden');
+              }else tip.classList.add('hidden');
+            });
+            cv.addEventListener('mouseleave',()=>tip.classList.add('hidden'));
+          }
+          const list=S.bestRoutes||[];
+          $('#rtEmpty').classList.toggle('hidden',list.length>0);
+          $('#rtWrap').classList.toggle('hidden',list.length===0);
+          $('#rtStats').classList.toggle('hidden',list.length===0);
+          if(!list.length)return;
+          const sig=list.map(m=>m.id+':'+m.chests).join('|');
+          if(sig!==rt.listSig){
+            rt.listSig=sig;
+            if(!rt.selectedId||!list.some(m=>m.id===rt.selectedId))rt.selectedId=list[0].id;
+            $('#rtSelect').innerHTML=list.map((m,i)=>`<option value="${esc(m.id)}" ${m.id===rt.selectedId?'selected':''}>#${i+1} Best · ${esc(m.chests)} chests · ${esc(m.when)} · ${esc(m.mode)}</option>`).join('');
+          }
+          const cur=rtCurMatch();if(cur){rtRenderStats(cur);if(!rt.playing)rtDraw()}
         }
         refresh(true);
         setInterval(()=>{if(!document.hidden)refresh(false)},2000);

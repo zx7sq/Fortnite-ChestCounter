@@ -10,6 +10,9 @@ public sealed class ChestRecord
     public string Blueprint { get; set; } = "";
     /// <summary>True when the chest was destroyed by the player instead of being opened.</summary>
     public bool Destroyed { get; set; }
+    /// <summary>World coordinates (Unreal units) where the chest was opened/destroyed, for route mapping.</summary>
+    public int? X { get; set; }
+    public int? Y { get; set; }
     public List<string> Items { get; set; } = new();
     public List<string> TreasureItems { get; set; } = new();
 }
@@ -168,6 +171,9 @@ public sealed class MatchRecord
 
     /// <summary>Sprites carried, leveled to max, extracted, or won with by the player during this match.</summary>
     public List<SpriteRecord> Sprites { get; set; } = new();
+
+    /// <summary>Downsampled player movement route as flat triples [timeSec, x, y, ...] for best-route map visualization.</summary>
+    public List<int> Route { get; set; } = new();
 
     /// <summary>Time and distance spent in vehicles (driver or passenger).</summary>
     public int VehicleSeconds { get; set; }

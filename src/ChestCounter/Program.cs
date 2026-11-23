@@ -1309,6 +1309,34 @@ object BuildGuiState()
             outfit = string.IsNullOrWhiteSpace(config.StatsOutfit) ? "Midas" : config.StatsOutfit,
         },
         sprites = BuildSpritesState(view, matches, tracker.IsLive ? tracker.LiveMatch : null),
+        bestRoutes = matches
+            .Where(m => m.ChestsOpened > 0 && (m.Route.Count >= 6 || m.Chests.Any(c => c.X != null && c.Y != null)))
+            .OrderByDescending(m => m.ChestsOpened)
+            .ThenByDescending(m => m.MatchStartUtc ?? m.AnalyzedAtUtc)
+            .Take(10)
+            .Select(m => new
+            {
+                id = m.SessionId,
+                chests = m.ChestsOpened,
+                when = L.DateTimeShort(L.Shown(m.MatchStartUtc ?? m.AnalyzedAtUtc)),
+                mode = Pretty.Playlist(m.Playlist),
+                placement = m.Placement,
+                duration = m.DurationSeconds ?? 0,
+                route = m.Route,
+                chestPts = m.Chests
+                    .Where(c => c.X != null && c.Y != null)
+                    .Select((c, idx) => new
+                    {
+                        n = idx + 1,
+                        t = (int)Math.Round(c.TimeSeconds),
+                        x = c.X!.Value,
+                        y = c.Y!.Value,
+                        kind = L.Name(c.Kind),
+                        destroyed = c.Destroyed,
+                    })
+                    .ToList(),
+            })
+            .ToList(),
     };
 }
 

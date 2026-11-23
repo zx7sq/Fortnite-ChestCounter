@@ -234,7 +234,7 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
     private readonly List<SpriteSpan> _spriteSpans = new();
 
     /// <summary>Bump when the analysis changes so that existing replays are re-analyzed.</summary>
-    public const int CurrentVersion = 21; // 21: track carried, maxed, extracted, and won Sprites (BP_ExtractionBackpack_Sprite)
+    public const int CurrentVersion = 22; // 22: record downsampled player Route and ChestRecord (X,Y) coordinates for Best Route map
 
     private static readonly bool ProbeDebug = Environment.GetEnvironmentVariable("CHESTCOUNTER_DEBUG") == "4";
 
@@ -941,12 +941,15 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
                     .Select(t => t.Item)
                     .ToList();
 
+            var chestPos = targetPawns.Select(p => PositionOf(p, search.Time)).FirstOrDefault(p => p != null);
             chests.Add(new ChestRecord
             {
                 TimeSeconds = MathF.Round(search.Time, 1),
                 Kind = search.Kind,
                 Blueprint = search.Label,
                 Destroyed = search.Destroyed,
+                X = chestPos is { } cp ? (int)Math.Round(cp.X) : null,
+                Y = chestPos is { } cp2 ? (int)Math.Round(cp2.Y) : null,
                 Items = items,
                 TreasureItems = items.Where(i => TreasureItem.IsMatch(i) && !EventItem.IsMatch(i)).ToList(),
             });
@@ -1276,6 +1279,7 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
             rec.LastSeenSeconds = Math.Max(rec.LastSeenSeconds, sp.LastSeen);
         }
         var sprites = spriteMap.Values.OrderBy(s => s.FirstSeenSeconds).ToList();
+        var route = BuildRoute(targetPawns);
 
         return new MatchRecord
         {
@@ -1309,10 +1313,79 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
             TeamChests = teamChests,
             TeamChestsOpened = teamChests.Sum(t => t.Chests),
             Sprites = sprites,
+            Route = route,
             VehicleSeconds = vehicleSeconds,
             VehicleMeters = vehicleMeters,
             UnrecordedVehicleLoot = unrecordedLoot,
         };
+    }
+
+    /// <summary>
+    /// Builds a compact downsampled ground route [tSec, x, y, ...] for the tracked player,
+    /// combining on-foot and in-vehicle movement and skipping pre-landing Battle Bus altitude.
+    /// </summary>
+    private List<int> BuildRoute(HashSet<uint> targetPawns)
+    {
+        var raw = new List<Pt>();
+        foreach (var pawn in targetPawns)
+        {
+            if (_pawnTrack.TryGetValue(pawn, out var track))
+            {
+                raw.AddRange(track);
+            }
+        }
+        foreach (var span in _seatSpans)
+        {
+            if (!targetPawns.Contains(span.Pawn)) continue;
+            if (_vehicleTrack.TryGetValue(span.Vehicle, out var vtrack))
+            {
+                foreach (var p in vtrack)
+                {
+                    if (p.T >= span.From - 0.5f && p.T <= span.To + 0.5f)
+                    {
+                        raw.Add(p);
+                    }
+                }
+            }
+        }
+        if (raw.Count < 2) return new();
+
+        raw.Sort((a, b) => a.T.CompareTo(b.T));
+
+        // Skip Battle Bus / spawn-island points before the player first drops onto the island (Z < 12000).
+        var startIdx = 0;
+        var hasLow = raw.Any(p => p.Z < 12000f && p.T > 20f);
+        if (hasLow)
+        {
+            while (startIdx < raw.Count && (raw[startIdx].Z > 12000f || raw[startIdx].T < 20f))
+            {
+                startIdx++;
+            }
+        }
+
+        var result = new List<int>(Math.Min(raw.Count, 400) * 3);
+        Pt? last = null;
+        for (var i = startIdx; i < raw.Count; i++)
+        {
+            var p = raw[i];
+            if (p.X < -180000 || p.X > 180000 || p.Y < -180000 || p.Y > 180000) continue;
+            if (last != null)
+            {
+                var dt = p.T - last.Value.T;
+                var dx = p.X - last.Value.X;
+                var dy = p.Y - last.Value.Y;
+                var d2 = dx * dx + dy * dy;
+                // Skip huge teleports (e.g. spawn island -> bus) and redundant stationary points.
+                if (dt < 0.5f || (dt < 3.0f && d2 < 1500f * 1500f)) continue;
+                if (d2 < 300f * 300f && dt < 12f) continue;
+            }
+            result.Add((int)Math.Round(p.T));
+            result.Add((int)Math.Round(p.X));
+            result.Add((int)Math.Round(p.Y));
+            last = p;
+            if (result.Count >= 400 * 3) break;
+        }
+        return result;
     }
 
     /// <summary>
