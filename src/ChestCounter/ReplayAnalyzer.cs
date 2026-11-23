@@ -232,9 +232,11 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
     }
     private readonly Dictionary<uint, SpriteSpan> _spriteByChannel = new();
     private readonly List<SpriteSpan> _spriteSpans = new();
+    private readonly HashSet<uint> _sawBusSkydive = new();
+    private readonly Dictionary<uint, float> _landedAt = new();
 
     /// <summary>Bump when the analysis changes so that existing replays are re-analyzed.</summary>
-    public const int CurrentVersion = 22; // 22: record downsampled player Route and ChestRecord (X,Y) coordinates for Best Route map
+    public const int CurrentVersion = 23; // 23: start Route strictly at ground touchdown (ignore Battle Bus & gliding)
 
     private static readonly bool ProbeDebug = Environment.GetEnvironmentVariable("CHESTCOUNTER_DEBUG") == "4";
 
@@ -794,6 +796,19 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
                     {
                         Track(_pawnTrack, pawnId.Value, pawnMove.Location, 0.5f);
                     }
+                    // Detect exact touchdown after Battle Bus / gliding drop.
+                    if (pawn.bIsSkydivingFromBus == true || pawn.bIsSkydiving == true || pawn.bIsParachuteOpen == true)
+                    {
+                        if (!_landedAt.ContainsKey(pawnId.Value))
+                        {
+                            _sawBusSkydive.Add(pawnId.Value);
+                        }
+                    }
+                    else if (_sawBusSkydive.Contains(pawnId.Value)
+                        && (pawn.bIsSkydivingFromBus == false || pawn.bIsSkydiving == false || pawn.bIsParachuteOpen == false || pawn.ReplicatedMovementMode == 1))
+                    {
+                        _landedAt.TryAdd(pawnId.Value, Now);
+                    }
                 }
                 break;
 
@@ -1352,14 +1367,31 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
 
         raw.Sort((a, b) => a.T.CompareTo(b.T));
 
-        // Skip Battle Bus / spawn-island points before the player first drops onto the island (Z < 12000).
+        // Start strictly when the player touches the ground (ignoring spawn island, Battle Bus, and gliding).
         var startIdx = 0;
-        var hasLow = raw.Any(p => p.Z < 12000f && p.T > 20f);
-        if (hasLow)
+        var landedTimes = targetPawns
+            .Where(p => _landedAt.ContainsKey(p))
+            .Select(p => _landedAt[p])
+            .ToList();
+        if (landedTimes.Count > 0)
         {
-            while (startIdx < raw.Count && (raw[startIdx].Z > 12000f || raw[startIdx].T < 20f))
+            var touchT = landedTimes.Min();
+            while (startIdx < raw.Count && raw[startIdx].T < touchT)
             {
                 startIdx++;
+            }
+        }
+        else
+        {
+            // Fallback if bus-drop flags weren't seen: skip high-altitude / fast-descending glider frames.
+            while (startIdx < raw.Count && raw[startIdx].T < 20f) startIdx++;
+            while (startIdx + 1 < raw.Count && raw[startIdx].Z > 5500f) startIdx++;
+            while (startIdx + 1 < raw.Count)
+            {
+                var dt = raw[startIdx + 1].T - raw[startIdx].T;
+                var vz = dt > 0.05f ? (raw[startIdx + 1].Z - raw[startIdx].Z) / dt : 0f;
+                if (vz < -350f) startIdx++;
+                else break;
             }
         }
 
