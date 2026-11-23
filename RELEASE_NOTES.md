@@ -2,6 +2,9 @@ Download **`ChestCounter.exe`** below and run it — nothing to install and no e
 
 > **Turn on replays in Fortnite first:** *Settings → Game → Replays → Record Replays: **On***. The app only reads your saved replay files in read-only mode — 100% Easy Anti-Cheat safe.
 
+**What's new in 3.2.1**
+- **All 59 Sprite & Variant Images Embedded:** Every Sprite family and every Base, Fortune, Cursed, and Gold variant now displays its actual in-game artwork directly in the **Sprites** tab and Recent Replay Sprites list (embedded for instant offline loading).
+
 **What's new in 3.2.0**
 - **Sprites Tab & Automatic Replay Scanner:**
   - Automatically scans your replays for every Sprite and variant (**Base**, **Fortune**, **Cursed**, **Gold**) you carry, level to **Max (Lv 5)**, **extract** mid-match, or **secure by winning** (`#1`).

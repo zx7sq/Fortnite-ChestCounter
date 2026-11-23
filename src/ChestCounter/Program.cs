@@ -1396,6 +1396,7 @@ object BuildSpritesState(TrackerData view, List<MatchRecord> matches, MatchRecor
                 var fam = SpriteCatalog.FindFamily(s.FamilyId);
                 return new
                 {
+                    familyId = s.FamilyId,
                     name = fam?.Name ?? s.FamilyId,
                     variant = s.Variant,
                     variantLabel = SpriteCatalog.VariantLabel(s.Variant),

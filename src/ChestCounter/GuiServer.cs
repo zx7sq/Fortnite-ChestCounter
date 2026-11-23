@@ -194,6 +194,21 @@ public sealed class GuiServer
                 {
                     Write(stream, 200, "text/html; charset=utf-8", File.ReadAllBytes(_overlayPath));
                 }
+                else if (method == "GET" && path.StartsWith("/sprites/", StringComparison.Ordinal))
+                {
+                    var name = Path.GetFileName(Uri.UnescapeDataString(path["/sprites/".Length..]));
+                    using var res = name.Length > 0 ? typeof(GuiServer).Assembly.GetManifestResourceStream("sprites/" + name) : null;
+                    if (res != null)
+                    {
+                        using var ms = new MemoryStream();
+                        res.CopyTo(ms);
+                        Write(stream, 200, "image/webp", ms.ToArray());
+                    }
+                    else
+                    {
+                        Write(stream, 404, "text/plain", "Not found"u8.ToArray());
+                    }
+                }
                 else if (method == "GET" && path.StartsWith("/images/", StringComparison.Ordinal))
                 {
                     // Pictures of the report (no token: they are public pictures, and the name cannot leave the folder).

@@ -427,26 +427,33 @@ public static class GuiPage
         @media (max-width:560px){.gs-cells.c3{grid-template-columns:1fr;gap:10px}.gs-cell+.gs-cell::before{display:none}.gs-extra{grid-template-columns:repeat(2,1fr)}}
         /* Sprites Tab */
         .sp-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
-        .sp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
-        .sp-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .18s var(--ease)}
+        .sp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+        .sp-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;transition:border-color .18s var(--ease)}
         .sp-card:hover{border-color:var(--line-strong)}
-        .sp-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+        .sp-head{display:flex;align-items:center;gap:12px}
+        .sp-thumb{width:46px;height:46px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--line);object-fit:contain;padding:3px;flex:none}
+        .sp-hinfo{flex:1;min-width:0}
+        .sp-htop{display:flex;align-items:center;justify-content:space-between;gap:8px}
         .sp-name{font-size:15.5px;font-weight:700;color:#ffffff;letter-spacing:-.01em}
-        .sp-ab{font-size:12.5px;color:var(--cmuted);line-height:1.4;margin-top:-4px}
-        .sp-rar{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--cmuted)}
+        .sp-ab{font-size:12px;color:var(--cmuted);line-height:1.35;margin-top:2px}
+        .sp-rar{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--cmuted);flex:none}
         .sp-rar.mythic{color:#f59e0b;border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.12)}
         .sp-rar.legendary{color:#fb923c;border-color:rgba(251,146,60,.4);background:rgba(251,146,60,.12)}
         .sp-rar.epic{color:#c084fc;border-color:rgba(192,132,252,.4);background:rgba(192,132,252,.12)}
         .sp-rar.rare{color:#38bdf8;border-color:rgba(56,189,248,.4);background:rgba(56,189,248,.12)}
-        .sp-vars{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
-        .sp-var{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:7px 10px;border-radius:9px;background:rgba(255,255,255,.025);border:1px solid var(--line);color:var(--cmuted);font:600 12px var(--font);cursor:pointer;text-align:left;transition:all .16s var(--ease)}
+        .sp-vars{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+        .sp-vars.single{grid-template-columns:minmax(0,110px)}
+        .sp-var{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px;border-radius:10px;background:rgba(255,255,255,.025);border:1px solid var(--line);color:var(--cmuted);font:600 11px var(--font);cursor:pointer;text-align:center;transition:all .16s var(--ease)}
+        .sp-var img{width:46px;height:46px;object-fit:contain;opacity:.42;filter:grayscale(.45);transition:all .18s var(--ease)}
         .sp-var:hover{border-color:var(--line-strong);color:var(--ink);background:rgba(255,255,255,.05)}
-        .sp-var.owned{color:#ffffff;background:rgba(48,209,88,.1);border-color:rgba(48,209,88,.38)}
-        .sp-var.v-fortune.owned{color:#7dd3fc;background:rgba(56,189,248,.12);border-color:rgba(56,189,248,.42)}
-        .sp-var.v-cursed.owned{color:#fca5a5;background:rgba(255,69,58,.12);border-color:rgba(255,69,58,.42)}
-        .sp-var.v-gold.owned{color:#fcd34d;background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.48)}
-        .sp-tags{display:inline-flex;gap:4px;align-items:center}
-        .sp-tag{font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:5px;letter-spacing:.03em;text-transform:uppercase;background:rgba(255,255,255,.08);color:var(--ink)}
+        .sp-var:hover img{opacity:.85;filter:none;transform:scale(1.06)}
+        .sp-var.owned{color:#ffffff;background:rgba(48,209,88,.1);border-color:rgba(48,209,88,.4)}
+        .sp-var.owned img{opacity:1;filter:none}
+        .sp-var.v-fortune.owned{color:#7dd3fc;background:rgba(56,189,248,.12);border-color:rgba(56,189,248,.45)}
+        .sp-var.v-cursed.owned{color:#fca5a5;background:rgba(255,69,58,.12);border-color:rgba(255,69,58,.45)}
+        .sp-var.v-gold.owned{color:#fcd34d;background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.5)}
+        .sp-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;min-height:15px}
+        .sp-tag{font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;letter-spacing:.03em;text-transform:uppercase;background:rgba(255,255,255,.08);color:var(--ink)}
         .sp-tag.won{background:rgba(48,209,88,.2);color:#30d158}
         .sp-tag.ext{background:rgba(56,189,248,.2);color:#38bdf8}
         .sp-tag.max{background:rgba(245,158,11,.22);color:#f59e0b}
@@ -454,7 +461,8 @@ public static class GuiPage
         .sp-rrow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--line);font-size:13.5px}
         .sp-rrow:first-child{border-top:none;padding-top:2px}
         .sp-rchips{display:flex;flex-wrap:wrap;gap:6px}
-        .sp-rchip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;font-weight:600;color:#ffffff}
+        .sp-rchip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px 3px 5px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;font-weight:600;color:#ffffff}
+        .sp-rchip img{width:22px;height:22px;object-fit:contain}
         </style></head><body><div class="tbar"><div class="wctl">
           <button type="button" id="wmin"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5.5h10" stroke="currentColor" stroke-width="1.1"/></svg></button>
           <button type="button" id="wmax"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><rect id="wmaxicon" x=".55" y=".55" width="8.9" height="8.9" fill="none" stroke="currentColor" stroke-width="1.1"/><path id="wresicon" d="M2.5 2.5V.55h6.95v6.95H7.5M.55 2.5h6.95v6.95H.55z" fill="none" stroke="currentColor" stroke-width="1.1" style="display:none"/></svg></button>
@@ -727,9 +735,11 @@ public static class GuiPage
               if(v.maxed)tags.push(`<span class="sp-tag max">Lv5</span>`);
               if(!tags.length&&v.seen>0)tags.push(`<span class="sp-tag">×${v.seen}</span>`);
               const check=v.owned?'✓ ':'';
-              return `<button type="button" class="sp-var v-${esc(v.variant)} ${v.owned?'owned':''}" title="Click to toggle owned" onclick="api('toggleSprite','${esc(v.key)}')"><span>${check}${esc(v.label)}</span><span class="sp-tags">${tags.join('')}</span></button>`;
+              const imgUrl=`/sprites/${encodeURIComponent(fam.id+'-'+v.variant+'.webp')}`;
+              return `<button type="button" class="sp-var v-${esc(v.variant)} ${v.owned?'owned':''}" title="Click to toggle owned" onclick="api('toggleSprite','${esc(v.key)}')"><img src="${imgUrl}" alt="${esc(v.label+' '+fam.name)}" loading="lazy"><span>${check}${esc(v.label)}</span><span class="sp-tags">${tags.join('')}</span></button>`;
             }).join('');
-            cards.push(`<div class="sp-card"><div class="sp-head"><span class="sp-name">${esc(fam.name)}</span><span class="sp-rar ${esc(fam.rarity.toLowerCase())}">${esc(fam.rarity)}</span></div><div class="sp-ab">${esc(fam.ability)}</div><div class="sp-vars">${chips}</div></div>`);
+            const baseUrl=`/sprites/${encodeURIComponent(fam.id+'-base.webp')}`;
+            cards.push(`<div class="sp-card"><div class="sp-head"><img class="sp-thumb" src="${baseUrl}" alt="${esc(fam.name)}" loading="lazy"><div class="sp-hinfo"><div class="sp-htop"><span class="sp-name">${esc(fam.name)}</span><span class="sp-rar ${esc(fam.rarity.toLowerCase())}">${esc(fam.rarity)}</span></div><div class="sp-ab">${esc(fam.ability)}</div></div></div><div class="sp-vars ${vars.length===1?'single':''}">${chips}</div></div>`);
           }
           h+=cards.length?`<div class="sp-grid">${cards.join('')}</div>`:`<div class="card"><span class="note">No Sprites match this filter yet.</span></div>`;
           if(sp.recent&&sp.recent.length){
@@ -740,7 +750,8 @@ public static class GuiPage
                 if(i.won)b.push('<span class="sp-tag won">Won</span>');
                 if(i.extracted)b.push('<span class="sp-tag ext">Extracted</span>');
                 if(i.maxed)b.push('<span class="sp-tag max">Lv5</span>');
-                return `<span class="sp-rchip">${esc(i.variantLabel)} ${esc(i.name)} ${b.join('')}</span>`;
+                const iu=`/sprites/${encodeURIComponent((i.familyId||'')+'-'+(i.variant||'base')+'.webp')}`;
+                return `<span class="sp-rchip"><img src="${iu}" alt="" onerror="this.style.display='none'">${esc(i.variantLabel)} ${esc(i.name)} ${b.join('')}</span>`;
               }).join('');
               return `<div class="sp-rrow"><span style="color:var(--cmuted)">${esc(r.when)} · ${esc(r.mode)}${esc(pl)}</span><div class="sp-rchips">${chips}</div></div>`;
             }).join('');

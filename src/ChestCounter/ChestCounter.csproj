@@ -11,7 +11,7 @@
     <PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>
     <AssemblyName>ChestCounter</AssemblyName>
     <RootNamespace>ChestCounter</RootNamespace>
-    <Version>3.2.0</Version>
+    <Version>3.2.1</Version>
     <InvariantGlobalization>false</InvariantGlobalization>
     <!-- Single-file publish: the parser discovers its types by reflection, so no trimming. -->
     <PublishTrimmed>false</PublishTrimmed>
@@ -35,5 +35,7 @@
     <EmbeddedResource Include="..\..\RELEASE_NOTES.md" LogicalName="ReleaseNotes.md" />
     <!-- Treasure hunt data (weeks, prize ids, odds, Treasure Hours, notices): replaced at runtime by a newer copy from the repository. -->
     <EmbeddedResource Include="..\..\content\content.json" LogicalName="content.json" />
+    <!-- All 59 Chapter 7 Treasure Hunters Sprite & variant images (embedded for instant offline loading). -->
+    <EmbeddedResource Include="..\..\assets\sprites\*.webp" LogicalName="sprites/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

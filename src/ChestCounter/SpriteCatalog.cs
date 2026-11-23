@@ -22,7 +22,7 @@ public static class SpriteCatalog
         new("siroscar", "Sir Oscar the Second", "Legendary", "Boosts pickaxe damage & speed on shield break", new[] { "WhiteTiger", "SirOscar", "Oscar" }, AllVariants),
         new("squiplash", "Squiplash", "Epic", "Deploys healing smoke when health is low", new[] { "PirateCalamari", "Squiplash" }, AllVariants),
         new("chester", "Chester", "Epic", "Extra chest rewards & negates fall damage", new[] { "TreasureChest", "Chester" }, AllVariants),
-        new("sweetdreams", "Sweet Dreams", "Epic", "Grants random loot on level-up, Mythic at max", new[] { "SweetDreams", "SweetDream" }, AllVariants),
+        new("sweetdreams", "Sweet Dreams", "Epic", "Grants random loot on level-up, Mythic at max", new[] { "SweetDreams", "SweetDream" }, BaseOnly),
         new("kelper", "Kelper", "Epic", "Gradually recovers health while underwater", new[] { "UnbotheredFish", "Kelper" }, AllVariants),
         new("transpondersnail", "Transponder Snail", "Epic", "Grants & shares bonus resources with teammates", new[] { "FeedJet", "TransponderSnail", "Snail" }, BaseOnly),
         new("halfpeeld", "Halfpeel'd", "Rare", "Marks eliminations within detection area", new[] { "PeelyBones", "PeelyBone", "Halfpeeld" }, AllVariants),
