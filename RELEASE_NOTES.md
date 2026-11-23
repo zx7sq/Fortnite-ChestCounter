@@ -2,6 +2,9 @@ Download **`ChestCounter.exe`** below and run it — nothing to install and no e
 
 > **Turn on replays in Fortnite first:** *Settings → Game → Replays → Record Replays: **On***. The app only reads your saved replay files in read-only mode — 100% Easy Anti-Cheat safe.
 
+**What's new in 3.3.4**
+- **Fortnite Golden Week Card & Live Schedule:** Dedicated **Golden Week — Final Hunt** showcase card on the Home tab with a live 1-second countdown, returning-treasures overview, boosted odds badges (**×7.5+ Gold Outfits**, **×10 Gold Vehicles & Decals**, **×1.5–2 Pirate Shop Tokens**), and kickoff/rotation/end times automatically formatted in your PC's local timezone and regional clock.
+
 **What's new in 3.3.3**
 - **Ground-Touchdown Route Start:** The **Route** map now strictly starts the moment your feet touch the ground (ignoring the Battle Bus, skydiving, and gliding in). Existing replays re-scan automatically.
 
