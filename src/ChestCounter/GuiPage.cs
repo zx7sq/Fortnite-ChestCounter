@@ -475,7 +475,12 @@ public static class GuiPage
         .rt-stat .l{font-size:11.5px;color:var(--cmuted);margin-top:2px;font-weight:500}
         .rt-wrap{position:relative;background:var(--card);border:1px solid rgba(245,158,11,.28);border-radius:16px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:10px}
         .rt-stage{position:relative;width:100%;max-width:680px;aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:#0a2540;border:1px solid var(--line)}
-        #rtCanvas{width:100%;height:100%;display:block;cursor:crosshair}
+        #rtCanvas{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+        #rtCanvas.drag{cursor:grabbing}
+        .rt-zctl{position:absolute;right:12px;bottom:12px;z-index:4;display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:10px;background:rgba(11,11,14,.86);border:1px solid var(--line-strong);backdrop-filter:blur(8px)}
+        .rt-zctl button{width:28px;height:28px;border:none;border-radius:7px;background:transparent;color:#ffffff;font:700 15px var(--font);cursor:pointer;display:grid;place-items:center;transition:background .15s}
+        .rt-zctl button:hover{background:rgba(255,255,255,.12)}
+        .rt-zctl span{font-size:11px;font-weight:700;color:var(--cmuted);padding:0 6px;font-variant-numeric:tabular-nums;min-width:40px;text-align:center}
         .rt-tip{position:absolute;pointer-events:none;z-index:5;background:rgba(11,11,14,.92);border:1px solid rgba(245,158,11,.45);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;color:#ffffff;white-space:nowrap;transform:translate(-50%,-120%);box-shadow:0 8px 20px rgba(0,0,0,.5)}
         .rt-leg{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:center;font-size:12px;color:var(--cmuted)}
         .rt-leg span{display:inline-flex;align-items:center;gap:6px}
@@ -608,6 +613,11 @@ public static class GuiPage
             <div class="rt-stage">
               <canvas id="rtCanvas" width="900" height="900"></canvas>
               <div id="rtTip" class="rt-tip hidden"></div>
+              <div class="rt-zctl">
+                <button type="button" id="rtZoomOut" title="Zoom out">−</button>
+                <span id="rtZoomLbl">1.0×</span>
+                <button type="button" id="rtZoomIn" title="Zoom in">+</button>
+              </div>
             </div>
             <div class="rt-leg">
               <span><i class="rt-dot" style="background:#30d158"></i>Landing</span>
@@ -991,11 +1001,12 @@ public static class GuiPage
           }
         }
         // --- Best Route Map ---
-        const rt={init:false,zoom:'island',pois:true,chests:true,selectedId:null,listSig:'',playing:false,animId:null,prog:1,mapPoi:null,mapBlank:null,hitPts:[]};
+        const rt={init:false,zoom:'island',customVp:null,drag:null,pois:true,chests:true,selectedId:null,listSig:'',playing:false,animId:null,prog:1,mapPoi:null,mapBlank:null,hitPts:[]};
         function rtWorldToNorm(x,y){return [(x+150000)/310000,(y+155000)/310000]}
         function rtFmtSec(s){const m=Math.floor((s||0)/60),r=Math.floor((s||0)%60);return `${m}:${r<10?'0':''}${r}`}
         function rtCurMatch(){const list=(S&&S.bestRoutes)||[];if(!list.length)return null;return list.find(m=>m.id===rt.selectedId)||list[0]}
-        function rtViewport(m){
+        function rtClampVp(u0,v0,span){span=Math.max(0.06,Math.min(0.92,span));return {u0:Math.max(0,Math.min(1-span,u0)),v0:Math.max(0,Math.min(1-span,v0)),span}}
+        function rtBaseViewport(m){
           if(rt.zoom==='island')return {u0:0.18,v0:0.20,span:0.68};
           const pts=[];
           const r=m.route||[];for(let i=0;i+2<r.length;i+=3)pts.push(rtWorldToNorm(r[i+1],r[i+2]));
@@ -1003,9 +1014,19 @@ public static class GuiPage
           if(!pts.length)return {u0:0.18,v0:0.20,span:0.68};
           let minU=1,maxU=0,minV=1,maxV=0;
           for(const [u,v] of pts){if(u<minU)minU=u;if(u>maxU)maxU=u;if(v<minV)minV=v;if(v>maxV)maxV=v}
-          const pad=0.05,span=Math.max(0.16,Math.max(maxU-minU,maxV-minV)+pad*2);
+          const pad=0.05,span=Math.max(0.14,Math.max(maxU-minU,maxV-minV)+pad*2);
           const cu=(minU+maxU)/2,cv=(minV+maxV)/2;
-          return {u0:Math.max(0,Math.min(1-span,cu-span/2)),v0:Math.max(0,Math.min(1-span,cv-span/2)),span};
+          return rtClampVp(cu-span/2,cv-span/2,span);
+        }
+        function rtViewport(m){return rt.customVp||rtBaseViewport(m)}
+        function rtUpdateZoomLbl(){const m=rtCurMatch(),el=$('#rtZoomLbl');if(!m||!el)return;const vp=rtViewport(m);el.textContent=(0.68/vp.span).toFixed(1)+'×'}
+        function rtZoomBy(factor,fx,fy){
+          const m=rtCurMatch();if(!m)return;
+          const vp=rtViewport(m);
+          const newSpan=Math.max(0.06,Math.min(0.92,vp.span*factor));
+          const uAt=vp.u0+fx*vp.span,vAt=vp.v0+fy*vp.span;
+          rt.customVp=rtClampVp(uAt-fx*newSpan,vAt-fy*newSpan,newSpan);
+          rtUpdateZoomLbl();rtDraw();
         }
         function rtDrawOn(cv,m,prog,withHud){
           if(!cv||!m)return;
@@ -1174,15 +1195,42 @@ public static class GuiPage
             rt.init=true;
             rt.mapPoi=new Image();rt.mapPoi.onload=rtDraw;rt.mapPoi.src='/api/map?pois=1&t='+TOKEN;
             rt.mapBlank=new Image();rt.mapBlank.onload=rtDraw;rt.mapBlank.src='/api/map?pois=0&t='+TOKEN;
-            $('#rtSelect').addEventListener('change',e=>{rt.selectedId=e.target.value;rtStopPlay();const m=rtCurMatch();if(m){rtRenderStats(m);rtDraw()}});
-            $('#rtZoomIsland').addEventListener('click',()=>{rt.zoom='island';$('#rtZoomIsland').classList.add('on');$('#rtZoomFit').classList.remove('on');rtDraw()});
-            $('#rtZoomFit').addEventListener('click',()=>{rt.zoom='fit';$('#rtZoomFit').classList.add('on');$('#rtZoomIsland').classList.remove('on');rtDraw()});
+            $('#rtSelect').addEventListener('change',e=>{rt.selectedId=e.target.value;rt.customVp=null;rtStopPlay();const m=rtCurMatch();if(m){rtRenderStats(m);rtUpdateZoomLbl();rtDraw()}});
+            $('#rtZoomIsland').addEventListener('click',()=>{rt.zoom='island';rt.customVp=null;$('#rtZoomIsland').classList.add('on');$('#rtZoomFit').classList.remove('on');rtUpdateZoomLbl();rtDraw()});
+            $('#rtZoomFit').addEventListener('click',()=>{rt.zoom='fit';rt.customVp=null;$('#rtZoomFit').classList.add('on');$('#rtZoomIsland').classList.remove('on');rtUpdateZoomLbl();rtDraw()});
+            $('#rtZoomIn').addEventListener('click',()=>rtZoomBy(0.72,0.5,0.5));
+            $('#rtZoomOut').addEventListener('click',()=>rtZoomBy(1.38,0.5,0.5));
             $('#rtPoisBtn').addEventListener('click',()=>{rt.pois=!rt.pois;$('#rtPoisBtn').textContent=rt.pois?'POIs: On':'POIs: Off';$('#rtPoisBtn').classList.toggle('live-on',rt.pois);rtDraw()});
             $('#rtChestsBtn').addEventListener('click',()=>{rt.chests=!rt.chests;$('#rtChestsBtn').textContent=rt.chests?'Chests: On':'Chests: Off';$('#rtChestsBtn').classList.toggle('live-on',rt.chests);rtDraw()});
             $('#rtPlayBtn').addEventListener('click',rtTogglePlay);
             $('#rtGifBtn').addEventListener('click',rtExportGif);
             const cv=$('#rtCanvas'),tip=$('#rtTip');
-            cv.addEventListener('mousemove',e=>{
+            cv.addEventListener('wheel',e=>{
+              e.preventDefault();
+              const rect=cv.getBoundingClientRect();
+              const fx=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
+              const fy=Math.max(0,Math.min(1,(e.clientY-rect.top)/rect.height));
+              rtZoomBy(e.deltaY<0?0.82:1.22,fx,fy);
+            },{passive:false});
+            cv.addEventListener('dblclick',e=>{
+              const rect=cv.getBoundingClientRect();
+              rtZoomBy(0.58,(e.clientX-rect.left)/rect.width,(e.clientY-rect.top)/rect.height);
+            });
+            cv.addEventListener('pointerdown',e=>{
+              if(e.button!==0)return;
+              const m=rtCurMatch();if(!m)return;
+              const vp=rtViewport(m);
+              rt.drag={x:e.clientX,y:e.clientY,u0:vp.u0,v0:vp.v0,span:vp.span};
+              cv.classList.add('drag');cv.setPointerCapture(e.pointerId);tip.classList.add('hidden');
+            });
+            cv.addEventListener('pointermove',e=>{
+              if(rt.drag){
+                const rect=cv.getBoundingClientRect();
+                const du=(e.clientX-rt.drag.x)/rect.width*rt.drag.span;
+                const dv=(e.clientY-rt.drag.y)/rect.height*rt.drag.span;
+                rt.customVp=rtClampVp(rt.drag.u0-du,rt.drag.v0-dv,rt.drag.span);
+                rtDraw();return;
+              }
               const rect=cv.getBoundingClientRect(),sx=cv.width/rect.width,sy=cv.height/rect.height;
               const mx=(e.clientX-rect.left)*sx,my=(e.clientY-rect.top)*sy;
               let best=null,bd=18;
@@ -1192,6 +1240,8 @@ public static class GuiPage
                 tip.style.left=(best.x/sx)+'px';tip.style.top=(best.y/sy)+'px';tip.classList.remove('hidden');
               }else tip.classList.add('hidden');
             });
+            const endDrag=()=>{if(rt.drag){rt.drag=null;cv.classList.remove('drag')}};
+            cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
             cv.addEventListener('mouseleave',()=>tip.classList.add('hidden'));
           }
           const list=S.bestRoutes||[];
@@ -1205,7 +1255,7 @@ public static class GuiPage
             if(!rt.selectedId||!list.some(m=>m.id===rt.selectedId))rt.selectedId=list[0].id;
             $('#rtSelect').innerHTML=list.map((m,i)=>`<option value="${esc(m.id)}" ${m.id===rt.selectedId?'selected':''}>#${i+1} Best · ${esc(m.chests)} chests · ${esc(m.when)} · ${esc(m.mode)}</option>`).join('');
           }
-          const cur=rtCurMatch();if(cur){rtRenderStats(cur);if(!rt.playing)rtDraw()}
+          const cur=rtCurMatch();if(cur){rtRenderStats(cur);rtUpdateZoomLbl();if(!rt.playing)rtDraw()}
         }
         refresh(true);
         setInterval(()=>{if(!document.hidden)refresh(false)},2000);
