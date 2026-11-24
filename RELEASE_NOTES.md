@@ -2,6 +2,11 @@ Download **`ChestCounter.exe`** below and run it — nothing to install and no e
 
 > **Turn on replays in Fortnite first:** *Settings → Game → Replays → Record Replays: **On***. The app only reads your saved replay files in read-only mode — 100% Easy Anti-Cheat safe.
 
+**What's new in 3.4.1**
+- **Season Tab & Live Countdown Bar:** Dedicated **Season** tab featuring a live `Days / Hrs / Min / Sec` countdown, full-width season progress bar with weekly tick markers, 5-week timeline, and the Golden Week & Treasure Hours schedule.
+- **Decluttered UI & Collapsible Drawers:** Streamlined navigation (`Home`, `Season`, `Route`, `Sprites`, `Stats`, `Report`, `Settings`), consolidated Home stat tiles, compact Sprite Collection summary header, and collapsible drawers for Activity, OBS setup, Outfit presets, and Uninstall.
+- **"Open with Fortnite?" Startup Prompt:** Mandatory Yes/No prompt on first launch and after updating to a new version asking whether Chest Counter should open automatically when Fortnite launches.
+
 **What's new in 3.4.0**
 - **Obsidian-Black Fortnite UI Theme & Embedded Fonts:** Sleek obsidian-black (`#0B0B0E` / `#141419`) + warm amber-gold (`#F59E0B`) Fortnite styling with embedded `Barlow Condensed` display & `Barlow` UI fonts, subtle animated triangle lobby backdrop, angled primary CTAs/active tabs, and compositor-thread hover flashes.
 

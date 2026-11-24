@@ -12,6 +12,7 @@ public static class GuiPage
     public static Dictionary<string, string> Texts() => _cachedTexts ??= new()
     {
         ["home"] = L.T("Accueil", "Home", "Inicio"),
+        ["season"] = L.T("Saison", "Season", "Temporada"),
         ["route"] = "Route",
         ["sprites"] = "Sprites",
         ["stats"] = "Stats",
@@ -305,6 +306,62 @@ public static class GuiPage
         .gw-box{min-width:0;background:rgba(11,11,14,.72);border:1.5px solid var(--line);border-radius:4px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
         .gw-box .gl{font-family:var(--fn-display);font-size:12.5px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--brand)}
         .gw-box .gv{font-size:14px;font-weight:700;color:#ffffff;font-variant-numeric:tabular-nums;overflow-wrap:break-word}
+        .fn-gate{min-height:calc(100vh - 110px);display:flex;align-items:center;justify-content:center;padding:var(--s5) 0}
+        .fn-gate-card{width:min(540px,100%);background:linear-gradient(160deg,rgba(245,158,11,.13) 0%,#141419 52%,#111116 100%);border:1.5px solid rgba(245,158,11,.55);border-radius:6px;padding:30px 28px;display:flex;flex-direction:column;gap:16px;box-shadow:0 24px 64px rgba(0,0,0,.72)}
+        .fn-gate-top{display:flex;align-items:center;gap:14px}
+        .fn-gate-badge{display:inline-block;padding:3px 10px;border-radius:3px;background:var(--brand-soft);border:1px solid rgba(245,158,11,.45);color:var(--brand);font-family:var(--fn-display);font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+        .fn-gate-title{margin:0;font-family:var(--fn-display);font-size:clamp(28px,4vw,36px);line-height:1.05;font-weight:900;text-transform:uppercase;letter-spacing:.03em;color:#ffffff;text-shadow:0 2px 0 rgba(0,0,0,.45)}
+        .fn-gate-desc{margin:0;font-size:14.5px;line-height:1.55;color:#d6d6de}
+        .fn-gate-note{margin:0;font-size:12.5px;line-height:1.45;color:var(--cmuted);padding:10px 12px;border-radius:4px;background:rgba(11,11,14,.68);border:1px solid var(--line)}
+        .fn-gate-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px}
+        .fn-gate-btns button{width:100%;min-height:46px;justify-content:center;text-align:center}
+        @media (max-width:500px){.fn-gate-btns{grid-template-columns:1fr}}
+        .clean-fold{border:1.5px solid var(--line);border-radius:4px;background:var(--card);overflow:hidden}
+        .clean-fold>summary{list-style:none;cursor:pointer;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:var(--fn-display);font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:var(--cmuted);user-select:none;transition:color .18s,background .18s}
+        .clean-fold>summary::-webkit-details-marker{display:none}
+        .clean-fold>summary::after{content:"+";font-size:18px;line-height:1;color:var(--brand)}
+        .clean-fold[open]>summary{color:#ffffff;border-bottom:1px solid var(--line)}
+        .clean-fold[open]>summary::after{content:"−"}
+        .clean-fold>summary:hover{color:#ffffff;background:rgba(255,255,255,.04)}
+        .clean-fold .fold-body{padding:16px}
+        .act-prev{font:500 12.5px var(--font);text-transform:none;letter-spacing:0;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;text-align:right;margin-right:6px}
+        .clean-fold[open] .act-prev{display:none}
+        .sp-sum{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding:16px 20px;background:linear-gradient(160deg,rgba(245,158,11,.12) 0%,#141419 55%);border:1.5px solid rgba(245,158,11,.45);border-radius:4px}
+        .sp-sum-main{display:flex;align-items:baseline;gap:10px}
+        .sp-sum-main .v{font-size:34px;line-height:1;color:#ffffff}
+        .sp-sum-main .l{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--brand);font-family:var(--fn-display)}
+        .sp-sum-pills{display:flex;flex-wrap:wrap;gap:8px}
+        .sp-stat-pill{font-size:12.5px;font-weight:600;color:var(--cmuted);background:rgba(11,11,14,.65);border:1px solid var(--line);border-radius:3px;padding:5px 10px}
+        .sp-stat-pill b{color:#ffffff;margin-right:4px}
+        .set-stack{display:flex;flex-direction:column;gap:16px}
+        .set-sec-title{margin:0 0 8px;font-family:var(--fn-display);font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:var(--cmuted)}
+        .sz-hero{display:flex;flex-direction:column;gap:18px;padding:24px 26px;background:linear-gradient(160deg,rgba(245,158,11,.14) 0%,#141419 52%,#111116 100%);border:1.5px solid rgba(245,158,11,.55)}
+        .sz-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px}
+        .sz-eyebrow{display:inline-block;padding:3px 10px;border-radius:3px;background:var(--brand-soft);border:1px solid rgba(245,158,11,.45);color:var(--brand);font-family:var(--fn-display);font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+        .sz-title{margin:6px 0 0;font-family:var(--fn-display);font-size:clamp(28px,3.8vw,38px);line-height:1.05;font-weight:900;text-transform:uppercase;letter-spacing:.03em;color:#ffffff;text-shadow:0 2px 0 rgba(0,0,0,.45)}
+        .sz-cd-wrap{display:flex;gap:8px;flex-wrap:wrap}
+        .sz-cd-unit{min-width:66px;padding:8px 10px;border-radius:4px;background:rgba(11,11,14,.78);border:1.5px solid var(--line-strong);display:flex;flex-direction:column;align-items:center;gap:2px}
+        .sz-cd-unit .v{font-family:var(--fn-display);font-size:28px;font-weight:900;line-height:1;color:#ffffff;font-variant-numeric:tabular-nums}
+        .sz-cd-unit .l{font-family:var(--fn-display);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--brand)}
+        .sz-prog{display:flex;flex-direction:column;gap:8px}
+        .sz-prog-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+        .sz-prog-lbl{font-family:var(--fn-display);font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:#ffffff}
+        .sz-prog-pct{font-family:var(--fn-display);font-size:18px;font-weight:900;color:var(--brand);font-variant-numeric:tabular-nums}
+        .sz-bar{position:relative;height:18px;border-radius:4px;background:rgba(255,255,255,.08);border:1px solid var(--line-strong);overflow:hidden}
+        .sz-bar-fill{height:100%;background:linear-gradient(90deg,#d97706 0%,#f59e0b 65%,#fbbf24 100%);box-shadow:0 0 18px rgba(245,158,11,.45);transition:width .4s var(--ease)}
+        .sz-bar-ticks{position:absolute;inset:0;pointer-events:none}
+        .sz-bar-ticks i{position:absolute;top:0;bottom:0;width:1.5px;background:rgba(11,11,14,.65)}
+        .sz-prog-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:12.5px;color:var(--cmuted);font-variant-numeric:tabular-nums}
+        .sz-weeks{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+        .sz-wk{padding:12px 14px;border-radius:4px;background:var(--card);border:1.5px solid var(--line);display:flex;flex-direction:column;gap:4px}
+        .sz-wk.done{opacity:.72}
+        .sz-wk.active{border-color:rgba(245,158,11,.65);background:linear-gradient(160deg,rgba(245,158,11,.12) 0%,#141419 65%)}
+        .sz-wk-top{display:flex;align-items:center;justify-content:space-between;gap:6px;font-family:var(--fn-display);font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:var(--cmuted)}
+        .sz-wk.active .sz-wk-top{color:var(--brand)}
+        .sz-wk-name{font-size:14px;font-weight:700;color:#ffffff;line-height:1.3}
+        .sz-wk-dates{font-size:12px;color:var(--cmuted);font-variant-numeric:tabular-nums}
+        .sz-strip{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px 16px;cursor:pointer;border-color:rgba(245,158,11,.38)}
+        .sz-strip:hover{border-color:var(--brand)}
         .spin{width:20px;height:20px;flex:none;margin-top:2px;border:2.5px solid var(--line-strong);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
         .row{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);padding:var(--s4) 0;border-bottom:1px solid var(--line)}
         .row:last-child{border-bottom:none}
@@ -336,6 +393,7 @@ public static class GuiPage
         .note{font-size:13px;color:var(--muted)}
         .hidden{display:none!important}
         footer{display:flex;justify-content:space-between;align-items:center;gap:var(--s3);flex-wrap:wrap;border-top:1px solid var(--line);padding-top:var(--s4);color:var(--muted);font-size:13px}
+        footer:empty,#foot:empty{display:none}
         .estimate{margin-top:var(--s3);font-weight:600;color:#ffffff}
         .mtotal{font-weight:600;margin-bottom:var(--s2);color:#ffffff}
         .mweek{display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer}
@@ -521,7 +579,7 @@ public static class GuiPage
           <button type="button" id="wmin"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5.5h10" stroke="currentColor" stroke-width="1.1"/></svg></button>
           <button type="button" id="wmax"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><rect id="wmaxicon" x=".55" y=".55" width="8.9" height="8.9" fill="none" stroke="currentColor" stroke-width="1.1"/><path id="wresicon" d="M2.5 2.5V.55h6.95v6.95H7.5M.55 2.5h6.95v6.95H.55z" fill="none" stroke="currentColor" stroke-width="1.1" style="display:none"/></svg></button>
           <button type="button" id="wclose" class="x"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M.5.5l9 9M9.5.5l-9 9" stroke="currentColor" stroke-width="1.2"/></svg></button>
-        </div></div><div id="scroll"><main><div id="app"><div class="card empty-state"><div class="spin" aria-hidden="true"></div><div><div class="es-title">Chest Counter</div><div class="es-body">Loading replays and match stats…</div></div></div></div><section id="activityPane" class="hidden"><h2 class="pirate"></h2><div class="card log"></div></section><section id="reportPane" class="hidden"><iframe id="rep" title="Report" scrolling="no"></iframe></section>
+        </div></div><div id="scroll"><main><div id="app"><div class="card empty-state"><div class="spin" aria-hidden="true"></div><div><div class="es-title">Chest Counter</div><div class="es-body">Loading replays and match stats…</div></div></div></div><details id="activityPane" class="clean-fold hidden"><summary><span class="act-title"></span><span id="actPreview" class="act-prev"></span></summary><div class="log" style="padding:14px 16px;border:0;border-radius:0"></div></details><section id="reportPane" class="hidden"><iframe id="rep" title="Report" scrolling="no"></iframe></section>
         <section id="statsPane" class="hidden">
           <div class="gs-top">
             <form id="gsSearchForm" class="gs-search" autocomplete="off">
@@ -610,7 +668,7 @@ public static class GuiPage
               <div id="gsSkinCap" class="gs-cap">MIDAS</div>
             </div>
           </section>
-          <div class="gs-skinbar">
+          <details class="clean-fold"><summary><span>Change Featured Outfit</span></summary><div class="fold-body"><div class="gs-skinbar">
             <div class="gs-presets">
               <span class="gs-sbl">Outfit</span>
               <button type="button" class="gs-chip on" data-gsskin="Midas">Midas</button>
@@ -623,7 +681,7 @@ public static class GuiPage
               <input id="gsSkinInput" type="text" placeholder="Custom outfit…">
               <button type="submit" class="gs-ghost">Set</button>
             </form>
-          </div>
+          </div></div></details>
         </section>
         <section id="routePane" class="hidden">
           <div class="rt-top">
@@ -662,7 +720,8 @@ public static class GuiPage
         <div id="foot"></div></main></div>
         <dialog id="dlg" aria-labelledby="dlgT"><div class="dhead"><h2 class="pirate" id="dlgT"></h2><button type="button" class="dclose" id="dlgX" aria-label="Close"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div><div id="dlgB"></div></dialog>
         <script>
-        const TOKEN='__TOKEN__';let S=null,tab=(()=>{const h=location.hash.slice(1);if(['home','route','sprites','stats','report','overlay','settings','help'].includes(h))return h;try{return localStorage.getItem('cc-gui-tab')||'home'}catch(e){return 'home'}})(),estimate=null,stopped=false,copied=false,spFilter='all',spVar='all';
+        const TOKEN='__TOKEN__',rawTab=(()=>{const h=location.hash.slice(1);if(h)return h;try{return localStorage.getItem('cc-gui-tab')||'home'}catch(e){return 'home'}})();
+        let S=null,tab=(rawTab==='overlay'||rawTab==='help')?'settings':(['home','season','route','sprites','stats','report','settings'].includes(rawTab)?rawTab:'home'),estimate=null,stopped=false,copied=false,spFilter='all',spVar='all';
         const $=s=>document.querySelector(s);
         // In the counter's own window (?w=1): the title bar of the page, its buttons sent to the window.
         const host=window.chrome&&window.chrome.webview;let maximized=false;
@@ -681,22 +740,48 @@ public static class GuiPage
         function row(title,help,control){return `<div class="row"><div><div class="t">${title}</div>${help?`<div class="h">${help}</div>`:''}</div><div>${control}</div></div>`}
         function sel(act,value,opts){return `<select onchange="api('${act}',this.value)">${opts.map(o=>`<option value="${esc(o[0])}" ${String(o[0])===String(value)?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`}
         function setTab(t){const changed=tab!==t;tab=t;try{localStorage.setItem('cc-gui-tab',t)}catch(e){}render(true);if(changed){['#view','#activityPane','#reportPane','#statsPane','#routePane'].forEach(sel=>{const el=$(sel);if(el){el.classList.remove('tab-anim');void el.offsetWidth;el.classList.add('tab-anim')}})}}
+        async function chooseOpenWithFn(yes){
+          document.querySelectorAll('.fn-gate-btns button').forEach(b=>b.disabled=true);
+          await api('chooseOpenWithFortnite',!!yes);
+        }
+        function gateView(){
+          const badge=S.firstRun?`First-Time Setup · v${esc(S.version)}`:`Updated to v${esc(S.version)}`;
+          return `<section class="fn-gate"><div class="fn-gate-card">
+            <div class="fn-gate-top"><img src="__CHESTICON__" width="52" height="52" alt="" style="object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,.55))"><div><span class="fn-gate-badge">${badge}</span><div style="color:var(--cmuted);font-size:13px;font-weight:600;margin-top:4px">${esc(S.appName)}</div></div></div>
+            <h1 class="fn-gate-title">Open Automatically With Fortnite?</h1>
+            <p class="fn-gate-desc">Would you like Chest Counter to start automatically whenever you launch Fortnite (and close after you quit) so you never forget to track a match?</p>
+            <p class="fn-gate-note">100% Easy Anti-Cheat safe — a tiny background watcher only checks if Fortnite is running and reads your saved replay files. You can change this anytime in <b>Settings → Open with Fortnite</b>.</p>
+            <div class="fn-gate-btns">
+              <button type="button" class="b main" onclick="chooseOpenWithFn(true)">Yes, Open With Fortnite</button>
+              <button type="button" class="b" onclick="chooseOpenWithFn(false)">No, Open Manually</button>
+            </div>
+          </div></section>`;
+        }
         function render(force){
           const T=S.txt;document.documentElement.lang=S.lang;
+          winTitles();
+          if(S.askOpenWithFortnite){
+            ['#activityPane','#reportPane','#statsPane','#routePane'].forEach(id=>{const p=$(id);if(p)p.classList.add('hidden')});
+            const d=$('#dlg');if(d&&d.open)d.close();
+            const g=gateView();
+            if(force||g!==appHtml){$('#app').innerHTML=g;appHtml=g}
+            if(footHtml!==''){$('#foot').innerHTML='';footHtml=''}
+            return;
+          }
           const head=`<header><div class="brand"><img src="__CHESTICON__" width="46" height="46" alt="" style="object-fit:contain"><div><h1 class="pirate">${esc(S.appName)}</h1><div class="who">${S.profiles.length>1?`<select aria-label="${esc(T.profile)}" title="${esc(T.profile)}" onchange="api('profile',this.value)">${S.profiles.map(p=>`<option value="${esc(p.key)}" ${p.key===S.profileKey?'selected':''}>${esc(p.name)} (${esc(p.matches)})</option>`).join('')}</select>`:`<span>${esc(S.player||'')}</span>`}<span>v${esc(S.version)}</span></div></div></div><span class="pill ${S.status.kind}"><i></i>${esc(S.status.text)}</span></header>
-          <nav>${['home','route','sprites','stats','report','overlay','settings','help'].map(t=>`<button class="${t===tab?'on':''}" onclick="setTab('${t}')">${esc(T[t])}</button>`).join('')}</nav>`;
+          <nav>${['home','season','route','sprites','stats','report','settings'].map(t=>`<button class="${t===tab?'on':''}" onclick="setTab('${t}')">${esc(T[t])}</button>`).join('')}</nav>`;
           if(!force&&busyHeader())return;
           if(!force&&busy()){$('#hdr').innerHTML=head;appHtml=null;return}
           // A click in progress (button pressed, not released yet): rebuilding now would replace its button and the click
           // would be lost. The next refresh, 2 s later, catches up.
           if(!force&&pressedAt&&Date.now()-pressedAt<3000)return;
           let v='';
-          if(tab==='home')v=home(T);else if(tab==='sprites')v=spritesView(T);else if(tab==='overlay')v=overlay(T);else if(tab==='settings')v=settings(T);else if(tab==='help')v=help(T);
+          if(tab==='home')v=home(T);else if(tab==='season')v=seasonView(T);else if(tab==='sprites')v=spritesView(T);else if(tab==='settings')v=settings(T);
           // Rebuilt only when something changed: the buttons stay the same elements between two refreshes.
           const app=`<div id="hdr">${head}</div>${notices(T)}<div id="view">${v}</div>`;
           if(force||app!==appHtml){$('#app').innerHTML=app;appHtml=app}
-          // In the counter's own window the close button asks and stops it: no "quit" button needed.
-          const foot=S.settings.windowed?`<footer><span>${esc(T.footerWindow)}</span></footer>`:`<footer><span>${esc(T.footer)}</span><button class="b danger" onclick="quit()">${esc(T.quit)}</button></footer>`;
+          // In the counter's own window the close button asks and stops it: no footer clutter needed.
+          const foot=S.settings.windowed?'':`<footer><span>${esc(T.footer)}</span><button class="b danger" onclick="quit()">${esc(T.quit)}</button></footer>`;
           if(force||foot!==footHtml){$('#foot').innerHTML=foot;footHtml=foot}
           showActivity(T);showReport();showStats();showRoute();winTitles();
         }
@@ -710,7 +795,9 @@ public static class GuiPage
           const pane=$('#activityPane');
           pane.classList.toggle('hidden',tab!=='home');
           if(tab!=='home')return;
-          pane.querySelector('h2').textContent=T.activity;
+          pane.querySelector('.act-title').textContent=T.activity;
+          const lastLine=S.activity.length?S.activity[S.activity.length-1].map(s=>s.t).join('').trim():T.noActivity;
+          const prev=$('#actPreview');if(prev)prev.textContent=lastLine;
           // Keep the scrolling element mounted while new log entries arrive.
           const log=pane.querySelector('.log');
           const html=S.activity.length?S.activity.map(l=>l.map(s=>`<span class="${s.c}">${esc(s.t)}</span>`).join('')).join('\n'):esc(T.noActivity);
@@ -745,56 +832,68 @@ public static class GuiPage
           return out;
         }
         function fmtCd(ms){if(ms<=0)return '0m';const s=Math.floor(ms/1000),d=Math.floor(s/86400),h=Math.floor((s%86400)/3600),m=Math.floor((s%3600)/60),sec=s%60;if(d>0)return `${d}d ${h}h ${m}m`;if(h>0)return `${h}h ${m}m`;return `${m}m ${sec}s`;}
-        function goldenWeekCard(T){
-          const gw=S.goldenWeek;if(!gw)return '';
-          const now=Date.now(),s0=Date.parse(gw.start),e0=Date.parse(gw.end);
-          if(now>=e0)return '';
-          const live=now>=s0&&now<e0;
-          const cdText=live?`LIVE · Ends in ${fmtCd(e0-now)}`:`Starts in ${fmtCd(s0-now)}`;
-          const winRows=(gw.windows||[]).map((w,i)=>{
-            const ws=Date.parse(w.start),we=Date.parse(w.end),isLive=now>=ws&&now<we;
-            const pill=isLive?`<span class="th-pill live">${esc(T.thLive)}</span>`:(w.isToday?`<span class="th-pill">${esc(T.thToday)}</span>`:'');
-            return `<div class="th-row"><span class="th-when">Kickoff Boost #${i+1} · ${esc(w.day)}${pill}</span><span class="th-time">${esc(w.range)}</span></div>`;
-          }).join('');
-          const foot=S.localZoneName?`All times shown in your local time · ${esc(S.localZoneName)}`:'All times shown in your local time';
-          return `<section class="card gw-card">
-            <div class="th-head"><h2 class="th-title">${starIco}<span>Fortnite Golden Week — Final Hunt</span></h2><span class="th-cd ${live?'live':''}" id="gwCd" data-start="${esc(gw.start)}" data-end="${esc(gw.end)}">${cdText}</span></div>
-            <p class="gw-sub">All past seasonal treasures return to Battle Royale chests at the same time for the final week of Treasure Hunters — your last chance to pull any missed Solid Gold Outfits, Gold Vehicles &amp; Decals, Pickaxes, Back Blings, Jam Tracks, and Loading Screens before Season End.</p>
-            <div class="gw-tags">
-              <span class="gw-tag">All Past Treasures Return</span>
-              <span class="gw-tag">Gold Outfits ×7.5+</span>
-              <span class="gw-tag">Gold Vehicles &amp; Decals ×10</span>
-              <span class="gw-tag">Pirate Shop Token ×1.5–2</span>
-            </div>
-            <div class="gw-grid">
-              <div class="gw-box"><span class="gl">Kickoff &amp; Treasure Hours</span><span class="gv">${esc(gw.startLocal)}</span></div>
-              <div class="gw-box"><span class="gl">Week 5 Final Hunt Rotation</span><span class="gv">${esc(gw.weekStartLocal)}</span></div>
-              <div class="gw-box"><span class="gl">Event &amp; Season Ends</span><span class="gv">${esc(gw.endLocal)}</span></div>
-            </div>
-            ${winRows?`<div class="th-list">${winRows}</div>`:''}
-            <div class="th-foot">${foot}</div>
-          </section>`;
-        }
-        function treasureHoursCard(T){
-          const list=S.treasureHours||[];if(!list.length)return '';
-          const now=Date.now(),first=list[0],s0=Date.parse(first.start),e0=Date.parse(first.end),live=now>=s0&&now<e0;
-          const loc=S.pcLocale||undefined;
-          const dayFmt=new Intl.DateTimeFormat(loc,{weekday:'short',month:'short',day:'numeric'});
-          const timeFmt=new Intl.DateTimeFormat(loc,{hour:'numeric',minute:'2-digit'});
-          const todayKey=new Date(now).toDateString();
-          const boosts=(first.boosts||[]).map(b=>`<span class="th-boost">${esc(b.name)} <b>×${esc(b.mult)}</b></span>`).join('');
-          const rows=list.map(x=>{
+        function eventScheduleCard(T){
+          const gw=S.goldenWeek,list=S.treasureHours||[],now=Date.now();
+          const gwActive=gw&&now<Date.parse(gw.end);
+          if(!gwActive&&!list.length)return '';
+          const first=list[0],s0=first?Date.parse(first.start):0,e0=first?Date.parse(first.end):0,thLive=first?now>=s0&&now<e0:false;
+          const gwS=gwActive?Date.parse(gw.start):0,gwE=gwActive?Date.parse(gw.end):0,gwLive=gwActive?now>=gwS&&now<gwE:false;
+          const cdHtml=first
+            ?`<span class="th-cd ${thLive?'live':''}" id="thCd" data-start="${esc(first.start)}" data-end="${esc(first.end)}">${thLive?`${esc(T.thEnds)} ${fmtCd(e0-now)}`:`${esc(T.thNext)} ${fmtCd(s0-now)}`}</span>`
+            :`<span class="th-cd ${gwLive?'live':''}" id="gwCd" data-start="${esc(gw.start)}" data-end="${esc(gw.end)}">${gwLive?`LIVE · Ends in ${fmtCd(gwE-now)}`:`Starts in ${fmtCd(gwS-now)}`}</span>`;
+          const headIco=gwActive?starIco:zapIco,titleText=gwActive?'Golden Week & Treasure Hours':T.thTitle;
+          const sub=gwActive?'<p class="gw-sub">Nov 28 – Dec 5 · All past seasonal treasures return to Battle Royale chests simultaneously.</p>':'';
+          const boostSrc=first&&first.boosts&&first.boosts.length?first.boosts:(gwActive?[{name:'Gold Outfit',mult:7.5},{name:'Vehicle & Decal',mult:10},{name:'Pirate Shop',mult:1.5}]:[]);
+          const boosts=boostSrc.map(b=>`<span class="th-boost">${esc(b.name)} <b>×${esc(b.mult)}</b></span>`).join('');
+          const loc=S.pcLocale||undefined,dayFmt=new Intl.DateTimeFormat(loc,{weekday:'short',month:'short',day:'numeric'}),timeFmt=new Intl.DateTimeFormat(loc,{hour:'numeric',minute:'2-digit'}),todayKey=new Date(now).toDateString();
+          const mkRow=x=>{
             const sd=new Date(x.start),ed=new Date(x.end),isLive=now>=sd.getTime()&&now<ed.getTime(),isToday=typeof x.isToday==='boolean'?x.isToday:sd.toDateString()===todayKey;
             const pill=isLive?`<span class="th-pill live">${esc(T.thLive)}</span>`:(isToday?`<span class="th-pill">${esc(T.thToday)}</span>`:'');
-            const dayText=x.day||dayFmt.format(sd);
-            const timeText=x.range||`${timeFmt.format(sd)} – ${timeFmt.format(ed)}`;
-            return `<div class="th-row"><span class="th-when">${esc(dayText)}${pill}</span><span class="th-time">${esc(timeText)}</span></div>`;
-          }).join('');
-          const cdText=live?`${esc(T.thEnds)} ${fmtCd(e0-now)}`:`${esc(T.thNext)} ${fmtCd(s0-now)}`;
+            return `<div class="th-row"><span class="th-when">${esc(x.day||dayFmt.format(sd))}${pill}</span><span class="th-time">${esc(x.range||`${timeFmt.format(sd)} – ${timeFmt.format(ed)}`)}</span></div>`;
+          };
+          const topRows=list.slice(0,3).map(mkRow).join(''),extraRows=list.slice(3).map(mkRow).join('');
+          const gwGrid=gwActive?`<div class="gw-grid" style="margin-bottom:${extraRows?'10px':'0'}">
+            <div class="gw-box"><span class="gl">Kickoff</span><span class="gv">${esc(gw.startLocal)}</span></div>
+            <div class="gw-box"><span class="gl">Week 5 Rotation</span><span class="gv">${esc(gw.weekStartLocal)}</span></div>
+            <div class="gw-box"><span class="gl">Season End</span><span class="gv">${esc(gw.endLocal)}</span></div>
+          </div>`:'';
+          const more=(gwActive||extraRows)?`<details class="clean-fold" style="background:rgba(11,11,14,.5)"><summary><span>Event Schedule &amp; Remaining Windows</span></summary><div class="fold-body">${gwGrid}${extraRows?`<div class="th-list">${extraRows}</div>`:''}</div></details>`:'';
           const foot=S.localZoneName?`${esc(T.thLocal)} · ${esc(S.localZoneName)}`:esc(T.thLocal);
-          return `<section class="card th-card"><div class="th-head"><h2 class="th-title">${zapIco}<span>${esc(T.thTitle)}</span></h2><span class="th-cd ${live?'live':''}" id="thCd" data-start="${esc(first.start)}" data-end="${esc(first.end)}">${cdText}</span></div>${boosts?`<div class="th-boosts">${boosts}</div>`:''}<div class="th-list">${rows}</div><div class="th-foot">${foot}</div></section>`;
+          return `<section class="card ${gwActive?'gw-card':'th-card'}"><div class="th-head"><h2 class="th-title">${headIco}<span>${esc(titleText)}</span></h2>${cdHtml}</div>${sub}${boosts?`<div class="th-boosts">${boosts}</div>`:''}${topRows?`<div class="th-list">${topRows}</div>`:''}${more}<div class="th-foot">${foot}</div></section>`;
         }
-        setInterval(()=>{if(document.hidden||!S)return;const T=S.txt,now=Date.now();const el=$('#thCd');if(el){const s=Date.parse(el.dataset.start),e=Date.parse(el.dataset.end),live=now>=s&&now<e;el.classList.toggle('live',live);el.textContent=live?`${T.thEnds} ${fmtCd(e-now)}`:`${T.thNext} ${fmtCd(s-now)}`;}const gw=$('#gwCd');if(gw){const s=Date.parse(gw.dataset.start),e=Date.parse(gw.dataset.end),live=now>=s&&now<e;gw.classList.toggle('live',live);gw.textContent=live?`LIVE · Ends in ${fmtCd(e-now)}`:`Starts in ${fmtCd(s-now)}`;}} ,1000);
+        function seasonCdParts(ms){
+          const rem=Math.max(0,ms),ended=ms<=0,s=Math.floor(rem/1000),pad=n=>String(n).padStart(2,'0');
+          return {ended,d:Math.floor(s/86400),h:pad(Math.floor((s%86400)/3600)),m:pad(Math.floor((s%3600)/60)),s:pad(s%60)};
+        }
+        function seasonView(T){
+          const sz=S.season;if(!sz)return '';
+          const now=Date.now(),sMs=Date.parse(sz.start),eMs=Date.parse(sz.end),span=Math.max(1,eMs-sMs);
+          const pct=Math.max(0,Math.min(100,((now-sMs)/span)*100)),cd=seasonCdParts(eMs-now);
+          const eyebrow=cd.ended?'Season Ended':(sz.currentWeek?`Week ${sz.currentWeek} Active`:'Current Season');
+          const ticks=(sz.weeks||[]).slice(1).map(w=>{
+            const wp=((Date.parse(w.start)-sMs)/span)*100;
+            return wp>0&&wp<100?`<i style="left:${wp.toFixed(2)}%" title="Week ${esc(w.number)}: ${esc(w.title)}"></i>`:'';
+          }).join('');
+          const cdUnits=cd.ended
+            ?`<span class="th-cd">SEASON ENDED</span>`
+            :`<div class="sz-cd-wrap"><div class="sz-cd-unit"><span class="v" id="szD">${cd.d}</span><span class="l">Days</span></div><div class="sz-cd-unit"><span class="v" id="szH">${cd.h}</span><span class="l">Hrs</span></div><div class="sz-cd-unit"><span class="v" id="szM">${cd.m}</span><span class="l">Min</span></div><div class="sz-cd-unit"><span class="v" id="szS">${cd.s}</span><span class="l">Sec</span></div></div>`;
+          const weekCards=(sz.weeks||[]).map(w=>{
+            const badge=w.status==='done'?'<span class="th-pill">Done</span>':(w.status==='active'?'<span class="th-pill live">Live</span>':'<span class="th-pill">Soon</span>');
+            return `<div class="sz-wk ${esc(w.status)}"><div class="sz-wk-top"><span>Week ${esc(w.number)}</span>${badge}</div><div class="sz-wk-name">${esc(w.title)}</div><div class="sz-wk-dates">${esc(w.rangeLocal)}</div></div>`;
+          }).join('');
+          let h=`<section class="card sz-hero" id="szTracker" data-start="${esc(sz.start)}" data-end="${esc(sz.end)}">
+            <div class="sz-top"><div><span class="sz-eyebrow">${esc(eyebrow)}</span><h2 class="sz-title">${esc(sz.name)}</h2></div>${cdUnits}</div>
+            <div class="sz-prog">
+              <div class="sz-prog-head"><span class="sz-prog-lbl">Season Progress</span><span class="sz-prog-pct" id="szPct">${pct.toFixed(1)}% · <span id="szLeftLbl">${cd.ended?'0d left':fmtCd(eMs-now)+' remaining'}</span></span></div>
+              <div class="sz-bar"><div class="sz-bar-fill" id="szBarFill" style="width:${pct.toFixed(2)}%"></div><div class="sz-bar-ticks">${ticks}</div></div>
+              <div class="sz-prog-foot"><span>Started ${esc(sz.startLocal)}</span><span>Season Ends ${esc(sz.endLocal)}</span></div>
+            </div>
+          </section>`;
+          if(weekCards)h+=`<section class="sz-weeks">${weekCards}</section>`;
+          h+=eventScheduleCard(T);
+          return h;
+        }
+        setInterval(()=>{if(document.hidden||!S)return;const T=S.txt,now=Date.now();const el=$('#thCd');if(el){const s=Date.parse(el.dataset.start),e=Date.parse(el.dataset.end),live=now>=s&&now<e;el.classList.toggle('live',live);el.textContent=live?`${T.thEnds} ${fmtCd(e-now)}`:`${T.thNext} ${fmtCd(s-now)}`;}const gw=$('#gwCd');if(gw){const s=Date.parse(gw.dataset.start),e=Date.parse(gw.dataset.end),live=now>=s&&now<e;gw.classList.toggle('live',live);gw.textContent=live?`LIVE · Ends in ${fmtCd(e-now)}`:`Starts in ${fmtCd(s-now)}`;}const sz=$('#szTracker');if(sz){const s=Date.parse(sz.dataset.start),e=Date.parse(sz.dataset.end),pct=Math.max(0,Math.min(100,((now-s)/Math.max(1,e-s))*100)),cd=seasonCdParts(e-now);const bf=$('#szBarFill');if(bf)bf.style.width=pct.toFixed(2)+'%';const sp=$('#szPct');if(sp)sp.innerHTML=`${pct.toFixed(1)}% · <span id="szLeftLbl">${cd.ended?'0d left':fmtCd(e-now)+' remaining'}</span>`;if($('#szD')){$('#szD').textContent=cd.d;$('#szH').textContent=cd.h;$('#szM').textContent=cd.m;$('#szS').textContent=cd.s;}}const hm=$('#hmSzCd');if(hm){const e=Date.parse(hm.dataset.end),s=Date.parse(hm.dataset.start),pct=Math.max(0,Math.min(100,((now-s)/Math.max(1,e-s))*100));hm.textContent=now>=e?'Ended · 100%':`${fmtCd(e-now)} left · ${pct.toFixed(0)}%`;}},1000);
         function home(T){
           let h='';
           if(S.autoClose)h+=`<div class="card notice warning"><b>${esc(S.status.text)}</b><br>${esc(T.autoCloseText)}<div class="actions" style="margin-top:10px"><button class="b main" onclick="api('keepOpen')">${esc(T.keepOpen)}</button></div></div>`;
@@ -806,32 +905,30 @@ public static class GuiPage
           if(S.progress)h+=`<div class="card"><b>${esc(T.analyzing)} ${S.progress.done} / ${S.progress.total}</b><div class="bar"><i style="width:${Math.round(100*S.progress.done/Math.max(1,S.progress.total))}%"></i></div></div>`;
           if(S.whatsNew&&S.whatsNew.length)h+=`<div class="card"><h2 class="pirate">${esc(fmt(T.whatsNew,S.version))}</h2><ul>${S.whatsNew.map(n=>`<li>${esc(n)}</li>`).join('')}</ul><button class="b main" onclick="api('dismissWhatsNew')">${esc(T.ok)}</button></div>`;
           if(S.update)h+=`<div class="card"><h2 class="pirate">${esc(fmt(T.newVersion,S.update.version))}</h2><ul>${S.update.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul><button class="b main" onclick="api('installUpdate')">${esc(T.install)}</button></div>`;
-          h+=`<section class="tiles"><div class="tile hero"><button type="button" class="editbtn" onclick="openManual()" title="${esc(T.editChests)}" aria-label="${esc(T.editChests)}">__PENCIL__</button><div class="l">${esc(T.total)}</div><div class="v num">${esc(S.total)}</div><div class="l">${esc(T.totalSub)}${S.manual?'<br>'+esc(fmt(T.byHand,S.manualText.replace('+',''))):''}</div></div>
-            <div class="tile"><div class="v num">${esc(S.session)}</div><div class="l">${esc(T.session)} · ${esc(S.sessionMatches)} ${esc(T.matches)}</div></div>
-            <div class="tile"><div class="v num">${esc(S.last?S.last.chests:'—')}</div><div class="l">${esc(T.last)}${S.last?'<br>'+esc(S.last.when)+' · '+esc(S.last.mode):''}</div></div>
-            <div class="tile"><div class="v num">${esc(S.avgPerDay||'0')}</div><div class="l">${esc(T.perDay)}${S.spanDays>0?'<br>over '+esc(S.spanDays)+(S.spanDays===1?' day':' days'):''}</div></div>
-            ${S.avgPerWeek?`<div class="tile"><div class="v num">${esc(S.avgPerWeek)}</div><div class="l">${esc(T.perWeek)}<br>over ${(S.spanDays/7).toFixed(1)} weeks</div></div>`:''}
-            ${S.squadSync&&S.squadSync.active?`<div class="tile" style="border-color:rgba(48,209,88,.35)"><div class="v num">${esc(S.squadSync.teamChests)}${S.squadSync.live?` <span class="th-pill live" style="margin-left:4px">${esc(T.thLive)}</span>`:''}</div><div class="l">Squad Sync chests · ${esc(S.squadSync.matches)} ${esc(T.matches)}<br>Squad total: ${esc(S.squadSync.totalChests)}${(S.squadSync.live?S.squadSync.livePeers:S.squadSync.recentPeers).length?'<br>'+((S.squadSync.live?S.squadSync.livePeers:S.squadSync.recentPeers).map(p=>esc(p.name)+': '+esc(p.chests)).join(' · ')):''}</div></div>`:''}
-            <div class="tile"><div class="v num">${starIco}<span>${esc(S.treasures)}</span></div><div class="l">${esc(T.treasures)} · ${esc(S.matches)} ${esc(T.matches)} · ${esc(fmt(T.perMatch,S.average))}</div></div></section>`;
+          h+=`<section class="tiles"><div class="tile hero"><button type="button" class="editbtn" onclick="openManual()" title="${esc(T.editChests)}" aria-label="${esc(T.editChests)}">__PENCIL__</button><div class="l">${esc(T.total)}</div><div class="v num">${esc(S.total)}</div><div class="l">${esc(S.matches)} ${esc(T.matches)} · ${esc(fmt(T.perMatch,S.average))}${S.manual?' · '+esc(fmt(T.byHand,S.manualText.replace('+',''))):''}</div></div>
+            <div class="tile"><div class="v num">${esc(S.session)}</div><div class="l">${esc(T.session)} · ${esc(S.sessionMatches)} ${esc(T.matches)}${S.last?'<br>Last: '+esc(S.last.chests)+' · '+esc(S.last.mode):''}</div></div>
+            <div class="tile"><div class="v num">${esc(S.avgPerDay||'0')}</div><div class="l">${esc(T.perDay)}${S.avgPerWeek?' · '+esc(S.avgPerWeek)+' / wk':(S.spanDays>0?' · '+esc(S.spanDays)+'d':'')}</div></div>
+            ${S.squadSync&&S.squadSync.active?`<div class="tile" style="border-color:rgba(48,209,88,.35)"><div class="v num">${esc(S.squadSync.teamChests)}${S.squadSync.live?` <span class="th-pill live" style="margin-left:4px">${esc(T.thLive)}</span>`:''}</div><div class="l">Squad Sync · ${esc(S.squadSync.totalChests)} total${(S.squadSync.live?S.squadSync.livePeers:S.squadSync.recentPeers).length?'<br>'+((S.squadSync.live?S.squadSync.livePeers:S.squadSync.recentPeers).map(p=>esc(p.name)+': '+esc(p.chests)).join(' · ')):''}</div></div>`:''}
+            <div class="tile"><div class="v num">${starIco}<span>${esc(S.treasures)}</span></div><div class="l">${esc(T.treasures)}</div></div></section>`;
           if(S.matches==='0'&&!S.firstRun)h+=`<div class="card empty-state"><div class="es-body"><div class="es-title">${esc(T.total)}</div>${esc(T.emptyMatches)}</div></div>`;
           h+=`<div class="actions"><button class="b main" onclick="setTab('report')">${esc(T.openReport)}</button>`;
-          if(S.overlay.running)h+=`<button class="b" onclick="api('toggleOverlayVisible')">${esc(S.overlay.visible?T.hideOverlay:T.showOverlay)}</button><button class="b" onclick="api('toggleOverlayLock')">${esc(S.overlay.locked?T.unlock:T.lock)}</button>`;
-          if(!S.update&&S.updatesOn)h+=`<button class="b" onclick="api('checkUpdate')">${esc(T.checkUpdate)}</button>`;
+          if(S.overlay.running)h+=`<button class="b" onclick="api('toggleOverlayVisible')">${esc(S.overlay.visible?T.hideOverlay:T.showOverlay)}</button>`;
           h+='</div>';
-          h+=goldenWeekCard(T);
-          h+=treasureHoursCard(T);
+          if(S.season){const sz=S.season,now=Date.now(),s=Date.parse(sz.start),e=Date.parse(sz.end),pct=Math.max(0,Math.min(100,((now-s)/Math.max(1,e-s))*100));h+=`<section class="card sz-strip" onclick="setTab('season')"><span style="display:flex;align-items:center;gap:8px;font-family:var(--fn-display);font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:#ffffff">${starIco}<span>${esc(sz.name)}</span></span><span class="th-cd" id="hmSzCd" data-start="${esc(sz.start)}" data-end="${esc(sz.end)}">${now>=e?'Ended · 100%':`${fmtCd(e-now)} left · ${pct.toFixed(0)}%`}</span></section>`;}
           return h;
         }
         function setSpFilter(f){spFilter=f;render(true)}
         function setSpVar(v){spVar=v;render(true)}
         function spritesView(T){
           const sp=S.sprites;if(!sp)return '';
-          let h=`<section class="tiles">
-            <div class="tile hero"><div class="l">Sprite Collection</div><div class="v num">${esc(sp.ownedCount)} <span style="font-size:20px;color:var(--cmuted);font-weight:600">/ ${esc(sp.totalVariants)}</span></div><div class="l">Auto-tracked from extractions & wins, or click any variant below to tick manually</div></div>
-            <div class="tile"><div class="v num">${esc(sp.extractedCount)}</div><div class="l">Extracted variants</div></div>
-            <div class="tile"><div class="v num">${esc(sp.wonCount)}</div><div class="l">Secured from wins</div></div>
-            <div class="tile"><div class="v num">${esc(sp.maxedCount)}</div><div class="l">Maxed to Lv 5</div></div>
-            <div class="tile"><div class="v num">${esc(sp.seenCount)}</div><div class="l">Carried in replays</div></div>
+          let h=`<section class="sp-sum">
+            <div class="sp-sum-main"><div class="l">Sprite Collection</div><div class="v num">${esc(sp.ownedCount)} <span style="font-size:18px;color:var(--cmuted);font-weight:600">/ ${esc(sp.totalVariants)}</span></div></div>
+            <div class="sp-sum-pills">
+              <span class="sp-stat-pill"><b>${esc(sp.extractedCount)}</b>Extracted</span>
+              <span class="sp-stat-pill"><b>${esc(sp.wonCount)}</b>Won</span>
+              <span class="sp-stat-pill"><b>${esc(sp.maxedCount)}</b>Lv 5</span>
+              <span class="sp-stat-pill"><b>${esc(sp.seenCount)}</b>Carried</span>
+            </div>
           </section>`;
           h+=`<div class="sp-bar">
             <div class="gs-seg">${[['all','All'],['owned','Owned'],['missing','Missing'],['secured','Extracted / Won']].map(([k,l])=>`<button type="button" class="gs-pill ${spFilter===k?'on':''}" onclick="setSpFilter('${k}')">${l}</button>`).join('')}</div>
@@ -874,34 +971,37 @@ public static class GuiPage
               }).join('');
               return `<div class="sp-rrow"><span style="color:var(--cmuted)">${esc(r.when)} · ${esc(r.mode)}${esc(pl)}</span><div class="sp-rchips">${chips}</div></div>`;
             }).join('');
-            h+=`<section><h2 class="pirate">Recent Replay Sprites</h2><div class="card sp-rec">${rows}</div></section>`;
+            h+=`<details class="clean-fold"><summary><span>Recent Replay Sprites (${esc(sp.recent.length)})</span></summary><div class="fold-body sp-rec">${rows}</div></details>`;
           }
           return h;
         }
-        function overlay(T){
-          const o=S.overlay;
-          let h=`<div class="card">${row(esc(T.inGame),esc(T.inGameHelp),sw('ov',o.show,'showOverlay'))}
-            ${row(esc(T.style),'',sel('overlayStyle',o.style,[['hud',T.hud],['classic',T.classic]]))}
-            ${o.show?row(esc(T.size),'',sel('overlaySize',o.size,o.sizes.map(x=>[x,x+' %'])))+row(esc(T.opacity),'',sel('overlayOpacity',o.opacity,o.opacities.map(x=>[x,x+' %']))):''}</div>
-            <section><h2 class="pirate">${esc(T.obs)}</h2><div class="card"><span class="path">${esc(S.paths.overlay)}</span><p class="note" style="color:var(--cmuted)">${esc(T.obsSteps)}</p>
-            <div class="actions"><button class="b main" onclick="copyObs()">${esc(copied?T.copied:T.copy)}</button><button class="b" onclick="window.open('/overlay?t='+TOKEN,'_blank')">${esc(T.preview)}</button></div></div></section>`;
-          return h;
-        }
         function settings(T){
-          const s=S.settings;
-          let h=`<div class="card">${row(esc(T.times),esc(T.timesHelp),sel('timeZone',s.timeZone,[['local',fmt(T.timesLocal,s.localZone)],['utc',T.timesUtc]]))}
-            ${row(esc(T.clock),'',sel('clockFormat',s.clockFormat,[['auto',fmt(T.clockAuto,s.windowsClock==='24'?T.h24:T.h12)],['12',T.clock12],['24',T.clock24]]))}
-            ${S.profiles.length>1?row(esc(T.profile),'',sel('profile',S.profileKey,S.profiles.map(p=>[p.key,p.name+' ('+p.matches+' · '+p.chests+')']))):''}
-            ${s.windowed?row(esc(T.tray),esc(T.trayHelp),sw('tr',s.minimizeToTray,'minimizeToTray')):''}
-            ${s.canStartWithFortnite?row(esc(T.withFortnite),esc(T.withFortniteHelp),sw('wf',s.startWithFortnite,'startWithFortnite')):''}
-            ${row(esc(T.zapMode),esc(T.zapModeHelp),sw('zm',s.zapMode,'zapMode'))}
-            ${row(esc(T.treasureAlerts),esc(T.treasureAlertsHelp),sw('tha',s.treasureHourAlerts,'treasureHourAlerts'))}
-            ${row(esc(T.squadSync),esc(T.squadSyncHelp),sw('sqs',s.squadSync,'squadSync'))}
-            ${row(esc(T.discordStatus),esc(T.discordStatusHelp),sw('drpc',s.discordPresence,'discordPresence'))}
-            ${s.discordPresence?`<div class="row"><div style="flex:1"><div class="t">${esc(T.discordAppId)}</div><div class="actions" style="margin-top:6px"><input type="text" id="discordAppId" placeholder="1234567890123456789" value="${esc(s.discordAppId||'')}"><button class="b" onclick="api('discordAppId',$('#discordAppId').value)">${esc(T.saveId)}</button></div></div></div>`:''}
-            ${row(esc(T.updates),'',sel('updateMode',s.updateMode,[['prompt',T.upPrompt],['auto',T.upAuto],['off',T.upOff]]))}
-            <div class="row"><div style="flex:1"><div class="t">${esc(T.demos)}</div>${s.demosExists?'':`<div class="h">${esc(T.demosMissing)}</div>`}<div class="actions" style="margin-top:6px"><input type="text" id="demos" value="${esc(s.demos)}"><button class="b" onclick="api('demosFolder',$('#demos').value)">${esc(T.save)}</button></div></div></div></div>`;
-          return h;
+          const s=S.settings,o=S.overlay;
+          return `<div class="set-stack">
+            <section><h2 class="set-sec-title">${esc(T.overlay)}</h2><div class="card">
+              ${row(esc(T.inGame),esc(T.inGameHelp),sw('ov',o.show,'showOverlay'))}
+              ${row(esc(T.style),'',sel('overlayStyle',o.style,[['hud',T.hud],['classic',T.classic]]))}
+              ${o.show?row(esc(T.size),'',sel('overlaySize',o.size,o.sizes.map(x=>[x,x+' %'])))+row(esc(T.opacity),'',sel('overlayOpacity',o.opacity,o.opacities.map(x=>[x,x+' %']))):''}
+              ${o.running?row(o.locked?esc(T.unlock):esc(T.lock),'',`<button type="button" class="b" onclick="api('toggleOverlayLock')">${esc(o.locked?T.unlock:T.lock)}</button>`):''}
+            </div>
+            <details class="clean-fold" style="margin-top:10px"><summary><span>${esc(T.obs)}</span></summary><div class="fold-body"><span class="path">${esc(S.paths.overlay)}</span><p class="note" style="color:var(--cmuted)">${esc(T.obsSteps)}</p><div class="actions"><button class="b main" onclick="copyObs()">${esc(copied?T.copied:T.copy)}</button><button class="b" onclick="window.open('/overlay?t='+TOKEN,'_blank')">${esc(T.preview)}</button></div></div></details></section>
+            <section><h2 class="set-sec-title">Preferences</h2><div class="card">
+              ${s.canStartWithFortnite?row(esc(T.withFortnite),esc(T.withFortniteHelp),sw('wf',s.startWithFortnite,'startWithFortnite')):''}
+              ${s.windowed?row(esc(T.tray),esc(T.trayHelp),sw('tr',s.minimizeToTray,'minimizeToTray')):''}
+              ${row(esc(T.treasureAlerts),esc(T.treasureAlertsHelp),sw('tha',s.treasureHourAlerts,'treasureHourAlerts'))}
+              ${row(esc(T.squadSync),esc(T.squadSyncHelp),sw('sqs',s.squadSync,'squadSync'))}
+              ${row(esc(T.discordStatus),esc(T.discordStatusHelp),sw('drpc',s.discordPresence,'discordPresence'))}
+              ${s.discordPresence?`<div class="row"><div style="flex:1"><div class="t">${esc(T.discordAppId)}</div><div class="actions" style="margin-top:6px"><input type="text" id="discordAppId" placeholder="1234567890123456789" value="${esc(s.discordAppId||'')}"><button class="b" onclick="api('discordAppId',$('#discordAppId').value)">${esc(T.saveId)}</button></div></div></div>`:''}
+              ${row(esc(T.zapMode),esc(T.zapModeHelp),sw('zm',s.zapMode,'zapMode'))}
+              ${row(esc(T.times),esc(T.timesHelp),sel('timeZone',s.timeZone,[['local',fmt(T.timesLocal,s.localZone)],['utc',T.timesUtc]]))}
+              ${row(esc(T.clock),'',sel('clockFormat',s.clockFormat,[['auto',fmt(T.clockAuto,s.windowsClock==='24'?T.h24:T.h12)],['12',T.clock12],['24',T.clock24]]))}
+              ${S.profiles.length>1?row(esc(T.profile),'',sel('profile',S.profileKey,S.profiles.map(p=>[p.key,p.name+' ('+p.matches+' · '+p.chests+')']))):''}
+              ${row(esc(T.updates),'',`<div class="actions" style="align-items:center">${sel('updateMode',s.updateMode,[['prompt',T.upPrompt],['auto',T.upAuto],['off',T.upOff]])}${!S.update&&S.updatesOn?`<button class="b" onclick="api('checkUpdate')">${esc(T.checkUpdate)}</button>`:''}</div>`)}
+              <div class="row"><div style="flex:1"><div class="t">${esc(T.demos)}</div>${s.demosExists?'':`<div class="h">${esc(T.demosMissing)}</div>`}<div class="actions" style="margin-top:6px"><input type="text" id="demos" value="${esc(s.demos)}"><button class="b" onclick="api('demosFolder',$('#demos').value)">${esc(T.save)}</button></div></div></div>
+            </div></section>
+            <section><h2 class="set-sec-title">Data &amp; Support</h2><div class="card"><p style="margin-top:0;color:var(--cmuted)">${esc(T.helpText)}</p><div class="actions"><button class="b" onclick="api('openDataFolder')">${esc(T.dataFolder)}</button>${S.paths.errorLog?`<button class="b" onclick="api('openErrorLog')">${esc(T.errorLog)}</button>`:''}<button class="b" onclick="api('openIssues')">${esc(T.issue)}</button><button class="b" onclick="api('openRepo')">${esc(T.project)}</button></div></div>
+            ${S.canUninstall?`<details class="clean-fold" style="margin-top:10px"><summary><span>${esc(T.uninstall)}</span></summary><div class="fold-body"><span class="path">${esc(S.paths.data)}</span><div class="actions"><button class="b danger" onclick="uninstall(false)">${esc(T.uninstall)} · ${esc(T.keepData)}</button><button class="b danger" onclick="uninstall(true)">${esc(T.uninstall)} · ${esc(T.deleteData)}</button></div></div></details>`:''}</section>
+          </div>`;
         }
         // Chests added by hand (and the estimate from the Career matches): p = 's' in the settings, 'd' in the edit box.
         // The box starts empty each time: the number typed is added to what was already added, and each addition can be
@@ -936,11 +1036,6 @@ public static class GuiPage
         $('#dlg').addEventListener('click',e=>{if(dlgDownOut&&dlgOutside(e))$('#dlg').close();dlgDownOut=false});
         window.addEventListener('message',e=>{if(e.origin===location.origin&&e.data&&e.data.cc==='editChests'&&S)openManual()});
         async function copyObs(){await api('copyObsPath');copied=true;render(true);setTimeout(()=>{copied=false;render(true)},2000)}
-        function help(T){
-          return `<div class="card"><p style="margin-top:0">${esc(T.helpText)}</p><div class="actions"><button class="b" onclick="api('openDataFolder')">${esc(T.dataFolder)}</button>${S.paths.errorLog?`<button class="b" onclick="api('openErrorLog')">${esc(T.errorLog)}</button>`:''}<button class="b" onclick="api('openIssues')">${esc(T.issue)}</button><button class="b" onclick="api('openRepo')">${esc(T.project)}</button></div></div>
-          ${S.canUninstall?`<section><h2 class="pirate">${esc(T.uninstall)}</h2><div class="card"><span class="path">${esc(S.paths.data)}</span>
-          <div class="actions"><button class="b danger" onclick="uninstall(false)">${esc(T.uninstall)} · ${esc(T.keepData)}</button><button class="b danger" onclick="uninstall(true)">${esc(T.uninstall)} · ${esc(T.deleteData)}</button></div></div></section>`:''}`;
-        }
         function closedView(){stopped=true;$('#app').innerHTML='<div class="card">'+esc(S.txt.closed)+'</div>';$('#foot').innerHTML='';appHtml=footHtml=null;$('#activityPane').classList.add('hidden');$('#reportPane').classList.add('hidden');$('#statsPane').classList.add('hidden');$('#routePane').classList.add('hidden')}
         async function uninstall(all){if(!confirm(S.txt.uninstallConfirm))return;const err=await api('uninstall',all);if(err){alert(err);return}closedView()}
         async function quit(){if(!confirm(S.txt.quitConfirm))return;try{await api('quit')}catch(e){}closedView()}

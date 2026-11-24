@@ -245,6 +245,9 @@ public sealed class Config
     /// <summary>Version of the tool the player last used: what's new is shown once after an update.</summary>
     public string? LastVersion { get; set; }
 
+    /// <summary>Version of the tool for which the player answered the mandatory "Open with Fortnite?" startup prompt.</summary>
+    public string? PromptedOpenWithFortniteVersion { get; set; }
+
     /// <summary>Look of the overlay: "hud" (figures only, like the game's HUD) or "classic" (dark card).</summary>
     public string OverlayStyle { get; set; } = "hud";
     public int? OverlayX { get; set; }

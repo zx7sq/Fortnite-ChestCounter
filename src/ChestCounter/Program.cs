@@ -1183,6 +1183,7 @@ object BuildGuiState()
         version = AppInfo.VersionText,
         player = profile?.Name,
         firstRun = welcome,
+        askOpenWithFortnite = OperatingSystem.IsWindows() && AppInfo.ExePath != null && config.PromptedOpenWithFortniteVersion != AppInfo.VersionText,
         autoClose = autoCloseAt != null,
         status = new { kind, text },
         total = L.N(view.TotalChests),
@@ -1270,7 +1271,7 @@ object BuildGuiState()
         },
         paths = new { data = store.Folder, overlay = Path.GetFullPath(store.OverlayPath), errorLog = File.Exists(store.ErrorLogPath) ? store.ErrorLogPath : null },
         canUninstall = OperatingSystem.IsWindows() && AppInfo.ExePath != null,
-        notices = TreasureCatalog.ActiveNotices(DateTime.UtcNow).Where(n => !config.DismissedNotices.Contains(n.Id))
+        notices = TreasureCatalog.ActiveNotices(DateTime.UtcNow).Where(n => n.Id != "golden-week-2026" && !config.DismissedNotices.Contains(n.Id))
             .Select(n => new { id = n.Id, level = n.Level, title = n.TitleIn(L.Code), text = n.TextIn(L.Code), link = n.Link }).ToList(),
         treasureAlert = activeTreasureAlert is { } ta && ta.Id != dismissedTreasureAlertId
             ? new { id = ta.Id, kind = ta.Kind, title = ta.Title, text = ta.Text }
@@ -1299,6 +1300,7 @@ object BuildGuiState()
         pcLocale = System.Globalization.CultureInfo.CurrentCulture.Name,
         localZoneName = L.UtcTimes ? "UTC" : $"{TimeZoneInfo.Local.StandardName} ({L.LocalOffset})",
         goldenWeek = BuildGoldenWeekState(todayLocal),
+        season = BuildSeasonState(),
         reportStamp = File.Exists(store.ReportPath) ? File.GetLastWriteTimeUtc(store.ReportPath).Ticks.ToString() : "",
         fnStats = new
         {
@@ -1338,6 +1340,42 @@ object BuildGuiState()
                     .ToList(),
             })
             .ToList(),
+    };
+}
+
+object BuildSeasonState()
+{
+    var weeks = TreasureCatalog.Weeks.OrderBy(w => w.From).ToList();
+    var startUtc = weeks.Count > 0 ? weeks[0].From : new DateTime(2026, 11, 1, 14, 0, 0, DateTimeKind.Utc);
+    var endUtc = weeks.Count > 0 ? weeks[^1].To : new DateTime(2026, 12, 5, 14, 0, 0, DateTimeKind.Utc);
+    var nowUtc = DateTime.UtcNow;
+
+    static string FmtMoment(DateTime utc)
+    {
+        var d = L.Shown(utc);
+        return $"{d.ToString("ddd, d MMM", L.Culture)} · {L.Clock(d)}";
+    }
+
+    var curWeek = TreasureCatalog.WeekOf(nowUtc)?.Number;
+    var weekItems = weeks.Select(w => new
+    {
+        number = w.Number,
+        title = w.Title,
+        start = w.From.ToString("O"),
+        end = w.To.ToString("O"),
+        rangeLocal = $"{L.Shown(w.From).ToString("d MMM", L.Culture)} – {L.Shown(w.To).ToString("d MMM", L.Culture)}",
+        status = nowUtc >= w.To ? "done" : (nowUtc >= w.From ? "active" : "upcoming"),
+    }).ToList();
+
+    return new
+    {
+        name = "Chapter 7 · Treasure Hunters",
+        start = startUtc.ToString("O"),
+        end = endUtc.ToString("O"),
+        startLocal = FmtMoment(startUtc),
+        endLocal = FmtMoment(endUtc),
+        currentWeek = curWeek,
+        weeks = weekItems,
     };
 }
 
@@ -1566,6 +1604,23 @@ object? RunGuiAction(string name, System.Text.Json.JsonElement value)
             if (OperatingSystem.IsWindows()) GuiWindow.MinimizeToTray = config.MinimizeToTray;
             break;
         case "startWithFortnite": if (Bool() != config.StartWithFortnite) ToggleStartWithFortnite(); break;
+        case "chooseOpenWithFortnite":
+        {
+            var want = Bool();
+            if (OperatingSystem.IsWindows())
+            {
+                if (FortniteWatch.Apply(want, dataDir))
+                {
+                    config.StartWithFortnite = want;
+                }
+                else if (!want)
+                {
+                    config.StartWithFortnite = false;
+                }
+            }
+            config.PromptedOpenWithFortniteVersion = AppInfo.VersionText;
+            break;
+        }
         case "zapMode":
             config.ZapMode = Bool();
             if (config.ZapMode)
