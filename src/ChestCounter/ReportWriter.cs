@@ -122,73 +122,76 @@ public static class ReportWriter
     /// <summary>A short date and time ("Nov 8, 6:00 AM"), shown in local time or UTC.</summary>
     private static string ShortWhen(DateTime utc) => L.Shown(utc).ToString(L.T("d MMM ", "MMM d, ", "d MMM ") + L.TimePattern(), Fr) + L.Zone;
 
-    // Sleek Apple dark-mode aesthetic: obsidian black, frosted dark grey glass cards, crisp SF Pro / system typography,
-    // and smooth spring animations.
+    // Fortnite UI aesthetic in obsidian black: RGB-triplet color tokens, Burbank / Barlow Condensed uppercase display
+    // headings, Fortnite Yellow primary accents, and responsive text sizing so everything fits cleanly inside boxes.
     private const string Style = """
         :root{
-          --bg:#060608;
+          --fn-gold-dark:48,34,8;
+          --fn-gold-mid:120,82,12;
+          --fn-gold-light:247,232,59;
           --bg:#0b0b0e;
           --bg-elevated:#141419;
           --ink:#f5f5f7;
           --ink2:#ffffff;
-          --muted:#8e8e93;
+          --muted:#9a9aa6;
           --title:#ffffff;
-          --card:#141419;
+          --card:rgba(20,20,25,.94);
           --cink:#f5f5f7;
-          --cmuted:#8e8e93;
-          --line:rgba(255,255,255,.09);
-          --line-strong:rgba(255,255,255,.18);
-          --track:rgba(255,255,255,.08);
+          --cmuted:#9a9aa6;
+          --line:rgba(255,255,255,.11);
+          --line-strong:rgba(255,255,255,.24);
+          --track:rgba(255,255,255,.09);
           --brand:#f59e0b;
           --brand-ink:#0b0b0e;
           --gold:#f59e0b;
-          --star:#bf5af2;
-          --team:#30d158;
-          --warn:#ff453a;
-          --warnbg:rgba(255,69,58,.10);
+          --star:#c084fc;
+          --team:#30e87a;
+          --warn:#ff4d5a;
+          --warnbg:rgba(255,77,90,.12);
           --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:20px;--s6:24px;--s8:32px;
-          --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+          --fn-display:"Burbank Big Condensed","Burbank Big Regular","FortniteDisplay","Barlow Condensed",Impact,sans-serif;
+          --font:"FortniteUI","Barlow",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
           --ease:cubic-bezier(.16,1,.3,1);
         }
         *{box-sizing:border-box;-webkit-font-smoothing:antialiased}
         @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes barGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
-        @keyframes pulseBorder{0%,100%{box-shadow:inset 4px 0 0 #f59e0b}50%{box-shadow:inset 4px 0 0 #fbbf24}}
+        @keyframes pulseBorder{0%,100%{box-shadow:inset 4px 0 0 #f7e83b}50%{box-shadow:inset 4px 0 0 #f59e0b}}
         body{
           margin:0;
-          background:var(--bg);
+          background:radial-gradient(ellipse at 50% 0%,#1a1a22 0%,var(--bg) 70%);
           color:var(--ink);
-          font:400 15px/1.55 var(--font);
-          letter-spacing:-.011em;
+          font:500 15px/1.55 var(--font);
+          letter-spacing:-.005em;
           text-align:left;
         }
         main{max-width:1120px;margin:0 auto;padding:var(--s8) var(--s5) 56px;display:flex;flex-direction:column;gap:var(--s8);animation:fadeUp .38s var(--ease) both}
-        .pirate{font-family:var(--font);font-weight:700;letter-spacing:-.025em}
-        .num{font-family:var(--font);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
-        header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--s4);border-bottom:1px solid var(--line);padding-bottom:var(--s5)}
-        .brand{display:flex;align-items:center;gap:var(--s4)}
-        h1{margin:0;font-size:34px;line-height:1.08;font-weight:700;letter-spacing:-.03em;color:var(--title)}
-        .who{font-size:14px;color:var(--muted);margin-top:var(--s1)}.who b{color:var(--ink2);font-weight:600}
+        .pirate{font-family:var(--fn-display);font-weight:900;text-transform:uppercase;letter-spacing:.035em;text-shadow:0 2px 0 rgba(0,0,0,.45)}
+        .num{font-family:var(--fn-display);font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+        header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--s4);border-bottom:1.5px solid var(--line);padding-bottom:var(--s5)}
+        .brand{display:flex;align-items:center;gap:var(--s4);min-width:0}
+        h1{margin:0;font-size:clamp(28px,4vw,38px);line-height:1.05;font-weight:900;color:var(--title);word-break:break-word}
+        .who{font-size:14px;color:var(--muted);margin-top:var(--s1)}.who b{color:var(--ink2);font-weight:700}
         .muted{color:var(--muted)}
-        h2{margin:0 0 var(--s3);font-size:20px;line-height:1.25;font-weight:700;letter-spacing:-.02em;color:var(--title)}
-        .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:var(--s4)}
-        .tile{background:var(--card);color:var(--cink);border:1px solid var(--line);border-radius:16px;padding:var(--s4) var(--s5);display:flex;flex-direction:column;gap:var(--s1);transition:transform .22s var(--ease),border-color .22s var(--ease)}
-        .tile:hover{transform:translateY(-2px);border-color:var(--line-strong)}
-        .tile .v{font-size:32px;font-weight:700;line-height:1.1;color:#ffffff}
-        .tile .l{font-size:13px;color:var(--cmuted);font-weight:500}
-        .tile .s{font-size:12px;color:var(--cmuted);margin-top:var(--s1)}
-        .tile.hero{position:relative;grid-column:span 2;background:var(--bg-elevated);color:#ffffff;border:1px solid rgba(245,158,11,.38);padding:var(--s5) var(--s6);justify-content:space-between}
-        .tile.hero:hover{border-color:var(--brand)}
-        .editbtn{display:none;position:absolute;top:var(--s4);right:var(--s4);width:34px;height:34px;padding:0;border-radius:10px;border:1px solid var(--line-strong);background:rgba(255,255,255,.05);color:#ffffff;cursor:pointer;place-items:center;transition:all .2s var(--ease)}
+        h2{margin:0 0 var(--s3);font-family:var(--fn-display);font-size:24px;line-height:1.15;font-weight:900;text-transform:uppercase;letter-spacing:.035em;color:var(--title)}
+        .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--s4)}
+        .tile{min-width:0;background:linear-gradient(180deg,#18181f 0%,#121217 100%);color:var(--cink);border:1.5px solid var(--line);border-radius:4px;padding:var(--s4) var(--s5);display:flex;flex-direction:column;gap:var(--s1);transition:transform .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease)}
+        .tile:hover{transform:scale(1.018);border-color:rgba(255,255,255,.45);box-shadow:0 10px 26px rgba(0,0,0,.55)}
+        .tile .v{font-size:clamp(28px,2.8vw,36px);font-weight:900;line-height:1.05;color:#ffffff;white-space:nowrap}
+        .tile .l{font-size:12px;color:var(--cmuted);font-weight:600;text-transform:uppercase;letter-spacing:.035em;overflow-wrap:break-word}
+        .tile .s{font-size:12px;color:var(--cmuted);margin-top:var(--s1);overflow-wrap:break-word}
+        .tile.hero{position:relative;grid-column:span 2;background:linear-gradient(160deg,rgba(245,158,11,.14) 0%,#141419 52%,#111116 100%);color:#ffffff;border:1.5px solid rgba(245,158,11,.55);padding:var(--s5) var(--s6);justify-content:space-between}
+        .tile.hero:hover{border-color:var(--brand);box-shadow:0 12px 30px rgba(245,158,11,.18)}
+        .editbtn{display:none;position:absolute;top:var(--s4);right:var(--s4);width:34px;height:34px;padding:0;border-radius:4px;border:1.5px solid rgba(245,158,11,.45);background:rgba(11,11,14,.72);color:#ffffff;cursor:pointer;place-items:center;transition:all .2s var(--ease)}
         .editbtn:hover{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
         .editbtn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
         html.incounter .editbtn{display:grid}
-        .tile.hero .k{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--brand)}
-        .tile.hero .v{font-size:52px;color:#ffffff;line-height:1}
-        .tile.hero .l{color:var(--cmuted)}
+        .tile.hero .k{font-size:12px;font-family:var(--fn-display);font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--brand)}
+        .tile.hero .v{font-size:clamp(38px,4.2vw,52px);color:#ffffff;line-height:1;text-shadow:0 3px 0 rgba(0,0,0,.45);white-space:nowrap}
+        .tile.hero .l{color:#d4d4dc}
         @media (max-width:820px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.tile.hero{grid-column:span 2}}
-        .card{background:var(--card);color:var(--cink);border:1px solid var(--line);border-radius:16px;padding:var(--s2) var(--s5);overflow-x:auto;transition:border-color .2s var(--ease)}
+        .card{background:var(--card);color:var(--cink);border:1.5px solid var(--line);border-radius:4px;padding:var(--s2) var(--s5);overflow-x:auto;transition:border-color .2s var(--ease)}
         .card:hover{border-color:var(--line-strong)}
         .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
         @media (max-width:820px){.two{grid-template-columns:1fr}}
@@ -400,8 +403,28 @@ public static class ReportWriter
         .prize.got img{filter:none;opacity:1}
         """;
 
-    /// <summary>Clean Apple system typography (no decorative embedded font required).</summary>
-    public static string FontFaceCss => "";
+    /// <summary>Embedded Fortnite-style display (Barlow Condensed) and UI (Barlow) @font-face rules.</summary>
+    public static readonly string FontFaceCss = BuildFontFaceCss();
+
+    private static string BuildFontFaceCss()
+    {
+        static string Face(string res, string family, int weight)
+        {
+            try
+            {
+                using var s = typeof(ReportWriter).Assembly.GetManifestResourceStream(res);
+                if (s == null) return "";
+                using var ms = new MemoryStream();
+                s.CopyTo(ms);
+                return $"@font-face{{font-family:'{family}';font-weight:{weight};font-style:normal;font-display:swap;src:url('data:font/ttf;base64,{Convert.ToBase64String(ms.ToArray())}') format('truetype');}}";
+            }
+            catch { return ""; }
+        }
+        return Face("fonts/BarlowCondensed-Bold.ttf", "FortniteDisplay", 700)
+             + Face("fonts/BarlowCondensed-Black.ttf", "FortniteDisplay", 900)
+             + Face("fonts/Barlow-Medium.ttf", "FortniteUI", 500)
+             + Face("fonts/Barlow-Bold.ttf", "FortniteUI", 700);
+    }
 
     public static readonly string ChestIconImg = LoadChestIcon();
 
@@ -473,7 +496,7 @@ public static class ReportWriter
             <!doctype html><html lang="{L.Code}"><head><meta charset="utf-8">
             <meta name="viewport" content="width=device-width,initial-scale=1">
             <meta http-equiv="refresh" content="{(progress != null ? 2 : 15)}">
-            <title>{title}</title><style>{Style}</style></head><body data-showsquad="0" data-showteam="0"><main>
+            <title>{title}</title><style>{FontFaceCss}{Style}</style></head><body data-showsquad="0" data-showteam="0"><main>
             <header><div class="brand">{ChestIcon}<div><h1 class="pirate">{title}</h1>{(player.Length > 0 ? $"<div class=\"who\"><b>{H(player)}</b></div>" : "")}</div></div>
             <span class="muted" style="font-size:13px">{updated}</span></header>
             {LoadingCard(progress)}{NoticeCards()}{ProfilesLine(profiles, player)}

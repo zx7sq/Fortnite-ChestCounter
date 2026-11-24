@@ -31,6 +31,11 @@
     <EmbeddedResource Include="Assets\ChestIcon.png" LogicalName="ChestIcon.png" />
     <!-- Custom HUD overlay font -->
     <EmbeddedResource Include="Assets\hellafine.ttf" LogicalName="hellafine.ttf" />
+    <!-- Embedded Fortnite-style display & UI fonts (Barlow Condensed Black/Bold + Barlow Medium/Bold, SIL OFL) -->
+    <EmbeddedResource Include="Assets\BarlowCondensed-Black.ttf" LogicalName="fonts/BarlowCondensed-Black.ttf" />
+    <EmbeddedResource Include="Assets\BarlowCondensed-Bold.ttf" LogicalName="fonts/BarlowCondensed-Bold.ttf" />
+    <EmbeddedResource Include="Assets\Barlow-Medium.ttf" LogicalName="fonts/Barlow-Medium.ttf" />
+    <EmbeddedResource Include="Assets\Barlow-Bold.ttf" LogicalName="fonts/Barlow-Bold.ttf" />
     <!-- What's new of this version: shown once after an update, and used as the GitHub release text (build.yml). -->
     <EmbeddedResource Include="..\..\RELEASE_NOTES.md" LogicalName="ReleaseNotes.md" />
     <!-- Treasure hunt data (weeks, prize ids, odds, Treasure Hours, notices): replaced at runtime by a newer copy from the repository. -->
