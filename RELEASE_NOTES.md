@@ -2,6 +2,9 @@ Download **`ChestCounter.exe`** below and run it — nothing to install and no e
 
 > **Turn on replays in Fortnite first:** *Settings → Game → Replays → Record Replays: **On***. The app only reads your saved replay files in read-only mode — 100% Easy Anti-Cheat safe.
 
+**What's new in 3.4.0**
+- **Obsidian-Black Fortnite UI Theme & Embedded Fonts:** Sleek obsidian-black (`#0B0B0E` / `#141419`) + warm amber-gold (`#F59E0B`) Fortnite styling with embedded `Barlow Condensed` display & `Barlow` UI fonts, subtle animated triangle lobby backdrop, angled primary CTAs/active tabs, and compositor-thread hover flashes.
+
 **What's new in 3.3.4**
 - **Fortnite Golden Week Card & Live Schedule:** Dedicated **Golden Week — Final Hunt** showcase card on the Home tab with a live 1-second countdown, returning-treasures overview, boosted odds badges (**×7.5+ Gold Outfits**, **×10 Gold Vehicles & Decals**, **×1.5–2 Pirate Shop Tokens**), and kickoff/rotation/end times automatically formatted in your PC's local timezone and regional clock.
 
